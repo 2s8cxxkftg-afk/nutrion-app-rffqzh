@@ -1,91 +1,199 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const handleNotificationSettings = () => {
+    Alert.alert(
+      'Notification Settings',
+      'Expiration alerts are enabled. You will receive notifications 3 days before items expire.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleAbout = () => {
+    Alert.alert(
+      'About Nutrion',
+      'Nutrion helps you manage your pantry, track food expiration dates, and plan balanced meals.\n\nVersion 1.0.0',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const settingsOptions = [
+    {
+      icon: 'bell.fill',
+      title: 'Notifications',
+      subtitle: 'Manage expiration alerts',
+      onPress: handleNotificationSettings,
+    },
+    {
+      icon: 'info.circle',
+      title: 'About',
+      subtitle: 'App information',
+      onPress: handleAbout,
+    },
+  ];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
-      >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Profile',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+        }}
+      />
+      
+      <View style={commonStyles.container}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={[
+            styles.contentContainer,
+            Platform.OS !== 'ios' && { paddingBottom: 100 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <IconSymbol name="person.fill" size={48} color={colors.card} />
+            </View>
+            <Text style={styles.userName}>Nutrion User</Text>
+            <Text style={commonStyles.textSecondary}>Managing your pantry</Text>
+          </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={commonStyles.textSecondary}>Items Tracked</Text>
+            </View>
+            <View style={styles.statCard}>
+              <IconSymbol name="leaf.fill" size={32} color={colors.success} />
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={commonStyles.textSecondary}>Waste Reduced</Text>
+            </View>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+
+          <Text style={[commonStyles.subtitle, styles.sectionTitle]}>Settings</Text>
+
+          {settingsOptions.map((option, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[commonStyles.card, styles.settingCard]}
+              onPress={option.onPress}
+            >
+              <View style={styles.settingIcon}>
+                <IconSymbol name={option.icon as any} size={24} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>{option.title}</Text>
+                <Text style={commonStyles.textSecondary}>{option.subtitle}</Text>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.footer}>
+            <Text style={commonStyles.textSecondary}>
+              Nutrion - Smart Pantry Management
+            </Text>
+            <Text style={[commonStyles.textSecondary, { fontSize: 12, marginTop: 4 }]}>
+              Version 1.0.0
+            </Text>
           </View>
-        </GlassView>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
-  container: {
+  content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
-  },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   profileHeader: {
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
+    paddingVertical: 24,
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
-    gap: 12,
   },
-  name: {
+  userName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    // color handled dynamically
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
   },
-  email: {
-    fontSize: 16,
-    // color handled dynamically
-  },
-  section: {
-    borderRadius: 12,
-    padding: 20,
+  statsContainer: {
+    flexDirection: 'row',
     gap: 12,
+    marginBottom: 32,
   },
-  infoRow: {
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+  },
+  settingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginBottom: 12,
+    padding: 16,
   },
-  infoText: {
+  settingIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.highlight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  settingTitle: {
     fontSize: 16,
-    // color handled dynamically
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 32,
   },
 });
