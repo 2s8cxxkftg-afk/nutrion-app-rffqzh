@@ -106,7 +106,7 @@ export default function ProfileScreen() {
         >
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <IconSymbol name="person.fill" size={48} color={colors.card} />
+              <IconSymbol name="person.fill" size={48} color={colors.text} />
             </View>
             <Text style={styles.userName}>Nutrion User</Text>
             <Text style={commonStyles.textSecondary}>Managing your pantry</Text>
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   settingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     padding: 16,
   },
   settingIcon: {

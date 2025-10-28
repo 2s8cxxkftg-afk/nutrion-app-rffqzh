@@ -137,7 +137,7 @@ export default function ShoppingScreen() {
           item.checked && styles.checkboxChecked
         ]}>
           {item.checked && (
-            <IconSymbol name="checkmark" size={16} color={colors.card} />
+            <IconSymbol name="checkmark" size={16} color={colors.text} />
           )}
         </View>
         
@@ -256,7 +256,7 @@ export default function ShoppingScreen() {
             style={styles.fab}
             onPress={() => setShowAddForm(true)}
           >
-            <IconSymbol name="plus" size={28} color={colors.card} />
+            <IconSymbol name="plus" size={28} color={colors.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   itemContent: {
     flex: 1,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
     marginTop: 16,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   emptyState: {
     alignItems: 'center',

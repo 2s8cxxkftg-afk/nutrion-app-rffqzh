@@ -1,3 +1,4 @@
+
 // This file is a fallback for using MaterialIcons on Android and web.
 
 import React from "react";
@@ -161,6 +162,17 @@ const MAPPING = {
   "lightbulb.fill": "lightbulb",
   "moon.fill": "dark-mode",
   "sun.max.fill": "light-mode",
+
+  // Pantry & Food
+  "archivebox.fill": "inventory",
+  "archivebox": "inventory-2",
+  "leaf.fill": "eco",
+  "leaf": "eco",
+  "sparkles": "auto-awesome",
+  "book.closed": "menu-book",
+  "cloud": "cloud",
+  "tag": "label",
+  "number": "tag",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

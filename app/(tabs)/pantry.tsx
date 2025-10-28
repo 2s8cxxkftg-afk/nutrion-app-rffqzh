@@ -159,7 +159,7 @@ export default function PantryScreen() {
             style={styles.addButton}
             onPress={() => router.push('/add-item')}
           >
-            <IconSymbol name="plus" size={24} color={colors.card} />
+            <IconSymbol name="plus" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 16,
     gap: 12,
   },
   searchContainer: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   categoryScroll: {
     maxHeight: 50,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   categoryScrollContent: {
     paddingHorizontal: 20,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 20 : 100,
   },
   itemCard: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   itemHeader: {
     flexDirection: 'row',

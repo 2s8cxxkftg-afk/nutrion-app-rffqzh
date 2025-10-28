@@ -14,6 +14,7 @@ export const colors = {
   error: '#FF6B6B',             // Soft Red for errors
   warning: '#FFD93D',           // Yellow for warnings
   success: '#6BCF7F',           // Green for success
+  border: '#E0E0E0',            // Light gray for borders
 };
 
 export const buttonStyles = StyleSheet.create({
