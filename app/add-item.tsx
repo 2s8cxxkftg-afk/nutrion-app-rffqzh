@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -73,9 +74,25 @@ export default function AddItemScreen() {
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
+    console.log('Date picker event:', event.type, selectedDate);
+    
+    // On Android, always close the picker after selection or dismissal
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    // Update the date if user selected one (not cancelled)
+    if (event.type === 'set' && selectedDate) {
       setExpirationDate(selectedDate);
+      console.log('Date updated to:', selectedDate);
+      
+      // On iOS, close the picker after selection
+      if (Platform.OS === 'ios') {
+        setShowDatePicker(false);
+      }
+    } else if (event.type === 'dismissed') {
+      // User cancelled the picker
+      console.log('Date picker dismissed');
     }
   };
 
@@ -91,15 +108,22 @@ export default function AddItemScreen() {
         }}
       />
       
-      <View style={commonStyles.container}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <TouchableOpacity
             style={styles.scanButton}
             onPress={handleScanBarcode}
+            activeOpacity={0.7}
           >
             <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
             <Text style={styles.scanButtonText}>Scan Barcode</Text>
@@ -114,12 +138,20 @@ export default function AddItemScreen() {
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={setName}
+            autoCapitalize="words"
+            returnKeyType="next"
+            editable={true}
+            selectTextOnFocus={true}
           />
 
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
-            onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+            onPress={() => {
+              setShowCategoryPicker(!showCategoryPicker);
+              setShowUnitPicker(false);
+            }}
+            activeOpacity={0.7}
           >
             <Text style={{ color: colors.text }}>{category}</Text>
             <IconSymbol 
@@ -131,7 +163,7 @@ export default function AddItemScreen() {
 
           {showCategoryPicker && (
             <View style={styles.pickerOptions}>
-              <ScrollView style={{ maxHeight: 200 }}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
                 {FOOD_CATEGORIES.map(cat => (
                   <TouchableOpacity
                     key={cat}
@@ -139,7 +171,9 @@ export default function AddItemScreen() {
                     onPress={() => {
                       setCategory(cat);
                       setShowCategoryPicker(false);
+                      console.log('Category selected:', cat);
                     }}
+                    activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.pickerOptionText,
@@ -165,7 +199,10 @@ export default function AddItemScreen() {
                 placeholderTextColor={colors.textSecondary}
                 value={quantity}
                 onChangeText={setQuantity}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+                editable={true}
+                selectTextOnFocus={true}
               />
             </View>
 
@@ -173,7 +210,11 @@ export default function AddItemScreen() {
               <Text style={styles.label}>Unit *</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
-                onPress={() => setShowUnitPicker(!showUnitPicker)}
+                onPress={() => {
+                  setShowUnitPicker(!showUnitPicker);
+                  setShowCategoryPicker(false);
+                }}
+                activeOpacity={0.7}
               >
                 <Text style={{ color: colors.text }}>{unit}</Text>
                 <IconSymbol 
@@ -187,7 +228,7 @@ export default function AddItemScreen() {
 
           {showUnitPicker && (
             <View style={styles.pickerOptions}>
-              <ScrollView style={{ maxHeight: 200 }}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
                 {UNITS.map(u => (
                   <TouchableOpacity
                     key={u}
@@ -195,7 +236,9 @@ export default function AddItemScreen() {
                     onPress={() => {
                       setUnit(u);
                       setShowUnitPicker(false);
+                      console.log('Unit selected:', u);
                     }}
+                    activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.pickerOptionText,
@@ -215,7 +258,13 @@ export default function AddItemScreen() {
           <Text style={styles.label}>Expiration Date *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => {
+              setShowDatePicker(true);
+              setShowCategoryPicker(false);
+              setShowUnitPicker(false);
+              console.log('Opening date picker');
+            }}
+            activeOpacity={0.7}
           >
             <Text style={{ color: colors.text }}>
               {expirationDate.toLocaleDateString()}
@@ -224,13 +273,26 @@ export default function AddItemScreen() {
           </TouchableOpacity>
 
           {showDatePicker && (
-            <DateTimePicker
-              value={expirationDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onDateChange}
-              minimumDate={new Date()}
-            />
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={expirationDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onDateChange}
+                minimumDate={new Date()}
+                textColor={colors.text}
+                themeVariant="light"
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={styles.datePickerDoneButton}
+                  onPress={() => setShowDatePicker(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.datePickerDoneText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
           <Text style={styles.label}>Notes (Optional)</Text>
@@ -242,16 +304,21 @@ export default function AddItemScreen() {
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
+            textAlignVertical="top"
+            returnKeyType="default"
+            editable={true}
+            selectTextOnFocus={true}
           />
 
           <TouchableOpacity
             style={[buttonStyles.primary, styles.saveButton]}
             onPress={handleSave}
+            activeOpacity={0.7}
           >
             <Text style={styles.saveButtonText}>Add to Pantry</Text>
           </TouchableOpacity>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -308,6 +375,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: colors.textSecondary + '40',
+    overflow: 'hidden',
   },
   pickerOption: {
     flexDirection: 'row',
@@ -325,9 +393,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
+  datePickerContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginTop: 8,
+    padding: Platform.OS === 'ios' ? 12 : 0,
+    borderWidth: 1,
+    borderColor: colors.textSecondary + '40',
+  },
+  datePickerDoneButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   notesInput: {
     height: 80,
-    textAlignVertical: 'top',
+    paddingTop: 12,
   },
   saveButton: {
     marginTop: 32,
@@ -335,6 +423,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });
