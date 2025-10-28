@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -88,6 +89,22 @@ export default function RootLayout() {
             <Stack>
               {/* Main app with tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+              {/* Pantry-related screens */}
+              <Stack.Screen
+                name="add-item"
+                options={{
+                  presentation: "modal",
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="scan-barcode"
+                options={{
+                  presentation: "modal",
+                  headerShown: false,
+                }}
+              />
 
               {/* Modal Demo Screens */}
               <Stack.Screen
