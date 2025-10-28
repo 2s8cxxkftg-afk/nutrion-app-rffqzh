@@ -7,30 +7,100 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
+import { OpenFoodFactsProduct } from '@/types/pantry';
 
 export default function ScanBarcodeScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchProductFromBarcode = async (barcode: string) => {
+    try {
+      setLoading(true);
+      console.log('Fetching product for barcode:', barcode);
+      
+      const response = await fetch(
+        `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
+      );
+      
+      const data = await response.json();
+      console.log('Open Food Facts response:', data);
+      
+      if (data.status === 1 && data.product) {
+        const product: OpenFoodFactsProduct = data.product;
+        
+        Alert.alert(
+          'Product Found!',
+          `${product.product_name || 'Unknown Product'}\n${product.brands ? `Brand: ${product.brands}` : ''}\n\nWould you like to add this to your pantry?`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setScanned(false);
+                setLoading(false);
+              },
+            },
+            {
+              text: 'Add to Pantry',
+              onPress: () => {
+                // Navigate back and pass product data
+                router.back();
+                // TODO: Pass product data to add-item screen
+                console.log('Product to add:', product);
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Product Not Found',
+          'This barcode was not found in the database. Please add the item manually.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setScanned(false);
+                setLoading(false);
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      Alert.alert(
+        'Error',
+        'Failed to fetch product information. Please try again or add the item manually.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setScanned(false);
+              setLoading(false);
+            },
+          },
+        ]
+      );
+    }
+  };
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+    if (scanned || loading) return;
+    
+    console.log('Barcode scanned - Type:', type, 'Data:', data);
     setScanned(true);
-    Alert.alert(
-      'Barcode Scanned',
-      `Type: ${type}\nData: ${data}\n\nNote: Barcode lookup is not yet implemented. Please add the item manually.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
-    );
+    
+    // Fetch product information from Open Food Facts
+    fetchProductFromBarcode(data);
   };
 
   if (!permission) {
@@ -98,6 +168,9 @@ export default function ScanBarcodeScreen() {
               'upc_e',
               'code128',
               'code39',
+              'code93',
+              'codabar',
+              'itf14',
             ],
           }}
         />
@@ -111,11 +184,19 @@ export default function ScanBarcodeScreen() {
           </View>
           
           <Text style={styles.instructionText}>
-            Position the barcode within the frame
+            {loading ? 'Looking up product...' : 'Position the barcode within the frame'}
           </Text>
+          
+          {loading && (
+            <ActivityIndicator 
+              size="large" 
+              color={colors.primary} 
+              style={{ marginTop: 16 }}
+            />
+          )}
         </View>
 
-        {scanned && (
+        {scanned && !loading && (
           <TouchableOpacity
             style={styles.rescanButton}
             onPress={() => setScanned(false)}

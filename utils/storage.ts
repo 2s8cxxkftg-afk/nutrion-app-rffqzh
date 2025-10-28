@@ -9,8 +9,9 @@ const SHOPPING_KEY = '@nutrion_shopping';
 // Pantry Storage
 export const savePantryItems = async (items: PantryItem[]): Promise<void> => {
   try {
-    await AsyncStorage.setItem(PANTRY_KEY, JSON.stringify(items));
-    console.log('Pantry items saved successfully');
+    const jsonValue = JSON.stringify(items);
+    await AsyncStorage.setItem(PANTRY_KEY, jsonValue);
+    console.log('Pantry items saved successfully:', items.length, 'items');
   } catch (error) {
     console.error('Error saving pantry items:', error);
     throw error;
@@ -19,8 +20,14 @@ export const savePantryItems = async (items: PantryItem[]): Promise<void> => {
 
 export const loadPantryItems = async (): Promise<PantryItem[]> => {
   try {
-    const data = await AsyncStorage.getItem(PANTRY_KEY);
-    return data ? JSON.parse(data) : [];
+    const jsonValue = await AsyncStorage.getItem(PANTRY_KEY);
+    if (jsonValue !== null) {
+      const items = JSON.parse(jsonValue);
+      console.log('Loaded pantry items:', items.length, 'items');
+      return items;
+    }
+    console.log('No pantry items found, returning empty array');
+    return [];
   } catch (error) {
     console.error('Error loading pantry items:', error);
     return [];
@@ -32,6 +39,7 @@ export const addPantryItem = async (item: PantryItem): Promise<void> => {
     const items = await loadPantryItems();
     items.push(item);
     await savePantryItems(items);
+    console.log('Item added to pantry:', item.name);
   } catch (error) {
     console.error('Error adding pantry item:', error);
     throw error;
@@ -45,6 +53,9 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
     if (index !== -1) {
       items[index] = updatedItem;
       await savePantryItems(items);
+      console.log('Item updated in pantry:', updatedItem.name);
+    } else {
+      console.warn('Item not found for update:', updatedItem.id);
     }
   } catch (error) {
     console.error('Error updating pantry item:', error);
@@ -54,9 +65,27 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
 
 export const deletePantryItem = async (itemId: string): Promise<void> => {
   try {
+    console.log('Attempting to delete item with ID:', itemId);
     const items = await loadPantryItems();
-    const filteredItems = items.filter(item => item.id !== itemId);
+    console.log('Current items count:', items.length);
+    
+    const filteredItems = items.filter(item => {
+      const shouldKeep = item.id !== itemId;
+      if (!shouldKeep) {
+        console.log('Found item to delete:', item.name);
+      }
+      return shouldKeep;
+    });
+    
+    console.log('Items after filter:', filteredItems.length);
+    
+    if (filteredItems.length === items.length) {
+      console.warn('Item not found for deletion:', itemId);
+      throw new Error('Item not found');
+    }
+    
     await savePantryItems(filteredItems);
+    console.log('Item deleted successfully');
   } catch (error) {
     console.error('Error deleting pantry item:', error);
     throw error;

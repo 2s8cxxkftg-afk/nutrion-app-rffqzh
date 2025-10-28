@@ -16,7 +16,7 @@ import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
+import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 
 export default function AddItemScreen() {
@@ -25,11 +25,12 @@ export default function AddItemScreen() {
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDate, setExpirationDate] = useState(new Date());
+  const [expirationDate, setExpirationDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 7 days from now
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [showQuantityPicker, setShowQuantityPicker] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -96,6 +97,12 @@ export default function AddItemScreen() {
     }
   };
 
+  const handleQuantityPresetSelect = (value: number) => {
+    setQuantity(value.toString());
+    setShowQuantityPicker(false);
+    console.log('Quantity preset selected:', value);
+  };
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
@@ -137,11 +144,15 @@ export default function AddItemScreen() {
             placeholder="e.g., Milk, Eggs, Bread"
             placeholderTextColor={colors.textSecondary}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              console.log('Name input changed:', text);
+              setName(text);
+            }}
             autoCapitalize="words"
             returnKeyType="next"
             editable={true}
             selectTextOnFocus={true}
+            autoCorrect={false}
           />
 
           <Text style={styles.label}>Category *</Text>
@@ -150,6 +161,7 @@ export default function AddItemScreen() {
             onPress={() => {
               setShowCategoryPicker(!showCategoryPicker);
               setShowUnitPicker(false);
+              setShowQuantityPicker(false);
             }}
             activeOpacity={0.7}
           >
@@ -193,17 +205,33 @@ export default function AddItemScreen() {
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Quantity *</Text>
-              <TextInput
-                style={commonStyles.input}
-                placeholder="1"
-                placeholderTextColor={colors.textSecondary}
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-                editable={true}
-                selectTextOnFocus={true}
-              />
+              <View style={styles.quantityContainer}>
+                <TextInput
+                  style={[commonStyles.input, { flex: 1 }]}
+                  placeholder="1"
+                  placeholderTextColor={colors.textSecondary}
+                  value={quantity}
+                  onChangeText={(text) => {
+                    console.log('Quantity input changed:', text);
+                    setQuantity(text);
+                  }}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  editable={true}
+                  selectTextOnFocus={true}
+                />
+                <TouchableOpacity
+                  style={styles.quantityPresetButton}
+                  onPress={() => {
+                    setShowQuantityPicker(!showQuantityPicker);
+                    setShowCategoryPicker(false);
+                    setShowUnitPicker(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="list.bullet" size={20} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -213,6 +241,7 @@ export default function AddItemScreen() {
                 onPress={() => {
                   setShowUnitPicker(!showUnitPicker);
                   setShowCategoryPicker(false);
+                  setShowQuantityPicker(false);
                 }}
                 activeOpacity={0.7}
               >
@@ -225,6 +254,28 @@ export default function AddItemScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {showQuantityPicker && (
+            <View style={styles.pickerOptions}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                {QUANTITY_PRESETS.map(preset => (
+                  <TouchableOpacity
+                    key={preset.label}
+                    style={styles.pickerOption}
+                    onPress={() => handleQuantityPresetSelect(preset.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.pickerOptionText}>
+                      {preset.label}
+                    </Text>
+                    {parseFloat(quantity) === preset.value && (
+                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {showUnitPicker && (
             <View style={styles.pickerOptions}>
@@ -262,6 +313,7 @@ export default function AddItemScreen() {
               setShowDatePicker(true);
               setShowCategoryPicker(false);
               setShowUnitPicker(false);
+              setShowQuantityPicker(false);
               console.log('Opening date picker');
             }}
             activeOpacity={0.7}
@@ -281,7 +333,6 @@ export default function AddItemScreen() {
                 onChange={onDateChange}
                 minimumDate={new Date()}
                 textColor={colors.text}
-                themeVariant="light"
               />
               {Platform.OS === 'ios' && (
                 <TouchableOpacity
@@ -301,7 +352,10 @@ export default function AddItemScreen() {
             placeholder="Add any additional notes..."
             placeholderTextColor={colors.textSecondary}
             value={notes}
-            onChangeText={setNotes}
+            onChangeText={(text) => {
+              console.log('Notes input changed:', text);
+              setNotes(text);
+            }}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
@@ -363,6 +417,20 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  quantityPresetButton: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   picker: {
     flexDirection: 'row',

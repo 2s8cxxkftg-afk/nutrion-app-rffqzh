@@ -61,7 +61,9 @@ export default function PantryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Deleting item with ID:', itemId);
               await deletePantryItem(itemId);
+              console.log('Item deleted successfully');
               await loadItems();
             } catch (error) {
               console.error('Error deleting item:', error);
@@ -95,6 +97,7 @@ export default function PantryScreen() {
           <TouchableOpacity
             onPress={() => handleDeleteItem(item.id)}
             style={styles.deleteButton}
+            activeOpacity={0.7}
           >
             <IconSymbol name="trash" size={20} color={colors.error} />
           </TouchableOpacity>
@@ -157,7 +160,16 @@ export default function PantryScreen() {
 
           <TouchableOpacity
             style={styles.addButton}
+            onPress={() => router.push('/food-search')}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="magnifyingglass" size={20} color={colors.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.addButton}
             onPress={() => router.push('/add-item')}
+            activeOpacity={0.7}
           >
             <IconSymbol name="plus" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -177,6 +189,7 @@ export default function PantryScreen() {
                 filterCategory === category && styles.categoryChipActive,
               ]}
               onPress={() => setFilterCategory(category)}
+              activeOpacity={0.7}
             >
               <Text
                 style={[
@@ -211,6 +224,13 @@ export default function PantryScreen() {
                   ? 'No items match your search'
                   : 'Add items to start tracking your pantry'}
               </Text>
+              <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={() => router.push('/food-search')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.emptyStateButtonText}>Search Foods</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             filteredItems.map(renderPantryItem)
@@ -352,5 +372,17 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
+  },
+  emptyStateButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  emptyStateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
   },
 });
