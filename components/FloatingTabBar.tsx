@@ -1,6 +1,5 @@
 
-import { BlurView } from 'expo-blur';
-import { IconSymbol } from '@/components/IconSymbol';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,16 +8,17 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import React from 'react';
-import { useTheme } from '@react-navigation/native';
 import { useRouter, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   interpolate,
 } from 'react-native-reanimated';
+import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 
 export interface TabBarItem {
@@ -41,24 +41,26 @@ export default function FloatingTabBar({
   borderRadius = 25,
   bottomMargin = 20,
 }: FloatingTabBarProps) {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = usePathname();
   const theme = useTheme();
 
-  const activeIndex = tabs.findIndex((tab) =>
-    pathname.includes(tab.name)
-  );
-
+  const activeIndex = tabs.findIndex(tab => pathname.includes(tab.name));
   const indicatorPosition = useSharedValue(activeIndex >= 0 ? activeIndex : 0);
 
   React.useEffect(() => {
-    if (activeIndex >= 0) {
-      indicatorPosition.value = withSpring(activeIndex, {
+    const newIndex = tabs.findIndex(tab => pathname.includes(tab.name));
+    if (newIndex >= 0) {
+      indicatorPosition.value = withSpring(newIndex, {
         damping: 20,
         stiffness: 90,
       });
     }
-  }, [activeIndex]);
+  }, [pathname, tabs]);
+
+  const handleTabPress = (route: string) => {
+    router.push(route as any);
+  };
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
     const tabWidth = containerWidth / tabs.length;
@@ -67,70 +69,66 @@ export default function FloatingTabBar({
         {
           translateX: interpolate(
             indicatorPosition.value,
-            [0, tabs.length - 1],
-            [0, tabWidth * (tabs.length - 1)]
+            tabs.map((_, i) => i),
+            tabs.map((_, i) => i * tabWidth)
           ),
         },
       ],
-      width: tabWidth,
     };
   });
 
-  const handleTabPress = (route: string) => {
-    router.push(route as any);
-  };
-
   return (
-    <SafeAreaView
-      edges={['bottom']}
-      style={[styles.safeArea, { marginBottom: bottomMargin }]}
-    >
-      <View style={[styles.container, { width: containerWidth }]}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <View style={[styles.container, { marginBottom: bottomMargin }]}>
         <BlurView
-          intensity={Platform.OS === 'ios' ? 80 : 100}
+          intensity={80}
           tint={theme.dark ? 'dark' : 'light'}
-          style={[styles.blurContainer, { borderRadius }]}
+          style={[
+            styles.tabBar,
+            {
+              width: containerWidth,
+              borderRadius,
+            },
+          ]}
         >
           <Animated.View
             style={[
               styles.indicator,
-              animatedIndicatorStyle,
               {
-                backgroundColor: colors.primary,
+                width: containerWidth / tabs.length,
                 borderRadius: borderRadius - 5,
               },
+              animatedIndicatorStyle,
             ]}
           />
-          <View style={styles.tabsContainer}>
-            {tabs.map((tab, index) => {
-              const isActive = activeIndex === index;
-              return (
-                <TouchableOpacity
-                  key={tab.name}
-                  style={styles.tab}
-                  onPress={() => handleTabPress(tab.route)}
-                  activeOpacity={0.7}
+          {tabs.map((tab, index) => {
+            const isActive = pathname.includes(tab.name);
+            return (
+              <TouchableOpacity
+                key={tab.name}
+                style={styles.tab}
+                onPress={() => handleTabPress(tab.route)}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  name={tab.icon as any}
+                  size={24}
+                  color={isActive ? colors.text : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: isActive ? colors.text : colors.textSecondary,
+                      fontWeight: isActive ? '600' : '400',
+                    },
+                  ]}
                 >
-                  <IconSymbol
-                    name={tab.icon as any}
-                    size={24}
-                    color={isActive ? colors.text : colors.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: isActive ? colors.text : colors.textSecondary,
-                        fontWeight: isActive ? '600' : '400',
-                      },
-                    ]}
-                  >
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </BlurView>
       </View>
     </SafeAreaView>
@@ -143,44 +141,37 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    alignItems: 'center',
-    pointerEvents: 'box-none',
+    backgroundColor: 'transparent',
   },
   container: {
-    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  blurContainer: {
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 8,
-  },
-  tabsContainer: {
+  tabBar: {
     flexDirection: 'row',
-    height: '100%',
     alignItems: 'center',
     justifyContent: 'space-around',
+    height: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  indicator: {
+    position: 'absolute',
+    height: 60,
+    backgroundColor: colors.primary,
+    left: 5,
+    top: 5,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
     gap: 4,
+    zIndex: 1,
   },
   label: {
     fontSize: 11,
-  },
-  indicator: {
-    position: 'absolute',
-    height: '80%',
-    top: '10%',
-    left: 0,
-    opacity: 0.3,
   },
 });

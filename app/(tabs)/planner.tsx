@@ -7,9 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { Recipe, PantryItem } from '@/types/pantry';
@@ -20,33 +21,48 @@ export default function PlannerScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [suggestedRecipes, setSuggestedRecipes] = useState<Recipe[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Load data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
-    const loadedRecipes = await loadRecipes();
-    const loadedPantry = await loadPantryItems();
-    setRecipes(loadedRecipes);
-    setPantryItems(loadedPantry);
-    
-    // Simple recipe suggestion based on available ingredients
-    const suggested = loadedRecipes.filter(recipe => {
-      const availableIngredients = loadedPantry.map(item => 
-        item.name.toLowerCase()
-      );
-      const matchCount = recipe.ingredients.filter(ingredient =>
-        availableIngredients.some(available => 
-          available.includes(ingredient.toLowerCase()) || 
-          ingredient.toLowerCase().includes(available)
-        )
-      ).length;
+    try {
+      const loadedRecipes = await loadRecipes();
+      const loadedPantry = await loadPantryItems();
+      setRecipes(loadedRecipes);
+      setPantryItems(loadedPantry);
       
-      return matchCount > 0;
-    });
-    
-    setSuggestedRecipes(suggested);
+      // Simple recipe suggestion based on available ingredients
+      const suggested = loadedRecipes.filter(recipe => {
+        const availableIngredients = loadedPantry.map(item => 
+          item.name.toLowerCase()
+        );
+        const matchCount = recipe.ingredients.filter(ingredient =>
+          availableIngredients.some(available => 
+            available.includes(ingredient.toLowerCase()) || 
+            ingredient.toLowerCase().includes(available)
+          )
+        ).length;
+        
+        return matchCount > 0;
+      });
+      
+      setSuggestedRecipes(suggested);
+      console.log('Loaded recipes:', loadedRecipes.length, 'Suggested:', suggested.length);
+    } catch (error) {
+      console.error('Error loading planner data:', error);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
   };
 
   const renderRecipeCard = (recipe: Recipe) => {
@@ -127,11 +143,15 @@ export default function PlannerScreen() {
       <View style={commonStyles.container}>
         <ScrollView
           style={styles.content}
-          contentContainerStyle={[
-            styles.contentContainer,
-            Platform.OS !== 'ios' && { paddingBottom: 100 },
-          ]}
+          contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         >
           <View style={styles.statsCard}>
             <View style={styles.statItem}>
@@ -173,6 +193,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
   },
   statsCard: {
     flexDirection: 'row',

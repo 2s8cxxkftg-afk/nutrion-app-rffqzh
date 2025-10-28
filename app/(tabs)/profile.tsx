@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,38 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
+import { loadPantryItems } from '@/utils/storage';
+import { getExpirationStatus } from '@/utils/expirationHelper';
 
 export default function ProfileScreen() {
+  const [itemsTracked, setItemsTracked] = useState(0);
+  const [wasteReduced, setWasteReduced] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadStats();
+    }, [])
+  );
+
+  const loadStats = async () => {
+    try {
+      const items = await loadPantryItems();
+      setItemsTracked(items.length);
+      
+      // Calculate waste reduced (items that haven't expired yet)
+      const freshItems = items.filter(item => {
+        const status = getExpirationStatus(item.expirationDate);
+        return status !== 'expired';
+      });
+      setWasteReduced(freshItems.length);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
   const handleNotificationSettings = () => {
     Alert.alert(
       'Notification Settings',
@@ -31,12 +58,26 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleSupabaseInfo = () => {
+    Alert.alert(
+      'Supabase Integration',
+      'Supabase backend is not yet configured. To enable cloud sync and authentication:\n\n1. Create a Supabase project\n2. Configure credentials in utils/supabase.ts\n3. Set up database tables\n\nSee utils/supabase.ts for detailed instructions.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const settingsOptions = [
     {
       icon: 'bell.fill',
       title: 'Notifications',
       subtitle: 'Manage expiration alerts',
       onPress: handleNotificationSettings,
+    },
+    {
+      icon: 'cloud',
+      title: 'Supabase Sync',
+      subtitle: 'Cloud backup (not configured)',
+      onPress: handleSupabaseInfo,
     },
     {
       icon: 'info.circle',
@@ -60,10 +101,7 @@ export default function ProfileScreen() {
       <View style={commonStyles.container}>
         <ScrollView
           style={styles.content}
-          contentContainerStyle={[
-            styles.contentContainer,
-            Platform.OS !== 'ios' && { paddingBottom: 100 },
-          ]}
+          contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.profileHeader}>
@@ -77,13 +115,13 @@ export default function ProfileScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
               <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{itemsTracked}</Text>
               <Text style={commonStyles.textSecondary}>Items Tracked</Text>
             </View>
             <View style={styles.statCard}>
               <IconSymbol name="leaf.fill" size={32} color={colors.success} />
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={commonStyles.textSecondary}>Waste Reduced</Text>
+              <Text style={styles.statNumber}>{wasteReduced}</Text>
+              <Text style={commonStyles.textSecondary}>Fresh Items</Text>
             </View>
           </View>
 
@@ -127,6 +165,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
   },
   profileHeader: {
     alignItems: 'center',

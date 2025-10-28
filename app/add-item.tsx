@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
@@ -23,7 +24,8 @@ export default function AddItemScreen() {
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDate, setExpirationDate] = useState('');
+  const [expirationDate, setExpirationDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -34,31 +36,29 @@ export default function AddItemScreen() {
       return;
     }
 
-    if (!expirationDate) {
-      Alert.alert('Error', 'Please enter an expiration date');
+    const quantityNum = parseFloat(quantity);
+    if (isNaN(quantityNum) || quantityNum <= 0) {
+      Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
 
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(expirationDate)) {
-      Alert.alert('Error', 'Please enter date in YYYY-MM-DD format');
-      return;
-    }
+    // Format date as YYYY-MM-DD
+    const formattedDate = expirationDate.toISOString().split('T')[0];
 
     const newItem: PantryItem = {
       id: Date.now().toString(),
       name: name.trim(),
       category,
-      quantity: parseFloat(quantity) || 1,
+      quantity: quantityNum,
       unit,
       dateAdded: new Date().toISOString(),
-      expirationDate,
+      expirationDate: formattedDate,
       notes: notes.trim(),
     };
 
     try {
       await addPantryItem(newItem);
+      console.log('Item added successfully:', newItem);
       Alert.alert('Success', 'Item added to pantry', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -70,6 +70,13 @@ export default function AddItemScreen() {
 
   const handleScanBarcode = () => {
     router.push('/scan-barcode');
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setExpirationDate(selectedDate);
+    }
   };
 
   return (
@@ -124,26 +131,28 @@ export default function AddItemScreen() {
 
           {showCategoryPicker && (
             <View style={styles.pickerOptions}>
-              {FOOD_CATEGORIES.map(cat => (
-                <TouchableOpacity
-                  key={cat}
-                  style={styles.pickerOption}
-                  onPress={() => {
-                    setCategory(cat);
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.pickerOptionText,
-                    category === cat && styles.pickerOptionTextSelected
-                  ]}>
-                    {cat}
-                  </Text>
-                  {category === cat && (
-                    <IconSymbol name="checkmark" size={20} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
+              <ScrollView style={{ maxHeight: 200 }}>
+                {FOOD_CATEGORIES.map(cat => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setCategory(cat);
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.pickerOptionText,
+                      category === cat && styles.pickerOptionTextSelected
+                    ]}>
+                      {cat}
+                    </Text>
+                    {category === cat && (
+                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -178,37 +187,51 @@ export default function AddItemScreen() {
 
           {showUnitPicker && (
             <View style={styles.pickerOptions}>
-              {UNITS.map(u => (
-                <TouchableOpacity
-                  key={u}
-                  style={styles.pickerOption}
-                  onPress={() => {
-                    setUnit(u);
-                    setShowUnitPicker(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.pickerOptionText,
-                    unit === u && styles.pickerOptionTextSelected
-                  ]}>
-                    {u}
-                  </Text>
-                  {unit === u && (
-                    <IconSymbol name="checkmark" size={20} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
+              <ScrollView style={{ maxHeight: 200 }}>
+                {UNITS.map(u => (
+                  <TouchableOpacity
+                    key={u}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setUnit(u);
+                      setShowUnitPicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.pickerOptionText,
+                      unit === u && styles.pickerOptionTextSelected
+                    ]}>
+                      {u}
+                    </Text>
+                    {unit === u && (
+                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
-          <Text style={styles.label}>Expiration Date * (YYYY-MM-DD)</Text>
-          <TextInput
-            style={commonStyles.input}
-            placeholder="2024-12-31"
-            placeholderTextColor={colors.textSecondary}
-            value={expirationDate}
-            onChangeText={setExpirationDate}
-          />
+          <Text style={styles.label}>Expiration Date *</Text>
+          <TouchableOpacity
+            style={[commonStyles.input, styles.picker]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={{ color: colors.text }}>
+              {expirationDate.toLocaleDateString()}
+            </Text>
+            <IconSymbol name="calendar" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={expirationDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onDateChange}
+              minimumDate={new Date()}
+            />
+          )}
 
           <Text style={styles.label}>Notes (Optional)</Text>
           <TextInput
@@ -285,7 +308,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: colors.textSecondary + '40',
-    maxHeight: 200,
   },
   pickerOption: {
     flexDirection: 'row',

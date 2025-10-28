@@ -9,9 +9,10 @@ import {
   TextInput,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, expirationColors } from '@/styles/commonStyles';
 import { PantryItem } from '@/types/pantry';
@@ -23,14 +24,30 @@ export default function PantryScreen() {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  // Load items when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadItems();
+    }, [])
+  );
 
   const loadItems = async () => {
-    const items = await loadPantryItems();
-    setPantryItems(items);
+    try {
+      const items = await loadPantryItems();
+      setPantryItems(items);
+      console.log('Loaded pantry items:', items.length);
+    } catch (error) {
+      console.error('Error loading pantry items:', error);
+      Alert.alert('Error', 'Failed to load pantry items');
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadItems();
+    setRefreshing(false);
   };
 
   const handleDeleteItem = async (itemId: string) => {
@@ -43,8 +60,13 @@ export default function PantryScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            await deletePantryItem(itemId);
-            loadItems();
+            try {
+              await deletePantryItem(itemId);
+              await loadItems();
+            } catch (error) {
+              console.error('Error deleting item:', error);
+              Alert.alert('Error', 'Failed to delete item');
+            }
           },
         },
       ]
@@ -99,6 +121,12 @@ export default function PantryScreen() {
             {formatExpirationText(item.expirationDate)}
           </Text>
         </View>
+
+        {item.notes && (
+          <View style={styles.notesContainer}>
+            <Text style={styles.notesText}>{item.notes}</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -164,11 +192,15 @@ export default function PantryScreen() {
 
         <ScrollView
           style={styles.itemsList}
-          contentContainerStyle={[
-            styles.itemsListContent,
-            Platform.OS !== 'ios' && { paddingBottom: 100 },
-          ]}
+          contentContainerStyle={styles.itemsListContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         >
           {filteredItems.length === 0 ? (
             <View style={styles.emptyState}>
@@ -255,6 +287,7 @@ const styles = StyleSheet.create({
   itemsListContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
   },
   itemCard: {
     marginBottom: 12,
@@ -296,6 +329,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.card,
+  },
+  notesContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.textSecondary + '20',
+  },
+  notesText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
   emptyState: {
     alignItems: 'center',

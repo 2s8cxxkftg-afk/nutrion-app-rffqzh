@@ -9,9 +9,10 @@ import {
   TextInput,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { ShoppingItem } from '@/types/pantry';
@@ -21,14 +22,30 @@ export default function ShoppingScreen() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  // Load items when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadItems();
+    }, [])
+  );
 
   const loadItems = async () => {
-    const items = await loadShoppingItems();
-    setShoppingItems(items);
+    try {
+      const items = await loadShoppingItems();
+      setShoppingItems(items);
+      console.log('Loaded shopping items:', items.length);
+    } catch (error) {
+      console.error('Error loading shopping items:', error);
+      Alert.alert('Error', 'Failed to load shopping items');
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadItems();
+    setRefreshing(false);
   };
 
   const handleAddItem = async () => {
@@ -46,25 +63,40 @@ export default function ShoppingScreen() {
       checked: false,
     };
 
-    const updatedItems = [...shoppingItems, newItem];
-    await saveShoppingItems(updatedItems);
-    setShoppingItems(updatedItems);
-    setNewItemName('');
-    setShowAddForm(false);
+    try {
+      const updatedItems = [...shoppingItems, newItem];
+      await saveShoppingItems(updatedItems);
+      setShoppingItems(updatedItems);
+      setNewItemName('');
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      Alert.alert('Error', 'Failed to add item');
+    }
   };
 
   const handleToggleItem = async (itemId: string) => {
-    const updatedItems = shoppingItems.map(item =>
-      item.id === itemId ? { ...item, checked: !item.checked } : item
-    );
-    await saveShoppingItems(updatedItems);
-    setShoppingItems(updatedItems);
+    try {
+      const updatedItems = shoppingItems.map(item =>
+        item.id === itemId ? { ...item, checked: !item.checked } : item
+      );
+      await saveShoppingItems(updatedItems);
+      setShoppingItems(updatedItems);
+    } catch (error) {
+      console.error('Error toggling item:', error);
+      Alert.alert('Error', 'Failed to update item');
+    }
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    const updatedItems = shoppingItems.filter(item => item.id !== itemId);
-    await saveShoppingItems(updatedItems);
-    setShoppingItems(updatedItems);
+    try {
+      const updatedItems = shoppingItems.filter(item => item.id !== itemId);
+      await saveShoppingItems(updatedItems);
+      setShoppingItems(updatedItems);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      Alert.alert('Error', 'Failed to delete item');
+    }
   };
 
   const handleClearCompleted = async () => {
@@ -77,9 +109,14 @@ export default function ShoppingScreen() {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            const updatedItems = shoppingItems.filter(item => !item.checked);
-            await saveShoppingItems(updatedItems);
-            setShoppingItems(updatedItems);
+            try {
+              const updatedItems = shoppingItems.filter(item => !item.checked);
+              await saveShoppingItems(updatedItems);
+              setShoppingItems(updatedItems);
+            } catch (error) {
+              console.error('Error clearing completed items:', error);
+              Alert.alert('Error', 'Failed to clear completed items');
+            }
           },
         },
       ]
@@ -183,11 +220,15 @@ export default function ShoppingScreen() {
 
         <ScrollView
           style={styles.itemsList}
-          contentContainerStyle={[
-            styles.itemsListContent,
-            Platform.OS !== 'ios' && { paddingBottom: 100 },
-          ]}
+          contentContainerStyle={styles.itemsListContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         >
           {uncheckedItems.length === 0 && checkedItems.length === 0 ? (
             <View style={styles.emptyState}>
@@ -276,6 +317,7 @@ const styles = StyleSheet.create({
   },
   itemsListContent: {
     paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
   },
   itemCard: {
     flexDirection: 'row',
