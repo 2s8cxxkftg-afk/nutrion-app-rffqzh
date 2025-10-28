@@ -1,23 +1,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-/**
- * Supabase Configuration for Nutrion App
- * 
- * To enable Supabase integration:
- * 1. Install Supabase client: npm install @supabase/supabase-js
- * 2. Create a Supabase project at https://supabase.com
- * 3. Get your project URL and anon key from project settings
- * 4. Replace the placeholder values below with your actual credentials
- * 5. Uncomment the code below
- */
-
-// Uncomment and configure when ready to use Supabase
-/*
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // e.g., https://xxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://xivsfhdsmsxwtsidxfyj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpdnNmaGRzbXN4d3RzaWR4ZnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2ODM4MTksImV4cCI6MjA3NzI1OTgxOX0.RzG259LTxK3jybjdFuINPAFUTnpBKCYfGbAowou5N5M';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -27,6 +13,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     detectSessionInUrl: false,
   },
 });
+
+export const supabaseConfigured = true;
+
+console.log('Supabase configured successfully for Nutrion app');
 
 // Database table schemas for Nutrion:
 // 
@@ -110,6 +100,9 @@ export async function signUpWithEmail(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: 'https://natively.dev/email-confirmed'
+    }
   });
 
   if (error) throw error;
@@ -120,9 +113,3 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
-*/
-
-// For now, export a placeholder
-export const supabaseConfigured = false;
-
-console.log('Supabase is not configured yet. See utils/supabase.ts for setup instructions.');

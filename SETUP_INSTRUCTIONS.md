@@ -13,6 +13,7 @@ The Nutrion app is fully functional with local storage using AsyncStorage. All c
 - ✅ Pull-to-refresh functionality
 - ✅ Date picker for expiration dates
 - ✅ Search and filter capabilities
+- ✅ **NEW: AI-Powered Recipe Suggestions with OpenAI**
 
 ## Bugs Fixed
 
@@ -25,34 +26,40 @@ The Nutrion app is fully functional with local storage using AsyncStorage. All c
 7. **Added loading states** - Proper loading indicators and refresh states
 8. **Stats tracking** - Profile screen now shows real-time statistics
 
-## Optional: Supabase Integration
+## NEW: OpenAI Integration for Recipe Suggestions
 
-Supabase is **not required** for the app to function. However, if you want to add cloud sync and user authentication, follow these steps:
+The app now includes AI-powered recipe suggestions! See **[OPENAI_SETUP.md](./OPENAI_SETUP.md)** for detailed setup instructions.
 
-### 1. Install Supabase Client
+### Quick Setup:
 
-```bash
-npm install @supabase/supabase-js
-```
+1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/)
+2. Add it to Supabase: **Project Settings** → **Edge Functions** → **Secrets**
+   - Name: `OPENAI_API_KEY`
+   - Value: Your API key
+3. Test in the app: Go to **Planner** tab → Tap **"Get AI Recipe Suggestions"**
 
-### 2. Create Supabase Project
+### Features:
 
-1. Go to https://supabase.com
-2. Create a new project
-3. Wait for the database to be provisioned
-4. Go to Project Settings > API
-5. Copy your project URL and anon key
+- 🤖 AI analyzes your pantry and suggests creative recipes
+- 📊 Shows match percentage for available ingredients
+- 📝 Detailed cooking instructions
+- ⏱️ Prep time and serving information
+- 🔄 Toggle between AI suggestions and default recipes
 
-### 3. Configure Credentials
+## Supabase Integration (Required for OpenAI)
 
-Open `utils/supabase.ts` and:
-1. Uncomment all the code
-2. Replace `YOUR_SUPABASE_URL` with your project URL
-3. Replace `YOUR_SUPABASE_ANON_KEY` with your anon key
+Supabase is **required** for the OpenAI integration to work. The app uses Supabase Edge Functions to securely call the OpenAI API.
 
-### 4. Create Database Tables
+### Supabase is Already Configured!
 
-Run these SQL commands in the Supabase SQL Editor:
+The app is already connected to your Supabase project:
+- ✅ Project URL: `https://xivsfhdsmsxwtsidxfyj.supabase.co`
+- ✅ Supabase client configured in `utils/supabase.ts`
+- ✅ Edge function deployed: `generate-recipe-suggestions`
+
+### Optional: Database Tables for Cloud Sync
+
+If you want to sync pantry data to the cloud (optional), create these tables:
 
 ```sql
 -- Enable Row Level Security
@@ -144,29 +151,32 @@ CREATE POLICY "Users can delete their own shopping items"
   USING (auth.uid() = user_id);
 ```
 
-### 5. Update Storage Functions
-
-Modify `utils/storage.ts` to sync with Supabase when configured. You can keep AsyncStorage as a fallback for offline mode.
-
 ## Testing
 
-1. **Test without Supabase**: The app works perfectly with local storage
-2. **Test with Supabase**: After configuration, data will sync to the cloud
+1. **Test without OpenAI**: The app works perfectly with local storage and default recipes
+2. **Test with OpenAI**: After adding API key, get AI-powered recipe suggestions
 3. **Test offline mode**: App continues to work offline with AsyncStorage
 
 ## Known Limitations
 
 - Barcode scanning shows barcode data but doesn't fetch product information (requires external API)
 - Notifications are configured but not fully implemented (requires expo-notifications setup)
-- Supabase integration is optional and requires manual setup
+- OpenAI suggestions require internet connection and API credits
+
+## Cost Information
+
+- **OpenAI API**: ~$0.001-0.005 per suggestion (less than a penny)
+- **Supabase**: Free tier includes 500MB database, 2GB bandwidth, 50MB file storage
+- Monitor usage at [OpenAI Usage Dashboard](https://platform.openai.com/usage)
 
 ## Next Steps
 
-1. Test all features with local storage
-2. (Optional) Set up Supabase for cloud sync
+1. ✅ Test all features with local storage
+2. ✅ Set up OpenAI API key for AI suggestions (see OPENAI_SETUP.md)
 3. (Optional) Integrate barcode lookup API (e.g., Open Food Facts)
 4. (Optional) Implement push notifications for expiration alerts
 5. (Optional) Add Stripe integration for subscription payments
+6. (Optional) Add user authentication for cloud sync
 
 ## Support
 
@@ -175,3 +185,4 @@ For issues or questions:
 - Verify AsyncStorage is working properly
 - Ensure camera permissions are granted for barcode scanning
 - Check date formats are correct (YYYY-MM-DD)
+- For OpenAI issues, see OPENAI_SETUP.md troubleshooting section
