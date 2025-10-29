@@ -321,7 +321,8 @@ export default function FoodSearchScreen() {
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="on-drag"
         >
           {loading && (
             <View style={styles.loadingContainer}>

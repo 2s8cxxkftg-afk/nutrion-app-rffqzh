@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -22,6 +23,8 @@ import { addPantryItem } from '@/utils/storage';
 
 export default function AddItemScreen() {
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  
   const [name, setName] = useState('');
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
@@ -87,10 +90,6 @@ export default function AddItemScreen() {
     if (event.type === 'set' && selectedDate) {
       setExpirationDate(selectedDate);
       console.log('Date updated to:', selectedDate);
-      
-      if (Platform.OS === 'ios') {
-        // Don't auto-close on iOS, let user press Done button
-      }
     } else if (event.type === 'dismissed') {
       console.log('Date picker dismissed');
       if (Platform.OS === 'android') {
@@ -105,10 +104,40 @@ export default function AddItemScreen() {
     console.log('Quantity preset selected:', value);
   };
 
-  const closePickers = () => {
+  const closeAllPickers = () => {
     setShowCategoryPicker(false);
     setShowUnitPicker(false);
     setShowQuantityPicker(false);
+    setShowDatePicker(false);
+  };
+
+  const openCategoryPicker = () => {
+    closeAllPickers();
+    // Small delay to ensure keyboard is dismissed first
+    setTimeout(() => {
+      setShowCategoryPicker(true);
+    }, 100);
+  };
+
+  const openUnitPicker = () => {
+    closeAllPickers();
+    setTimeout(() => {
+      setShowUnitPicker(true);
+    }, 100);
+  };
+
+  const openQuantityPicker = () => {
+    closeAllPickers();
+    setTimeout(() => {
+      setShowQuantityPicker(true);
+    }, 100);
+  };
+
+  const openDatePicker = () => {
+    closeAllPickers();
+    setTimeout(() => {
+      setShowDatePicker(true);
+    }, 100);
   };
 
   return (
@@ -129,11 +158,12 @@ export default function AddItemScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="on-drag"
         >
           <TouchableOpacity
             style={styles.scanButton}
@@ -157,19 +187,13 @@ export default function AddItemScreen() {
             returnKeyType="next"
             autoCorrect={false}
             clearButtonMode="while-editing"
-            onFocus={closePickers}
+            onFocus={closeAllPickers}
           />
 
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
-            onPress={() => {
-              Keyboard.dismiss();
-              setShowCategoryPicker(!showCategoryPicker);
-              setShowUnitPicker(false);
-              setShowQuantityPicker(false);
-              setShowDatePicker(false);
-            }}
+            onPress={openCategoryPicker}
             activeOpacity={0.7}
           >
             <Text style={{ color: colors.text }}>{category}</Text>
@@ -222,17 +246,11 @@ export default function AddItemScreen() {
                   keyboardType="decimal-pad"
                   returnKeyType="done"
                   clearButtonMode="while-editing"
-                  onFocus={closePickers}
+                  onFocus={closeAllPickers}
                 />
                 <TouchableOpacity
                   style={styles.quantityPresetButton}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setShowQuantityPicker(!showQuantityPicker);
-                    setShowCategoryPicker(false);
-                    setShowUnitPicker(false);
-                    setShowDatePicker(false);
-                  }}
+                  onPress={openQuantityPicker}
                   activeOpacity={0.7}
                 >
                   <IconSymbol name="list.bullet" size={20} color={colors.primary} />
@@ -244,13 +262,7 @@ export default function AddItemScreen() {
               <Text style={styles.label}>Unit *</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  setShowUnitPicker(!showUnitPicker);
-                  setShowCategoryPicker(false);
-                  setShowQuantityPicker(false);
-                  setShowDatePicker(false);
-                }}
+                onPress={openUnitPicker}
                 activeOpacity={0.7}
               >
                 <Text style={{ color: colors.text }}>{unit}</Text>
@@ -317,14 +329,7 @@ export default function AddItemScreen() {
           <Text style={styles.label}>Expiration Date *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
-            onPress={() => {
-              Keyboard.dismiss();
-              setShowDatePicker(true);
-              setShowCategoryPicker(false);
-              setShowUnitPicker(false);
-              setShowQuantityPicker(false);
-              console.log('Opening date picker');
-            }}
+            onPress={openDatePicker}
             activeOpacity={0.7}
           >
             <Text style={{ color: colors.text }}>
@@ -368,7 +373,7 @@ export default function AddItemScreen() {
             textAlignVertical="top"
             returnKeyType="default"
             clearButtonMode="while-editing"
-            onFocus={closePickers}
+            onFocus={closeAllPickers}
           />
 
           <TouchableOpacity
