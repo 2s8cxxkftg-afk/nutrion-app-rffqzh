@@ -14,7 +14,8 @@ import { Stack, useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { OpenFoodFactsProduct } from '@/types/pantry';
+import { OpenFoodFactsProduct, PantryItem } from '@/types/pantry';
+import { addPantryItem } from '@/utils/storage';
 
 export default function ScanBarcodeScreen() {
   const router = useRouter();
@@ -51,11 +52,69 @@ export default function ScanBarcodeScreen() {
             },
             {
               text: 'Add to Pantry',
-              onPress: () => {
-                // Navigate back and pass product data
-                router.back();
-                // TODO: Pass product data to add-item screen
-                console.log('Product to add:', product);
+              onPress: async () => {
+                try {
+                  // Determine category based on product name
+                  const productNameLower = (product.product_name || '').toLowerCase();
+                  let category = 'Other';
+                  
+                  if (productNameLower.includes('milk') || productNameLower.includes('cheese') || productNameLower.includes('yogurt')) {
+                    category = 'Dairy';
+                  } else if (productNameLower.includes('chicken') || productNameLower.includes('beef') || productNameLower.includes('pork') || productNameLower.includes('meat')) {
+                    category = 'Meat';
+                  } else if (productNameLower.includes('bread') || productNameLower.includes('rice') || productNameLower.includes('pasta')) {
+                    category = 'Grains';
+                  } else if (productNameLower.includes('juice') || productNameLower.includes('soda') || productNameLower.includes('water')) {
+                    category = 'Beverages';
+                  } else if (productNameLower.includes('chips') || productNameLower.includes('cookie') || productNameLower.includes('candy')) {
+                    category = 'Snacks';
+                  } else if (productNameLower.includes('sauce') || productNameLower.includes('ketchup') || productNameLower.includes('mayo')) {
+                    category = 'Condiments';
+                  }
+
+                  // Create pantry item
+                  const newItem: PantryItem = {
+                    id: Date.now().toString(),
+                    name: product.product_name || 'Unknown Product',
+                    category: category,
+                    quantity: 1,
+                    unit: 'pcs',
+                    dateAdded: new Date().toISOString(),
+                    expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days
+                    brandName: product.brands,
+                    calories: product.nutriments?.['energy-kcal'] || 0,
+                    photo: product.image_url,
+                    barcode: barcode,
+                    notes: '',
+                  };
+
+                  // Save to AsyncStorage
+                  await addPantryItem(newItem);
+                  console.log('Product added to pantry:', newItem);
+
+                  Alert.alert(
+                    'Success',
+                    `✅ ${newItem.name} added to your pantry!`,
+                    [
+                      {
+                        text: 'Scan Another',
+                        onPress: () => {
+                          setScanned(false);
+                          setLoading(false);
+                        },
+                      },
+                      {
+                        text: 'View Pantry',
+                        onPress: () => router.back(),
+                      },
+                    ]
+                  );
+                } catch (error) {
+                  console.error('Error adding product to pantry:', error);
+                  Alert.alert('Error', 'Failed to add product to pantry');
+                  setScanned(false);
+                  setLoading(false);
+                }
               },
             },
           ]
@@ -66,7 +125,14 @@ export default function ScanBarcodeScreen() {
           'This barcode was not found in the database. Please add the item manually.',
           [
             {
-              text: 'OK',
+              text: 'Add Manually',
+              onPress: () => {
+                router.back();
+                router.push('/add-item');
+              },
+            },
+            {
+              text: 'Try Again',
               onPress: () => {
                 setScanned(false);
                 setLoading(false);

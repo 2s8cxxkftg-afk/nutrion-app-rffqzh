@@ -16,8 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { NutritionixFood } from '@/types/pantry';
+import { NutritionixFood, PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import { supabase } from '@/utils/supabase';
+import { addPantryItem } from '@/utils/storage';
 
 // Nutritionix API credentials
 const NUTRITIONIX_APP_ID = 'YOUR_APP_ID'; // Replace with your actual app ID
@@ -103,39 +104,75 @@ export default function FoodSearchScreen() {
     try {
       console.log('Selected food:', food);
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Determine category based on food name (simple categorization)
+      const foodNameLower = food.food_name.toLowerCase();
+      let category = 'Other';
       
-      if (!user) {
-        Alert.alert('Error', 'You must be logged in to add items to your pantry.');
-        return;
+      if (foodNameLower.includes('milk') || foodNameLower.includes('cheese') || foodNameLower.includes('yogurt')) {
+        category = 'Dairy';
+      } else if (foodNameLower.includes('chicken') || foodNameLower.includes('beef') || foodNameLower.includes('pork') || foodNameLower.includes('meat')) {
+        category = 'Meat';
+      } else if (foodNameLower.includes('apple') || foodNameLower.includes('banana') || foodNameLower.includes('orange') || foodNameLower.includes('berry')) {
+        category = 'Fruits';
+      } else if (foodNameLower.includes('lettuce') || foodNameLower.includes('tomato') || foodNameLower.includes('carrot') || foodNameLower.includes('vegetable')) {
+        category = 'Vegetables';
+      } else if (foodNameLower.includes('bread') || foodNameLower.includes('rice') || foodNameLower.includes('pasta') || foodNameLower.includes('cereal')) {
+        category = 'Grains';
+      } else if (foodNameLower.includes('juice') || foodNameLower.includes('soda') || foodNameLower.includes('water') || foodNameLower.includes('coffee')) {
+        category = 'Beverages';
+      } else if (foodNameLower.includes('chips') || foodNameLower.includes('cookie') || foodNameLower.includes('candy')) {
+        category = 'Snacks';
       }
 
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('pantry_items')
-        .insert({
-          user_id: user.id,
-          food_name: food.food_name,
-          brand_name: food.brand_name,
-          calories: food.nf_calories,
-          photo: food.photo.thumb,
-          quantity: food.serving_qty,
-          unit: food.serving_unit,
-          created_at: new Date().toISOString(),
-        })
-        .select();
+      // Create pantry item with proper structure
+      const newItem: PantryItem = {
+        id: Date.now().toString(),
+        name: food.food_name,
+        category: category,
+        quantity: food.serving_qty || 1,
+        unit: food.serving_unit || 'serving',
+        dateAdded: new Date().toISOString(),
+        expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+        brandName: food.brand_name,
+        calories: food.nf_calories,
+        photo: food.photo.thumb,
+        notes: '',
+      };
 
-      if (error) {
-        console.error('Error inserting food:', error);
-        Alert.alert('Error', 'Failed to add food to pantry.');
-        return;
+      // Save to AsyncStorage (local storage)
+      await addPantryItem(newItem);
+      console.log('Food added to local pantry:', newItem);
+
+      // Optionally save to Supabase if user is logged in
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const { error: supabaseError } = await supabase
+            .from('pantry_items')
+            .insert({
+              user_id: user.id,
+              food_name: food.food_name,
+              brand_name: food.brand_name,
+              calories: food.nf_calories,
+              photo: food.photo.thumb,
+              quantity: food.serving_qty,
+              unit: food.serving_unit,
+              created_at: new Date().toISOString(),
+            });
+
+          if (supabaseError) {
+            console.warn('Failed to sync to Supabase:', supabaseError);
+          } else {
+            console.log('Food synced to Supabase');
+          }
+
+          // Update cache
+          await updateFoodsCache(food);
+        }
+      } catch (supabaseError) {
+        console.warn('Supabase sync failed:', supabaseError);
       }
-
-      console.log('Food added to pantry:', data);
-
-      // Update cache
-      await updateFoodsCache(food);
 
       // Show success message
       Alert.alert(
