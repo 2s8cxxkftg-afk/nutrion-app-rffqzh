@@ -23,20 +23,35 @@ export default function ScanBarcodeScreen() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    console.log('Camera permission status:', permission);
+  }, [permission]);
+
   const fetchProductFromBarcode = async (barcode: string) => {
     try {
       setLoading(true);
       console.log('Fetching product for barcode:', barcode);
       
       const response = await fetch(
-        `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
+        `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
+        {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Nutrion - Pantry Management App',
+          },
+        }
       );
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      console.log('Open Food Facts response:', data);
+      console.log('Open Food Facts response status:', data.status);
       
       if (data.status === 1 && data.product) {
         const product: OpenFoodFactsProduct = data.product;
+        console.log('Product found:', product.product_name);
         
         Alert.alert(
           'Product Found!',
@@ -54,7 +69,6 @@ export default function ScanBarcodeScreen() {
               text: 'Add to Pantry',
               onPress: async () => {
                 try {
-                  // Determine category based on product name
                   const productNameLower = (product.product_name || '').toLowerCase();
                   let category = 'Other';
                   
@@ -72,15 +86,15 @@ export default function ScanBarcodeScreen() {
                     category = 'Condiments';
                   }
 
-                  // Create pantry item
+                  const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                   const newItem: PantryItem = {
-                    id: Date.now().toString(),
+                    id: uniqueId,
                     name: product.product_name || 'Unknown Product',
                     category: category,
                     quantity: 1,
                     unit: 'pcs',
                     dateAdded: new Date().toISOString(),
-                    expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days
+                    expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     brandName: product.brands,
                     calories: product.nutriments?.['energy-kcal'] || 0,
                     photo: product.image_url,
@@ -88,7 +102,6 @@ export default function ScanBarcodeScreen() {
                     notes: '',
                   };
 
-                  // Save to AsyncStorage
                   await addPantryItem(newItem);
                   console.log('Product added to pantry:', newItem);
 
@@ -120,6 +133,7 @@ export default function ScanBarcodeScreen() {
           ]
         );
       } else {
+        console.log('Product not found in database');
         Alert.alert(
           'Product Not Found',
           'This barcode was not found in the database. Please add the item manually.',
@@ -128,7 +142,9 @@ export default function ScanBarcodeScreen() {
               text: 'Add Manually',
               onPress: () => {
                 router.back();
-                router.push('/add-item');
+                setTimeout(() => {
+                  router.push('/add-item');
+                }, 100);
               },
             },
             {
@@ -145,13 +161,22 @@ export default function ScanBarcodeScreen() {
       console.error('Error fetching product:', error);
       Alert.alert(
         'Error',
-        'Failed to fetch product information. Please try again or add the item manually.',
+        'Failed to fetch product information. Please check your internet connection and try again.',
         [
           {
-            text: 'OK',
+            text: 'Try Again',
             onPress: () => {
               setScanned(false);
               setLoading(false);
+            },
+          },
+          {
+            text: 'Add Manually',
+            onPress: () => {
+              router.back();
+              setTimeout(() => {
+                router.push('/add-item');
+              }, 100);
             },
           },
         ]
@@ -160,19 +185,22 @@ export default function ScanBarcodeScreen() {
   };
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
-    if (scanned || loading) return;
+    if (scanned || loading) {
+      console.log('Already processing a scan, ignoring...');
+      return;
+    }
     
     console.log('Barcode scanned - Type:', type, 'Data:', data);
     setScanned(true);
     
-    // Fetch product information from Open Food Facts
     fetchProductFromBarcode(data);
   };
 
   if (!permission) {
     return (
-      <View style={commonStyles.container}>
-        <Text style={commonStyles.text}>Requesting camera permission...</Text>
+      <View style={[commonStyles.container, commonStyles.center]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[commonStyles.text, { marginTop: 16 }]}>Requesting camera permission...</Text>
       </View>
     );
   }
@@ -194,12 +222,13 @@ export default function ScanBarcodeScreen() {
           <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 16 }]}>
             Camera Permission Required
           </Text>
-          <Text style={[commonStyles.textSecondary, { textAlign: 'center', marginTop: 8 }]}>
+          <Text style={[commonStyles.textSecondary, { textAlign: 'center', marginTop: 8, paddingHorizontal: 40 }]}>
             We need access to your camera to scan barcodes
           </Text>
           <TouchableOpacity
-            style={[styles.permissionButton]}
+            style={styles.permissionButton}
             onPress={requestPermission}
+            activeOpacity={0.7}
           >
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </TouchableOpacity>
@@ -209,13 +238,13 @@ export default function ScanBarcodeScreen() {
   }
 
   return (
-    <SafeAreaView style={[commonStyles.safeArea, { backgroundColor: '#000' }]}>
+    <SafeAreaView style={[commonStyles.safeArea, { backgroundColor: '#000' }]} edges={['top', 'bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
           title: 'Scan Barcode',
           headerStyle: { backgroundColor: '#000' },
-          headerTintColor: colors.card,
+          headerTintColor: '#FFFFFF',
           presentation: 'modal',
         }}
       />
@@ -265,7 +294,11 @@ export default function ScanBarcodeScreen() {
         {scanned && !loading && (
           <TouchableOpacity
             style={styles.rescanButton}
-            onPress={() => setScanned(false)}
+            onPress={() => {
+              console.log('Resetting scanner');
+              setScanned(false);
+            }}
+            activeOpacity={0.7}
           >
             <Text style={styles.rescanButtonText}>Tap to Scan Again</Text>
           </TouchableOpacity>
@@ -341,7 +374,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
   },
   instructionText: {
-    color: colors.card,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginTop: 32,

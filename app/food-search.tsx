@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -20,9 +21,8 @@ import { NutritionixFood, PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import { supabase } from '@/utils/supabase';
 import { addPantryItem } from '@/utils/storage';
 
-// Nutritionix API credentials
-const NUTRITIONIX_APP_ID = 'YOUR_APP_ID'; // Replace with your actual app ID
-const NUTRITIONIX_APP_KEY = 'YOUR_APP_KEY'; // Replace with your actual app key
+const NUTRITIONIX_APP_ID = 'YOUR_APP_ID';
+const NUTRITIONIX_APP_KEY = 'YOUR_APP_KEY';
 
 export default function FoodSearchScreen() {
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function FoodSearchScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Debounce search
     if (searchQuery.length >= 2) {
       const timeoutId = setTimeout(() => {
         searchFoods(searchQuery);
@@ -66,7 +65,6 @@ export default function FoodSearchScreen() {
       const data = await response.json();
       console.log('Nutritionix response:', data);
 
-      // Combine common and branded foods
       const commonFoods = data.common || [];
       const brandedFoods = data.branded || [];
       
@@ -104,7 +102,6 @@ export default function FoodSearchScreen() {
     try {
       console.log('Selected food:', food);
 
-      // Determine category based on food name (simple categorization)
       const foodNameLower = food.food_name.toLowerCase();
       let category = 'Other';
       
@@ -124,26 +121,24 @@ export default function FoodSearchScreen() {
         category = 'Snacks';
       }
 
-      // Create pantry item with proper structure
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newItem: PantryItem = {
-        id: Date.now().toString(),
+        id: uniqueId,
         name: food.food_name,
         category: category,
         quantity: food.serving_qty || 1,
         unit: food.serving_unit || 'serving',
         dateAdded: new Date().toISOString(),
-        expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+        expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         brandName: food.brand_name,
         calories: food.nf_calories,
         photo: food.photo.thumb,
         notes: '',
       };
 
-      // Save to AsyncStorage (local storage)
       await addPantryItem(newItem);
       console.log('Food added to local pantry:', newItem);
 
-      // Optionally save to Supabase if user is logged in
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -167,14 +162,12 @@ export default function FoodSearchScreen() {
             console.log('Food synced to Supabase');
           }
 
-          // Update cache
           await updateFoodsCache(food);
         }
       } catch (supabaseError) {
         console.warn('Supabase sync failed:', supabaseError);
       }
 
-      // Show success message
       Alert.alert(
         'Success',
         `✅ ${food.food_name} added to your pantry!`,
@@ -197,7 +190,6 @@ export default function FoodSearchScreen() {
 
   const updateFoodsCache = async (food: NutritionixFood) => {
     try {
-      // Check if food already exists in cache
       const { data: existingFood } = await supabase
         .from('foods_cache')
         .select('*')
@@ -206,7 +198,6 @@ export default function FoodSearchScreen() {
         .single();
 
       if (existingFood) {
-        // Update search count
         await supabase
           .from('foods_cache')
           .update({
@@ -215,7 +206,6 @@ export default function FoodSearchScreen() {
           })
           .eq('id', existingFood.id);
       } else {
-        // Insert new cache entry
         await supabase
           .from('foods_cache')
           .insert({
@@ -233,13 +223,14 @@ export default function FoodSearchScreen() {
   };
 
   const handleBarcodeScan = () => {
+    Keyboard.dismiss();
     router.push('/scan-barcode');
   };
 
   const renderFoodItem = (food: NutritionixFood, index: number) => {
     return (
       <TouchableOpacity
-        key={`${food.food_name}-${index}`}
+        key={`${food.food_name}-${food.brand_name}-${index}`}
         style={styles.foodCard}
         onPress={() => handleFoodSelect(food)}
         activeOpacity={0.7}
@@ -308,6 +299,7 @@ export default function FoodSearchScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
+              clearButtonMode="while-editing"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -349,7 +341,7 @@ export default function FoodSearchScreen() {
             <View style={styles.emptyState}>
               <IconSymbol name="magnifyingglass" size={64} color={colors.textSecondary} />
               <Text style={styles.emptyStateTitle}>No results found</Text>
-              <Text style={commonStyles.textSecondary}>
+              <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
                 Try searching for a different food item
               </Text>
             </View>

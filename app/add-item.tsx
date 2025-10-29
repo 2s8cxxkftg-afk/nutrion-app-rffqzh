@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -25,7 +26,7 @@ export default function AddItemScreen() {
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDate, setExpirationDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 7 days from now
+  const [expirationDate, setExpirationDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -44,11 +45,12 @@ export default function AddItemScreen() {
       return;
     }
 
-    // Format date as YYYY-MM-DD
+    // Generate unique ID using timestamp and random number
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const formattedDate = expirationDate.toISOString().split('T')[0];
 
     const newItem: PantryItem = {
-      id: Date.now().toString(),
+      id: uniqueId,
       name: name.trim(),
       category,
       quantity: quantityNum,
@@ -71,29 +73,29 @@ export default function AddItemScreen() {
   };
 
   const handleScanBarcode = () => {
+    Keyboard.dismiss();
     router.push('/scan-barcode');
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     console.log('Date picker event:', event.type, selectedDate);
     
-    // On Android, always close the picker after selection or dismissal
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
     
-    // Update the date if user selected one (not cancelled)
     if (event.type === 'set' && selectedDate) {
       setExpirationDate(selectedDate);
       console.log('Date updated to:', selectedDate);
       
-      // On iOS, close the picker after selection
       if (Platform.OS === 'ios') {
-        setShowDatePicker(false);
+        // Don't auto-close on iOS, let user press Done button
       }
     } else if (event.type === 'dismissed') {
-      // User cancelled the picker
       console.log('Date picker dismissed');
+      if (Platform.OS === 'android') {
+        setShowDatePicker(false);
+      }
     }
   };
 
@@ -101,6 +103,12 @@ export default function AddItemScreen() {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
     console.log('Quantity preset selected:', value);
+  };
+
+  const closePickers = () => {
+    setShowCategoryPicker(false);
+    setShowUnitPicker(false);
+    setShowQuantityPicker(false);
   };
 
   return (
@@ -117,7 +125,7 @@ export default function AddItemScreen() {
       
       <KeyboardAvoidingView 
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
@@ -125,7 +133,7 @@ export default function AddItemScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode="interactive"
         >
           <TouchableOpacity
             style={styles.scanButton}
@@ -144,24 +152,23 @@ export default function AddItemScreen() {
             placeholder="e.g., Milk, Eggs, Bread"
             placeholderTextColor={colors.textSecondary}
             value={name}
-            onChangeText={(text) => {
-              console.log('Name input changed:', text);
-              setName(text);
-            }}
+            onChangeText={setName}
             autoCapitalize="words"
             returnKeyType="next"
-            editable={true}
-            selectTextOnFocus={true}
             autoCorrect={false}
+            clearButtonMode="while-editing"
+            onFocus={closePickers}
           />
 
           <Text style={styles.label}>Category *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={() => {
+              Keyboard.dismiss();
               setShowCategoryPicker(!showCategoryPicker);
               setShowUnitPicker(false);
               setShowQuantityPicker(false);
+              setShowDatePicker(false);
             }}
             activeOpacity={0.7}
           >
@@ -211,21 +218,20 @@ export default function AddItemScreen() {
                   placeholder="1"
                   placeholderTextColor={colors.textSecondary}
                   value={quantity}
-                  onChangeText={(text) => {
-                    console.log('Quantity input changed:', text);
-                    setQuantity(text);
-                  }}
+                  onChangeText={setQuantity}
                   keyboardType="decimal-pad"
                   returnKeyType="done"
-                  editable={true}
-                  selectTextOnFocus={true}
+                  clearButtonMode="while-editing"
+                  onFocus={closePickers}
                 />
                 <TouchableOpacity
                   style={styles.quantityPresetButton}
                   onPress={() => {
+                    Keyboard.dismiss();
                     setShowQuantityPicker(!showQuantityPicker);
                     setShowCategoryPicker(false);
                     setShowUnitPicker(false);
+                    setShowDatePicker(false);
                   }}
                   activeOpacity={0.7}
                 >
@@ -239,9 +245,11 @@ export default function AddItemScreen() {
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
                 onPress={() => {
+                  Keyboard.dismiss();
                   setShowUnitPicker(!showUnitPicker);
                   setShowCategoryPicker(false);
                   setShowQuantityPicker(false);
+                  setShowDatePicker(false);
                 }}
                 activeOpacity={0.7}
               >
@@ -310,6 +318,7 @@ export default function AddItemScreen() {
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={() => {
+              Keyboard.dismiss();
               setShowDatePicker(true);
               setShowCategoryPicker(false);
               setShowUnitPicker(false);
@@ -329,10 +338,11 @@ export default function AddItemScreen() {
               <DateTimePicker
                 value={expirationDate}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={onDateChange}
                 minimumDate={new Date()}
                 textColor={colors.text}
+                themeVariant="light"
               />
               {Platform.OS === 'ios' && (
                 <TouchableOpacity
@@ -352,16 +362,13 @@ export default function AddItemScreen() {
             placeholder="Add any additional notes..."
             placeholderTextColor={colors.textSecondary}
             value={notes}
-            onChangeText={(text) => {
-              console.log('Notes input changed:', text);
-              setNotes(text);
-            }}
+            onChangeText={setNotes}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
             returnKeyType="default"
-            editable={true}
-            selectTextOnFocus={true}
+            clearButtonMode="while-editing"
+            onFocus={closePickers}
           />
 
           <TouchableOpacity
@@ -479,7 +486,7 @@ const styles = StyleSheet.create({
   datePickerDoneText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text,
   },
   notesInput: {
     height: 80,
@@ -491,6 +498,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text,
   },
 });

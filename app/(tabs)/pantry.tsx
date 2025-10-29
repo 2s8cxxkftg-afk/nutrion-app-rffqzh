@@ -26,9 +26,9 @@ export default function PantryScreen() {
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load items when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
+      console.log('Pantry screen focused, loading items...');
       loadItems();
     }, [])
   );
@@ -36,8 +36,8 @@ export default function PantryScreen() {
   const loadItems = async () => {
     try {
       const items = await loadPantryItems();
-      setPantryItems(items);
       console.log('Loaded pantry items:', items.length);
+      setPantryItems(items);
     } catch (error) {
       console.error('Error loading pantry items:', error);
       Alert.alert('Error', 'Failed to load pantry items');
@@ -51,11 +51,18 @@ export default function PantryScreen() {
   };
 
   const handleDeleteItem = async (itemId: string) => {
+    const itemToDelete = pantryItems.find(item => item.id === itemId);
+    console.log('Delete requested for item:', itemId, itemToDelete?.name);
+    
     Alert.alert(
       'Delete Item',
-      'Are you sure you want to remove this item from your pantry?',
+      `Are you sure you want to remove "${itemToDelete?.name}" from your pantry?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('Delete cancelled')
+        },
         {
           text: 'Delete',
           style: 'destructive',
@@ -63,11 +70,12 @@ export default function PantryScreen() {
             try {
               console.log('Deleting item with ID:', itemId);
               await deletePantryItem(itemId);
-              console.log('Item deleted successfully');
+              console.log('Item deleted successfully, reloading items...');
               await loadItems();
+              Alert.alert('Success', 'Item removed from pantry');
             } catch (error) {
               console.error('Error deleting item:', error);
-              Alert.alert('Error', 'Failed to delete item');
+              Alert.alert('Error', 'Failed to delete item. Please try again.');
             }
           },
         },
@@ -98,8 +106,9 @@ export default function PantryScreen() {
             onPress={() => handleDeleteItem(item.id)}
             style={styles.deleteButton}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <IconSymbol name="trash" size={20} color={colors.error} />
+            <IconSymbol name="trash" size={22} color={colors.error} />
           </TouchableOpacity>
         </View>
         
@@ -155,6 +164,7 @@ export default function PantryScreen() {
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
             />
           </View>
 
@@ -219,7 +229,7 @@ export default function PantryScreen() {
             <View style={styles.emptyState}>
               <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
               <Text style={styles.emptyStateTitle}>No items in pantry</Text>
-              <Text style={commonStyles.textSecondary}>
+              <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
                 {searchQuery
                   ? 'No items match your search'
                   : 'Add items to start tracking your pantry'}
@@ -324,7 +334,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   deleteButton: {
-    padding: 4,
+    padding: 8,
+    marginRight: -8,
+    marginTop: -4,
   },
   itemDetails: {
     gap: 8,
@@ -348,7 +360,7 @@ const styles = StyleSheet.create({
   expirationText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.card,
+    color: '#FFFFFF',
   },
   notesContainer: {
     marginTop: 12,
