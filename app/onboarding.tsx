@@ -139,45 +139,9 @@ export default function OnboardingScreen() {
 
       {/* Pagination Dots */}
       <View style={styles.pagination}>
-        {pages.map((_, index) => {
-          const dotStyle = useAnimatedStyle(() => {
-            const inputRange = [
-              (index - 1) * SCREEN_WIDTH,
-              index * SCREEN_WIDTH,
-              (index + 1) * SCREEN_WIDTH,
-            ];
-
-            const scale = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.8, 1.4, 0.8],
-              Extrapolate.CLAMP
-            );
-
-            const opacity = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.4, 1, 0.4],
-              Extrapolate.CLAMP
-            );
-
-            return {
-              transform: [{ scale }],
-              opacity,
-            };
-          });
-
-          return (
-            <Animated.View
-              key={index}
-              style={[
-                styles.dot,
-                dotStyle,
-                currentPage === index && styles.activeDot,
-              ]}
-            />
-          );
-        })}
+        {pages.map((_, index) => (
+          <PaginationDot key={index} index={index} scrollX={scrollX} currentPage={currentPage} />
+        ))}
       </View>
 
       {/* Next/Get Started Button */}
@@ -197,6 +161,46 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+  );
+}
+
+// Separate component for pagination dots to use hooks properly
+function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX: any; currentPage: number }) {
+  const dotStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * SCREEN_WIDTH,
+      index * SCREEN_WIDTH,
+      (index + 1) * SCREEN_WIDTH,
+    ];
+
+    const scale = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.8, 1.4, 0.8],
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.4, 1, 0.4],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        dotStyle,
+        currentPage === index && styles.activeDot,
+      ]}
+    />
   );
 }
 
