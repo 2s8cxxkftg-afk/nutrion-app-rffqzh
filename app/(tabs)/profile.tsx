@@ -10,13 +10,17 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [itemsTracked, setItemsTracked] = useState(0);
   const [wasteReduced, setWasteReduced] = useState(0);
 
@@ -58,12 +62,15 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleSupabaseInfo = () => {
-    Alert.alert(
-      'Supabase Integration',
-      'Supabase backend is not yet configured. To enable cloud sync and authentication:\n\n1. Create a Supabase project\n2. Configure credentials in utils/supabase.ts\n3. Set up database tables\n\nSee utils/supabase.ts for detailed instructions.',
-      [{ text: 'OK' }]
-    );
+  const handleViewOnboarding = async () => {
+    try {
+      await AsyncStorage.removeItem(ONBOARDING_KEY);
+      console.log('Onboarding reset, navigating to onboarding screen');
+      router.push('/onboarding');
+    } catch (error) {
+      console.error('Error resetting onboarding:', error);
+      Alert.alert('Error', 'Failed to reset onboarding');
+    }
   };
 
   const settingsOptions = [
@@ -74,10 +81,10 @@ export default function ProfileScreen() {
       onPress: handleNotificationSettings,
     },
     {
-      icon: 'cloud',
-      title: 'Supabase Sync',
-      subtitle: 'Cloud backup (not configured)',
-      onPress: handleSupabaseInfo,
+      icon: 'info.circle',
+      title: 'View Tutorial',
+      subtitle: 'See the app introduction again',
+      onPress: handleViewOnboarding,
     },
     {
       icon: 'info.circle',
