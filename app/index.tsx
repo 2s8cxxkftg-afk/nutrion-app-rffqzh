@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
@@ -20,18 +20,28 @@ export default function Index() {
       const value = await AsyncStorage.getItem(ONBOARDING_KEY);
       console.log('Onboarding status:', value);
       setHasCompletedOnboarding(value === 'true');
+      
+      // Show splash screen with logo for 1.5 seconds
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       setHasCompletedOnboarding(false);
-    } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
     }
   };
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <Image
+          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
     );
   }
@@ -49,5 +59,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+  },
+  logo: {
+    width: 200,
+    height: 200,
   },
 });

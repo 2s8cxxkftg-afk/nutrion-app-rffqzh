@@ -56,7 +56,7 @@ export default function FloatingTabBar({
         stiffness: 90,
       });
     }
-  }, [pathname, tabs, indicatorPosition]);
+  }, [pathname, tabs]);
 
   const handleTabPress = (route: string) => {
     router.push(route as any);
@@ -113,13 +113,13 @@ export default function FloatingTabBar({
                 <IconSymbol
                   name={tab.icon as any}
                   size={24}
-                  color={isActive ? colors.text : colors.textSecondary}
+                  color={isActive ? '#FFFFFF' : colors.text}
                 />
                 <Text
                   style={[
                     styles.label,
                     {
-                      color: isActive ? colors.text : colors.textSecondary,
+                      color: isActive ? '#FFFFFF' : colors.text,
                       fontWeight: isActive ? '600' : '400',
                     },
                   ]}
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   indicator: {
     position: 'absolute',
     height: 60,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.text,
     left: 5,
     top: 5,
   },

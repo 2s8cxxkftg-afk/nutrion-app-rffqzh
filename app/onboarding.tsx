@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,22 +35,28 @@ interface OnboardingPage {
 
 const pages: OnboardingPage[] = [
   {
+    title: 'Welcome to Nutrion',
+    description: 'Your smart pantry companion that helps you manage food inventory, reduce waste, and plan delicious meals.',
+    icon: 'leaf.fill',
+    color: colors.primary,
+  },
+  {
     title: 'Smart Pantry Management',
     description: 'Scan barcodes or manually add items to track everything in your pantry. Never forget what you have at home!',
     icon: 'kitchen',
-    color: colors.primary,
+    color: colors.accent,
   },
   {
     title: 'AI-Powered Meal Planning',
     description: 'Get personalized recipe suggestions based on what\'s in your pantry. Plan delicious meals with what you already have.',
     icon: 'restaurant',
-    color: colors.accent,
+    color: colors.secondary,
   },
   {
     title: 'Expiration Alerts',
     description: 'Receive timely notifications before food expires. Reduce waste and save money by using ingredients before they spoil.',
     icon: 'notifications',
-    color: colors.secondary,
+    color: colors.success,
   },
 ];
 
@@ -98,6 +105,15 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Logo at the top */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       {/* Skip Button */}
       {currentPage < pages.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
@@ -154,7 +170,7 @@ export default function OnboardingScreen() {
             <IconSymbol
               name="arrow_forward"
               size={20}
-              color={colors.text}
+              color="#FFFFFF"
               style={{ marginLeft: 8 }}
             />
           )}
@@ -209,6 +225,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingBottom: 10,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
   skipButton: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 20,
@@ -216,10 +241,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    backgroundColor: colors.card,
+    borderRadius: 20,
   },
   skipText: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: colors.text,
     fontWeight: '600',
   },
   scrollView: {
@@ -281,19 +308,19 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   nextButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.text,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(144, 238, 144, 0.3)',
+    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
     elevation: 4,
   },
   nextButtonText: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
       onPress: handleNotificationSettings,
     },
     {
-      icon: 'info.circle',
+      icon: 'book.fill',
       title: 'View Tutorial',
       subtitle: 'See the app introduction again',
       onPress: handleViewOnboarding,
@@ -113,15 +114,19 @@ export default function ProfileScreen() {
         >
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <IconSymbol name="person.fill" size={48} color={colors.text} />
+              <Image
+                source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+                style={styles.avatarLogo}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.userName}>Nutrion User</Text>
-            <Text style={commonStyles.textSecondary}>Managing your pantry</Text>
+            <Text style={commonStyles.textSecondary}>Managing your pantry smartly</Text>
           </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
+              <IconSymbol name="archivebox.fill" size={32} color={colors.text} />
               <Text style={styles.statNumber}>{itemsTracked}</Text>
               <Text style={commonStyles.textSecondary}>Items Tracked</Text>
             </View>
@@ -141,7 +146,7 @@ export default function ProfileScreen() {
               onPress={option.onPress}
             >
               <View style={styles.settingIcon}>
-                <IconSymbol name={option.icon as any} size={24} color={colors.primary} />
+                <IconSymbol name={option.icon as any} size={24} color={colors.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingTitle}>{option.title}</Text>
@@ -152,6 +157,11 @@ export default function ProfileScreen() {
           ))}
 
           <View style={styles.footer}>
+            <Image
+              source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+              style={styles.footerLogo}
+              resizeMode="contain"
+            />
             <Text style={commonStyles.textSecondary}>
               Nutrion - Smart Pantry Management
             </Text>
@@ -182,10 +192,16 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    borderWidth: 3,
+    borderColor: colors.primary,
+  },
+  avatarLogo: {
+    width: 70,
+    height: 70,
   },
   userName: {
     fontSize: 24,
@@ -241,5 +257,10 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingVertical: 32,
+  },
+  footerLogo: {
+    width: 60,
+    height: 60,
+    marginBottom: 12,
   },
 });

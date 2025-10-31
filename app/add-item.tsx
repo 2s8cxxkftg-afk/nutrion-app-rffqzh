@@ -11,7 +11,6 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -24,6 +23,9 @@ import { addPantryItem } from '@/utils/storage';
 export default function AddItemScreen() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
+  const nameInputRef = useRef<TextInput>(null);
+  const quantityInputRef = useRef<TextInput>(null);
+  const notesInputRef = useRef<TextInput>(null);
   
   const [name, setName] = useState('');
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
@@ -112,32 +114,35 @@ export default function AddItemScreen() {
   };
 
   const openCategoryPicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
-    // Small delay to ensure keyboard is dismissed first
     setTimeout(() => {
       setShowCategoryPicker(true);
-    }, 100);
+    }, 150);
   };
 
   const openUnitPicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
     setTimeout(() => {
       setShowUnitPicker(true);
-    }, 100);
+    }, 150);
   };
 
   const openQuantityPicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
     setTimeout(() => {
       setShowQuantityPicker(true);
-    }, 100);
+    }, 150);
   };
 
   const openDatePicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
     setTimeout(() => {
       setShowDatePicker(true);
-    }, 100);
+    }, 150);
   };
 
   return (
@@ -162,7 +167,7 @@ export default function AddItemScreen() {
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
           <TouchableOpacity
@@ -178,6 +183,7 @@ export default function AddItemScreen() {
 
           <Text style={styles.label}>Item Name *</Text>
           <TextInput
+            ref={nameInputRef}
             style={commonStyles.input}
             placeholder="e.g., Milk, Eggs, Bread"
             placeholderTextColor={colors.textSecondary}
@@ -188,6 +194,7 @@ export default function AddItemScreen() {
             autoCorrect={false}
             clearButtonMode="while-editing"
             onFocus={closeAllPickers}
+            onSubmitEditing={() => quantityInputRef.current?.focus()}
           />
 
           <Text style={styles.label}>Category *</Text>
@@ -238,6 +245,7 @@ export default function AddItemScreen() {
               <Text style={styles.label}>Quantity *</Text>
               <View style={styles.quantityContainer}>
                 <TextInput
+                  ref={quantityInputRef}
                   style={[commonStyles.input, { flex: 1 }]}
                   placeholder="1"
                   placeholderTextColor={colors.textSecondary}
@@ -253,7 +261,7 @@ export default function AddItemScreen() {
                   onPress={openQuantityPicker}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol name="list.bullet" size={20} color={colors.primary} />
+                  <IconSymbol name="list.bullet" size={20} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -363,6 +371,7 @@ export default function AddItemScreen() {
 
           <Text style={styles.label}>Notes (Optional)</Text>
           <TextInput
+            ref={notesInputRef}
             style={[commonStyles.input, styles.notesInput]}
             placeholder="Add any additional notes..."
             placeholderTextColor={colors.textSecondary}
@@ -440,7 +449,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.text,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -471,7 +480,7 @@ const styles = StyleSheet.create({
   },
   pickerOptionTextSelected: {
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.text,
   },
   datePickerContainer: {
     backgroundColor: colors.card,
@@ -482,7 +491,7 @@ const styles = StyleSheet.create({
     borderColor: colors.textSecondary + '40',
   },
   datePickerDoneButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.text,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -491,7 +500,7 @@ const styles = StyleSheet.create({
   datePickerDoneText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   notesInput: {
     height: 80,
