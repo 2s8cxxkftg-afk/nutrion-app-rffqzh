@@ -12,6 +12,7 @@ import {
   Image,
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -283,90 +284,98 @@ export default function FoodSearchScreen() {
         }}
       />
       
-      <View style={commonStyles.container}>
-        <View style={styles.header}>
-          <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('searchPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus={true}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              clearButtonMode="while-editing"
-              onSubmitEditing={() => Keyboard.dismiss()}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <View style={commonStyles.container}>
+          <View style={styles.header}>
+            <View style={styles.searchContainer}>
+              <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('searchPlaceholder')}
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus={true}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                clearButtonMode="while-editing"
+                onSubmitEditing={() => Keyboard.dismiss()}
+                editable={true}
+                selectTextOnFocus={true}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.barcodeButton}
+              onPress={handleBarcodeScan}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.barcodeButton}
-            onPress={handleBarcodeScan}
-            activeOpacity={0.7}
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
           >
-            <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
-          </TouchableOpacity>
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>{t('loading')}</Text>
+              </View>
+            )}
+
+            {error && (
+              <View style={styles.errorContainer}>
+                <IconSymbol name="exclamationmark.triangle" size={48} color={colors.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            {!loading && !error && searchQuery.length >= 2 && searchResults.length === 0 && (
+              <View style={styles.emptyState}>
+                <IconSymbol name="magnifyingglass" size={64} color={colors.textSecondary} />
+                <Text style={styles.emptyStateTitle}>{t('noResults')}</Text>
+                <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
+                  {t('tryDifferent')}
+                </Text>
+              </View>
+            )}
+
+            {!loading && !error && searchQuery.length < 2 && (
+              <View style={styles.emptyState}>
+                <IconSymbol name="fork.knife" size={64} color={colors.textSecondary} />
+                <Text style={styles.emptyStateTitle}>{t('searchForFoods')}</Text>
+                <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
+                  {t('searchHint')}
+                </Text>
+              </View>
+            )}
+
+            {!loading && !error && searchResults.length > 0 && (
+              <View style={styles.resultsContainer}>
+                <Text style={styles.resultsHeader}>
+                  {searchResults.length} results for "{searchQuery}"
+                </Text>
+                {searchResults.map((food, index) => renderFoodItem(food, index))}
+              </View>
+            )}
+          </ScrollView>
         </View>
-
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>{t('loading')}</Text>
-            </View>
-          )}
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <IconSymbol name="exclamationmark.triangle" size={48} color={colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          {!loading && !error && searchQuery.length >= 2 && searchResults.length === 0 && (
-            <View style={styles.emptyState}>
-              <IconSymbol name="magnifyingglass" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>{t('noResults')}</Text>
-              <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
-                {t('tryDifferent')}
-              </Text>
-            </View>
-          )}
-
-          {!loading && !error && searchQuery.length < 2 && (
-            <View style={styles.emptyState}>
-              <IconSymbol name="fork.knife" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>{t('searchForFoods')}</Text>
-              <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
-                {t('searchHint')}
-              </Text>
-            </View>
-          )}
-
-          {!loading && !error && searchResults.length > 0 && (
-            <View style={styles.resultsContainer}>
-              <Text style={styles.resultsHeader}>
-                {searchResults.length} results for "{searchQuery}"
-              </Text>
-              {searchResults.map((food, index) => renderFoodItem(food, index))}
-            </View>
-          )}
-        </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
 
       <Toast
         visible={showToast}
@@ -401,6 +410,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: colors.text,
+    minHeight: 20,
   },
   barcodeButton: {
     backgroundColor: colors.primary,
