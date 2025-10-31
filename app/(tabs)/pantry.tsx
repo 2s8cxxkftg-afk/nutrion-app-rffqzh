@@ -56,7 +56,7 @@ export default function PantryScreen() {
     
     Alert.alert(
       'Delete Item',
-      `Are you sure you want to remove "${itemToDelete?.name}" from your pantry?`,
+      `Remove "${itemToDelete?.name}" from your pantry?`,
       [
         { 
           text: 'Cancel', 
@@ -72,7 +72,6 @@ export default function PantryScreen() {
               await deletePantryItem(itemId);
               console.log('Item deleted successfully, reloading items...');
               await loadItems();
-              Alert.alert('Success', 'Item removed from pantry');
             } catch (error) {
               console.error('Error deleting item:', error);
               Alert.alert('Error', 'Failed to delete item. Please try again.');
@@ -96,49 +95,52 @@ export default function PantryScreen() {
     const statusColor = expirationColors[status];
 
     return (
-      <View key={item.id} style={[commonStyles.card, styles.itemCard]}>
-        <View style={styles.itemHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={commonStyles.textSecondary}>{item.category}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => handleDeleteItem(item.id)}
-            style={styles.deleteButton}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <IconSymbol name="trash" size={22} color={colors.error} />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.itemDetails}>
-          <View style={styles.detailRow}>
-            <IconSymbol name="number" size={16} color={colors.textSecondary} />
-            <Text style={styles.detailText}>
-              {item.quantity} {item.unit}
-            </Text>
+      <View key={item.id} style={styles.itemCard}>
+        <View style={styles.itemContent}>
+          <View style={styles.itemHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemCategory}>{item.category}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => handleDeleteItem(item.id)}
+              style={styles.deleteButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol name="trash" size={20} color={colors.error} />
+            </TouchableOpacity>
           </View>
           
-          <View style={styles.detailRow}>
-            <IconSymbol name="calendar" size={16} color={colors.textSecondary} />
-            <Text style={styles.detailText}>
-              Added: {new Date(item.dateAdded).toLocaleDateString()}
+          <View style={styles.itemDetails}>
+            <View style={styles.detailChip}>
+              <IconSymbol name="number" size={14} color={colors.textSecondary} />
+              <Text style={styles.detailText}>
+                {item.quantity} {item.unit}
+              </Text>
+            </View>
+            
+            <View style={styles.detailChip}>
+              <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
+              <Text style={styles.detailText}>
+                {new Date(item.dateAdded).toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.expirationBadge, { backgroundColor: statusColor }]}>
+            <IconSymbol name="clock" size={14} color="#FFFFFF" />
+            <Text style={styles.expirationText}>
+              {formatExpirationText(item.expirationDate)}
             </Text>
           </View>
-        </View>
 
-        <View style={[styles.expirationBadge, { backgroundColor: statusColor }]}>
-          <Text style={styles.expirationText}>
-            {formatExpirationText(item.expirationDate)}
-          </Text>
+          {item.notes && (
+            <View style={styles.notesContainer}>
+              <Text style={styles.notesText}>{item.notes}</Text>
+            </View>
+          )}
         </View>
-
-        {item.notes && (
-          <View style={styles.notesContainer}>
-            <Text style={styles.notesText}>{item.notes}</Text>
-          </View>
-        )}
       </View>
     );
   };
@@ -151,16 +153,18 @@ export default function PantryScreen() {
           title: 'My Pantry',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '800', fontSize: 20 },
         }}
       />
       
       <View style={commonStyles.container}>
+        {/* Search and Actions Header */}
         <View style={styles.header}>
           <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search items..."
+              placeholder="Search your pantry..."
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -169,22 +173,23 @@ export default function PantryScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.addButton}
+            style={styles.actionButton}
             onPress={() => router.push('/food-search')}
             activeOpacity={0.7}
           >
-            <IconSymbol name="magnifyingglass" size={20} color={colors.text} />
+            <IconSymbol name="magnifyingglass" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.actionButton, styles.actionButtonPrimary]}
             onPress={() => router.push('/add-item')}
             activeOpacity={0.7}
           >
-            <IconSymbol name="plus" size={24} color={colors.text} />
+            <IconSymbol name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
+        {/* Category Filter */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -195,16 +200,16 @@ export default function PantryScreen() {
             <TouchableOpacity
               key={category}
               style={[
-                styles.categoryChip,
-                filterCategory === category && styles.categoryChipActive,
+                commonStyles.chip,
+                filterCategory === category && commonStyles.chipActive,
               ]}
               onPress={() => setFilterCategory(category)}
               activeOpacity={0.7}
             >
               <Text
                 style={[
-                  styles.categoryChipText,
-                  filterCategory === category && styles.categoryChipTextActive,
+                  commonStyles.chipText,
+                  filterCategory === category && commonStyles.chipTextActive,
                 ]}
               >
                 {category}
@@ -213,6 +218,7 @@ export default function PantryScreen() {
           ))}
         </ScrollView>
 
+        {/* Items List */}
         <ScrollView
           style={styles.itemsList}
           contentContainerStyle={styles.itemsListContent}
@@ -227,20 +233,27 @@ export default function PantryScreen() {
         >
           {filteredItems.length === 0 ? (
             <View style={styles.emptyState}>
-              <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>No items in pantry</Text>
-              <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
-                {searchQuery
-                  ? 'No items match your search'
-                  : 'Add items to start tracking your pantry'}
+              <View style={styles.emptyStateIcon}>
+                <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
+              </View>
+              <Text style={styles.emptyStateTitle}>
+                {searchQuery ? 'No items found' : 'Your pantry is empty'}
               </Text>
-              <TouchableOpacity
-                style={styles.emptyStateButton}
-                onPress={() => router.push('/food-search')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.emptyStateButtonText}>Search Foods</Text>
-              </TouchableOpacity>
+              <Text style={styles.emptyStateDescription}>
+                {searchQuery
+                  ? 'Try a different search term'
+                  : 'Start adding items to track your food inventory'}
+              </Text>
+              {!searchQuery && (
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => router.push('/food-search')}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="magnifyingglass" size={20} color="#FFFFFF" />
+                  <Text style={styles.emptyStateButtonText}>Search Foods</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             filteredItems.map(renderPantryItem)
@@ -264,52 +277,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
+    fontWeight: '500',
   },
-  addButton: {
-    backgroundColor: colors.primary,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  actionButton: {
+    backgroundColor: colors.accent,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    boxShadow: '0px 4px 12px rgba(102, 205, 170, 0.3)',
+    elevation: 4,
+  },
+  actionButtonPrimary: {
+    backgroundColor: colors.primary,
+    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
   },
   categoryScroll: {
-    maxHeight: 50,
+    maxHeight: 56,
     marginBottom: 16,
   },
   categoryScrollContent: {
     paddingHorizontal: 20,
-    gap: 8,
-  },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.textSecondary + '40',
-  },
-  categoryChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  categoryChipTextActive: {
-    color: colors.text,
-    fontWeight: '600',
+    gap: 10,
   },
   itemsList: {
     flex: 1,
@@ -317,84 +318,132 @@ const styles = StyleSheet.create({
   itemsListContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 110,
   },
   itemCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
     marginBottom: 16,
+    boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.06)',
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  itemContent: {
+    padding: 20,
   },
   itemHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  itemCategory: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
   deleteButton: {
     padding: 8,
     marginRight: -8,
     marginTop: -4,
+    backgroundColor: colors.error + '15',
+    borderRadius: 10,
   },
   itemDetails: {
-    gap: 8,
-    marginBottom: 12,
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
   },
-  detailRow: {
+  detailChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    backgroundColor: colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   expirationBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
     alignSelf: 'flex-start',
   },
   expirationText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   notesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.textSecondary + '20',
+    borderTopColor: colors.border,
   },
   notesText: {
     fontSize: 14,
     color: colors.textSecondary,
     fontStyle: 'italic',
+    lineHeight: 20,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyStateIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '800',
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  emptyStateDescription: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
   },
   emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginTop: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
+    elevation: 4,
   },
   emptyStateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

@@ -34,34 +34,35 @@ interface OnboardingPage {
   imageUrl: string;
 }
 
+// 3D art style illustrations similar to Foodpanda
 const pages: OnboardingPage[] = [
   {
     title: 'Welcome to Nutrion',
-    description: 'Your smart pantry companion that helps you manage food inventory, reduce waste, and plan delicious meals.',
-    icon: 'leaf.fill',
+    description: 'Your smart kitchen companion that helps you manage food, reduce waste, and discover amazing recipes.',
+    icon: 'sparkles',
     color: colors.primary,
-    imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80', // Fresh healthy food bowl
+    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=80', // 3D food illustration
   },
   {
-    title: 'Smart Pantry Management',
-    description: 'Scan barcodes or manually add items to track everything in your pantry. Never forget what you have at home!',
-    icon: 'kitchen',
+    title: 'Smart Pantry Tracking',
+    description: 'Scan barcodes or add items manually. Keep track of everything in your kitchen with ease.',
+    icon: 'qrcode.viewfinder',
     color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=800&q=80', // Organized pantry shelves
+    imageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80', // 3D scanning illustration
   },
   {
-    title: 'AI-Powered Meal Planning',
-    description: 'Get personalized recipe suggestions based on what\'s in your pantry. Plan delicious meals with what you already have.',
-    icon: 'restaurant',
+    title: 'AI Recipe Suggestions',
+    description: 'Get personalized meal ideas based on what you have. Cook delicious meals without extra shopping.',
+    icon: 'wand.and.stars',
     color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=80', // Beautiful plated meal
+    imageUrl: 'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&q=80', // 3D cooking illustration
   },
   {
-    title: 'Expiration Alerts',
-    description: 'Receive timely notifications before food expires. Reduce waste and save money by using ingredients before they spoil.',
-    icon: 'notifications',
+    title: 'Never Waste Food',
+    description: 'Smart expiration alerts keep you informed. Save money and help the planet by reducing food waste.',
+    icon: 'leaf.fill',
     color: colors.success,
-    imageUrl: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=800&q=80', // Fresh vegetables and produce
+    imageUrl: 'https://images.unsplash.com/photo-1633356122363-1b8e1b1b1b1b?w=800&q=80', // 3D sustainability illustration
   },
 ];
 
@@ -110,21 +111,23 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Logo at the top */}
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+      {/* Header with Logo and Skip */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoText}>Nutrion</Text>
+        </View>
+        
+        {currentPage < pages.length - 1 && (
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+            <Text style={styles.skipText}>Skip</Text>
+          </TouchableOpacity>
+        )}
       </View>
-
-      {/* Skip Button */}
-      {currentPage < pages.length - 1 && (
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-      )}
 
       {/* Pages ScrollView */}
       <ScrollView
@@ -139,61 +142,63 @@ export default function OnboardingScreen() {
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
             <View style={styles.pageContent}>
-              {/* Feature Image */}
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: page.imageUrl }}
-                  style={styles.featureImage}
-                  resizeMode="cover"
-                />
-                {/* Icon Overlay */}
-                <View style={[styles.iconOverlay, { backgroundColor: page.color + '95' }]}>
-                  <IconSymbol
-                    name={page.icon as any}
-                    size={60}
-                    color="#FFFFFF"
+              {/* 3D Art Style Image Container */}
+              <View style={styles.imageWrapper}>
+                <View style={[styles.imageBackground, { backgroundColor: page.color + '20' }]}>
+                  <Image
+                    source={{ uri: page.imageUrl }}
+                    style={styles.featureImage}
+                    resizeMode="cover"
                   />
+                  {/* Floating Icon Badge - Foodpanda style */}
+                  <View style={[styles.iconBadge, { backgroundColor: page.color }]}>
+                    <IconSymbol
+                      name={page.icon as any}
+                      size={40}
+                      color="#FFFFFF"
+                    />
+                  </View>
                 </View>
               </View>
 
-              {/* Title */}
-              <Text style={styles.title}>{page.title}</Text>
-
-              {/* Description */}
-              <Text style={styles.description}>{page.description}</Text>
+              {/* Content */}
+              <View style={styles.textContent}>
+                <Text style={styles.title}>{page.title}</Text>
+                <Text style={styles.description}>{page.description}</Text>
+              </View>
             </View>
           </View>
         ))}
       </ScrollView>
 
-      {/* Pagination Dots */}
-      <View style={styles.pagination}>
-        {pages.map((_, index) => (
-          <PaginationDot key={index} index={index} scrollX={scrollX} currentPage={currentPage} />
-        ))}
-      </View>
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Pagination Dots */}
+        <View style={styles.pagination}>
+          {pages.map((_, index) => (
+            <PaginationDot key={index} index={index} scrollX={scrollX} currentPage={currentPage} />
+          ))}
+        </View>
 
-      {/* Next/Get Started Button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>
-            {currentPage === pages.length - 1 ? 'Get Started' : 'Next'}
+        {/* Action Button */}
+        <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
+          <Text style={styles.actionButtonText}>
+            {currentPage === pages.length - 1 ? 'Get Started' : 'Continue'}
           </Text>
-          {currentPage < pages.length - 1 && (
+          <View style={styles.actionButtonIcon}>
             <IconSymbol
-              name="arrow_forward"
+              name={currentPage === pages.length - 1 ? 'checkmark' : 'arrow_forward'}
               size={20}
               color="#FFFFFF"
-              style={{ marginLeft: 8 }}
             />
-          )}
+          </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-// Separate component for pagination dots to use hooks properly
+// Pagination Dot Component
 function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX: any; currentPage: number }) {
   const dotStyle = useAnimatedStyle(() => {
     const inputRange = [
@@ -202,22 +207,22 @@ function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX
       (index + 1) * SCREEN_WIDTH,
     ];
 
-    const scale = interpolate(
+    const width = interpolate(
       scrollX.value,
       inputRange,
-      [0.8, 1.4, 0.8],
+      [8, 32, 8],
       Extrapolate.CLAMP
     );
 
     const opacity = interpolate(
       scrollX.value,
       inputRange,
-      [0.4, 1, 0.4],
+      [0.3, 1, 0.3],
       Extrapolate.CLAMP
     );
 
     return {
-      transform: [{ scale }],
+      width,
       opacity,
     };
   });
@@ -238,31 +243,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  logoContainer: {
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+    paddingBottom: 20,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 48,
+    height: 48,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: -0.5,
   },
   skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 20,
-    right: 20,
-    zIndex: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     backgroundColor: colors.card,
-    borderRadius: 20,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    borderRadius: 24,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 2,
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
@@ -272,7 +287,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
   },
   pageContent: {
     alignItems: 'center',
@@ -280,82 +295,101 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     width: '100%',
   },
-  imageContainer: {
+  imageWrapper: {
     width: '100%',
-    height: 280,
-    borderRadius: 24,
+    marginBottom: 48,
+  },
+  imageBackground: {
+    width: '100%',
+    height: 320,
+    borderRadius: 32,
     overflow: 'hidden',
-    marginBottom: 32,
     position: 'relative',
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+    boxShadow: '0px 12px 32px rgba(0, 0, 0, 0.12)',
     elevation: 8,
   },
   featureImage: {
     width: '100%',
     height: '100%',
   },
-  iconOverlay: {
+  iconBadge: {
     position: 'absolute',
-    bottom: 16,
-    right: 16,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    bottom: 20,
+    right: 20,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
-    elevation: 6,
+    boxShadow: '0px 6px 20px rgba(0, 0, 0, 0.25)',
+    elevation: 8,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+  },
+  textContent: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 36,
-    paddingHorizontal: 10,
+    lineHeight: 40,
+    letterSpacing: -0.5,
   },
   description: {
     fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
-    paddingHorizontal: 10,
+    fontWeight: '500',
+  },
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 20,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    marginBottom: 32,
+    gap: 8,
   },
   dot: {
-    width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.textSecondary,
-    marginHorizontal: 4,
   },
   activeDot: {
     backgroundColor: colors.primary,
   },
-  buttonContainer: {
-    paddingHorizontal: 40,
-    paddingBottom: 40,
-  },
-  nextButton: {
-    backgroundColor: colors.text,
-    paddingVertical: 16,
+  actionButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 16,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
-    elevation: 4,
+    boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
+    elevation: 6,
+    gap: 12,
   },
-  nextButtonText: {
+  actionButtonText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  actionButtonIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
