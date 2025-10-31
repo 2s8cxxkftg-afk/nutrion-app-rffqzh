@@ -31,6 +31,7 @@ interface OnboardingPage {
   description: string;
   icon: string;
   color: string;
+  imageUrl: string;
 }
 
 const pages: OnboardingPage[] = [
@@ -39,24 +40,28 @@ const pages: OnboardingPage[] = [
     description: 'Your smart pantry companion that helps you manage food inventory, reduce waste, and plan delicious meals.',
     icon: 'leaf.fill',
     color: colors.primary,
+    imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80', // Fresh healthy food bowl
   },
   {
     title: 'Smart Pantry Management',
     description: 'Scan barcodes or manually add items to track everything in your pantry. Never forget what you have at home!',
     icon: 'kitchen',
     color: colors.accent,
+    imageUrl: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=800&q=80', // Organized pantry shelves
   },
   {
     title: 'AI-Powered Meal Planning',
     description: 'Get personalized recipe suggestions based on what\'s in your pantry. Plan delicious meals with what you already have.',
     icon: 'restaurant',
     color: colors.secondary,
+    imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=80', // Beautiful plated meal
   },
   {
     title: 'Expiration Alerts',
     description: 'Receive timely notifications before food expires. Reduce waste and save money by using ingredients before they spoil.',
     icon: 'notifications',
     color: colors.success,
+    imageUrl: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=800&q=80', // Fresh vegetables and produce
   },
 ];
 
@@ -134,13 +139,21 @@ export default function OnboardingScreen() {
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
             <View style={styles.pageContent}>
-              {/* Icon Container */}
-              <View style={[styles.iconContainer, { backgroundColor: page.color + '20' }]}>
-                <IconSymbol
-                  name={page.icon as any}
-                  size={80}
-                  color={page.color}
+              {/* Feature Image */}
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: page.imageUrl }}
+                  style={styles.featureImage}
+                  resizeMode="cover"
                 />
+                {/* Icon Overlay */}
+                <View style={[styles.iconOverlay, { backgroundColor: page.color + '95' }]}>
+                  <IconSymbol
+                    name={page.icon as any}
+                    size={60}
+                    color="#FFFFFF"
+                  />
+                </View>
               </View>
 
               {/* Title */}
@@ -243,6 +256,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: colors.card,
     borderRadius: 20,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
   skipText: {
     fontSize: 16,
@@ -257,20 +272,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
   },
   pageContent: {
     alignItems: 'center',
     justifyContent: 'center',
     maxWidth: 400,
+    width: '100%',
   },
-  iconContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+  imageContainer: {
+    width: '100%',
+    height: 280,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 32,
+    position: 'relative',
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+    elevation: 8,
+  },
+  featureImage: {
+    width: '100%',
+    height: '100%',
+  },
+  iconOverlay: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
+    elevation: 6,
   },
   title: {
     fontSize: 28,
@@ -279,6 +313,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 36,
+    paddingHorizontal: 10,
   },
   description: {
     fontSize: 17,
