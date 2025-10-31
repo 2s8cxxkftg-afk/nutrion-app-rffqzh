@@ -10,6 +10,8 @@ import {
   Alert,
   Platform,
   RefreshControl,
+  Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
@@ -24,7 +26,6 @@ export default function ShoppingScreen() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load items when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadItems();
@@ -55,7 +56,7 @@ export default function ShoppingScreen() {
     }
 
     const newItem: ShoppingItem = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: newItemName.trim(),
       quantity: 1,
       unit: 'pcs',
@@ -69,6 +70,7 @@ export default function ShoppingScreen() {
       setShoppingItems(updatedItems);
       setNewItemName('');
       setShowAddForm(false);
+      Keyboard.dismiss();
     } catch (error) {
       console.error('Error adding item:', error);
       Alert.alert('Error', 'Failed to add item');
@@ -131,6 +133,7 @@ export default function ShoppingScreen() {
       <TouchableOpacity
         style={styles.itemContent}
         onPress={() => handleToggleItem(item.id)}
+        activeOpacity={0.7}
       >
         <View style={[
           styles.checkbox,
@@ -157,6 +160,7 @@ export default function ShoppingScreen() {
       <TouchableOpacity
         onPress={() => handleDeleteItem(item.id)}
         style={styles.deleteButton}
+        activeOpacity={0.7}
       >
         <IconSymbol name="trash" size={20} color={colors.error} />
       </TouchableOpacity>
@@ -174,14 +178,18 @@ export default function ShoppingScreen() {
         }}
       />
       
-      <View style={commonStyles.container}>
+      <KeyboardAvoidingView 
+        style={commonStyles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
         <View style={styles.header}>
           <View style={styles.statsRow}>
             <Text style={commonStyles.text}>
               {uncheckedItems.length} items to buy
             </Text>
             {checkedItems.length > 0 && (
-              <TouchableOpacity onPress={handleClearCompleted}>
+              <TouchableOpacity onPress={handleClearCompleted} activeOpacity={0.7}>
                 <Text style={styles.clearText}>Clear completed</Text>
               </TouchableOpacity>
             )}
@@ -197,6 +205,8 @@ export default function ShoppingScreen() {
               value={newItemName}
               onChangeText={setNewItemName}
               autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleAddItem}
             />
             <View style={styles.formButtons}>
               <TouchableOpacity
@@ -204,13 +214,16 @@ export default function ShoppingScreen() {
                 onPress={() => {
                   setShowAddForm(false);
                   setNewItemName('');
+                  Keyboard.dismiss();
                 }}
+                activeOpacity={0.7}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.formButton, styles.addFormButton]}
                 onPress={handleAddItem}
+                activeOpacity={0.7}
               >
                 <Text style={styles.addButtonText}>Add</Text>
               </TouchableOpacity>
@@ -222,6 +235,8 @@ export default function ShoppingScreen() {
           style={styles.itemsList}
           contentContainerStyle={styles.itemsListContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -255,11 +270,12 @@ export default function ShoppingScreen() {
           <TouchableOpacity
             style={styles.fab}
             onPress={() => setShowAddForm(true)}
+            activeOpacity={0.8}
           >
             <IconSymbol name="plus" size={28} color={colors.text} />
           </TouchableOpacity>
         )}
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -317,7 +333,7 @@ const styles = StyleSheet.create({
   },
   itemsListContent: {
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
+    paddingBottom: 120,
   },
   itemCard: {
     flexDirection: 'row',
@@ -378,7 +394,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: Platform.OS === 'ios' ? 20 : 100,
+    bottom: 100,
     width: 56,
     height: 56,
     borderRadius: 28,

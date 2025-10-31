@@ -106,6 +106,7 @@ export default function FoodSearchScreen() {
   const handleFoodSelect = async (food: NutritionixFood) => {
     try {
       console.log('Selected food:', food);
+      Keyboard.dismiss();
 
       const foodNameLower = food.food_name.toLowerCase();
       let category = 'Other';
@@ -173,11 +174,9 @@ export default function FoodSearchScreen() {
         console.warn('Supabase sync failed:', supabaseError);
       }
 
-      // Show toast notification
       setToastMessage(t('itemAdded'));
       setShowToast(true);
       
-      // Clear search after a short delay
       setTimeout(() => {
         setSearchQuery('');
       }, 1500);
@@ -299,6 +298,7 @@ export default function FoodSearchScreen() {
               autoCorrect={false}
               returnKeyType="search"
               clearButtonMode="while-editing"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -320,7 +320,7 @@ export default function FoodSearchScreen() {
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
           {loading && (
@@ -360,7 +360,7 @@ export default function FoodSearchScreen() {
           {!loading && !error && searchResults.length > 0 && (
             <View style={styles.resultsContainer}>
               <Text style={styles.resultsHeader}>
-                {t('resultsFor', { count: searchResults.length, query: searchQuery })}
+                {searchResults.length} results for "{searchQuery}"
               </Text>
               {searchResults.map((food, index) => renderFoodItem(food, index))}
             </View>
