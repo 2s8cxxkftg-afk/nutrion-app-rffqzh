@@ -19,8 +19,11 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
+import Toast from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 export default function AddItemScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
@@ -37,20 +40,21 @@ export default function AddItemScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter an item name');
+      Alert.alert(t('error'), 'Please enter an item name');
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+      Alert.alert(t('error'), 'Please enter a valid quantity');
       return;
     }
 
-    // Generate unique ID using timestamp and random number
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const formattedDate = expirationDate.toISOString().split('T')[0];
 
@@ -68,11 +72,17 @@ export default function AddItemScreen() {
     try {
       await addPantryItem(newItem);
       console.log('Item added successfully:', newItem);
-      Alert.alert('Success', 'Item added to pantry', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      
+      // Show toast notification
+      setToastMessage(t('itemAdded'));
+      setShowToast(true);
+      
+      // Navigate back after a short delay
+      setTimeout(() => {
+        router.back();
+      }, 1500);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add item');
+      Alert.alert(t('error'), 'Failed to add item');
       console.error('Error adding item:', error);
     }
   };
@@ -150,7 +160,7 @@ export default function AddItemScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Add Item',
+          title: t('addItem'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'modal',
@@ -176,12 +186,12 @@ export default function AddItemScreen() {
             activeOpacity={0.7}
           >
             <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
-            <Text style={styles.scanButtonText}>Scan Barcode</Text>
+            <Text style={styles.scanButtonText}>{t('scanBarcode')}</Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
-          <Text style={styles.label}>Item Name *</Text>
+          <Text style={styles.label}>{t('itemName')} *</Text>
           <TextInput
             ref={nameInputRef}
             style={commonStyles.input}
@@ -197,7 +207,7 @@ export default function AddItemScreen() {
             onSubmitEditing={() => quantityInputRef.current?.focus()}
           />
 
-          <Text style={styles.label}>Category *</Text>
+          <Text style={styles.label}>{t('category')} *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openCategoryPicker}
@@ -242,7 +252,7 @@ export default function AddItemScreen() {
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Quantity *</Text>
+              <Text style={styles.label}>{t('quantity')} *</Text>
               <View style={styles.quantityContainer}>
                 <TextInput
                   ref={quantityInputRef}
@@ -267,7 +277,7 @@ export default function AddItemScreen() {
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>Unit *</Text>
+              <Text style={styles.label}>{t('unit')} *</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
                 onPress={openUnitPicker}
@@ -334,7 +344,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Expiration Date *</Text>
+          <Text style={styles.label}>{t('expirationDate')} *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openDatePicker}
@@ -369,7 +379,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Notes (Optional)</Text>
+          <Text style={styles.label}>{t('notes')} (Optional)</Text>
           <TextInput
             ref={notesInputRef}
             style={[commonStyles.input, styles.notesInput]}
@@ -390,10 +400,18 @@ export default function AddItemScreen() {
             onPress={handleSave}
             activeOpacity={0.7}
           >
-            <Text style={styles.saveButtonText}>Add to Pantry</Text>
+            <Text style={styles.saveButtonText}>{t('addToPantry')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type="success"
+        duration={2000}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }

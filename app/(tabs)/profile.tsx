@@ -17,13 +17,15 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
-  const [itemsTracked, setItemsTracked] = useState(0);
-  const [wasteReduced, setWasteReduced] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [expiringItems, setExpiringItems] = useState(0);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -34,14 +36,13 @@ export default function ProfileScreen() {
   const loadStats = async () => {
     try {
       const items = await loadPantryItems();
-      setItemsTracked(items.length);
-      
-      // Calculate waste reduced (items that haven't expired yet)
-      const freshItems = items.filter(item => {
+      setTotalItems(items.length);
+
+      const expiring = items.filter(item => {
         const status = getExpirationStatus(item.expirationDate);
-        return status !== 'expired';
+        return status === 'nearExpiry' || status === 'expired';
       });
-      setWasteReduced(freshItems.length);
+      setExpiringItems(expiring.length);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -49,16 +50,20 @@ export default function ProfileScreen() {
 
   const handleNotificationSettings = () => {
     Alert.alert(
-      'Notification Settings',
-      'Expiration alerts are enabled. You will receive notifications 3 days before items expire.',
+      t('notifications'),
+      'Notification settings will be available in a future update.',
       [{ text: 'OK' }]
     );
   };
 
+  const handleLanguageSettings = () => {
+    router.push('/language-settings');
+  };
+
   const handleAbout = () => {
     Alert.alert(
-      'About Nutrion',
-      'Nutrion helps you manage your pantry, track food expiration dates, and plan balanced meals.\n\nVersion 1.0.0',
+      t('about'),
+      'Nutrion v1.0.0\n\nA smart pantry management app to help you track food inventory, reduce waste, and plan meals efficiently.',
       [{ text: 'OK' }]
     );
   };
@@ -66,153 +71,138 @@ export default function ProfileScreen() {
   const handleViewOnboarding = async () => {
     try {
       await AsyncStorage.removeItem(ONBOARDING_KEY);
-      console.log('Onboarding reset, navigating to onboarding screen');
-      router.push('/onboarding');
+      router.replace('/onboarding');
     } catch (error) {
       console.error('Error resetting onboarding:', error);
-      Alert.alert('Error', 'Failed to reset onboarding');
     }
   };
-
-  const settingsOptions = [
-    {
-      icon: 'bell.fill',
-      title: 'Notifications',
-      subtitle: 'Manage expiration alerts',
-      onPress: handleNotificationSettings,
-    },
-    {
-      icon: 'book.fill',
-      title: 'View Tutorial',
-      subtitle: 'See the app introduction again',
-      onPress: handleViewOnboarding,
-    },
-    {
-      icon: 'info.circle',
-      title: 'About',
-      subtitle: 'App information',
-      onPress: handleAbout,
-    },
-  ];
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: 'Profile',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
+          headerShown: false,
         }}
       />
       
-      <View style={commonStyles.container}>
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <Image
-                source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-                style={styles.avatarLogo}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.userName}>Nutrion User</Text>
-            <Text style={commonStyles.textSecondary}>Managing your pantry smartly</Text>
-          </View>
+      <ScrollView
+        style={commonStyles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Image
+            source={require('@/assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>{t('profileTitle')}</Text>
+        </View>
 
-          <View style={styles.statsContainer}>
+        <View style={styles.statsContainer}>
+          <Text style={styles.sectionTitle}>{t('statistics')}</Text>
+          <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <IconSymbol name="archivebox.fill" size={32} color={colors.text} />
-              <Text style={styles.statNumber}>{itemsTracked}</Text>
-              <Text style={commonStyles.textSecondary}>Items Tracked</Text>
+              <IconSymbol name="cube.box.fill" size={32} color={colors.primary} />
+              <Text style={styles.statValue}>{totalItems}</Text>
+              <Text style={styles.statLabel}>{t('totalItems')}</Text>
             </View>
             <View style={styles.statCard}>
-              <IconSymbol name="leaf.fill" size={32} color={colors.success} />
-              <Text style={styles.statNumber}>{wasteReduced}</Text>
-              <Text style={commonStyles.textSecondary}>Fresh Items</Text>
+              <IconSymbol name="clock.fill" size={32} color={colors.warning} />
+              <Text style={styles.statValue}>{expiringItems}</Text>
+              <Text style={styles.statLabel}>{t('expiringItems')}</Text>
             </View>
           </View>
+        </View>
 
-          <Text style={[commonStyles.subtitle, styles.sectionTitle]}>Settings</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings')}</Text>
+          
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleNotificationSettings}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingIcon}>
+              <IconSymbol name="bell.fill" size={24} color={colors.text} />
+            </View>
+            <Text style={styles.settingText}>{t('notifications')}</Text>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-          {settingsOptions.map((option, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[commonStyles.card, styles.settingCard]}
-              onPress={option.onPress}
-            >
-              <View style={styles.settingIcon}>
-                <IconSymbol name={option.icon as any} size={24} color={colors.text} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingTitle}>{option.title}</Text>
-                <Text style={commonStyles.textSecondary}>{option.subtitle}</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleLanguageSettings}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingIcon}>
+              <IconSymbol name="globe" size={24} color={colors.text} />
+            </View>
+            <Text style={styles.settingText}>{t('language')}</Text>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-          <View style={styles.footer}>
-            <Image
-              source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-              style={styles.footerLogo}
-              resizeMode="contain"
-            />
-            <Text style={commonStyles.textSecondary}>
-              Nutrion - Smart Pantry Management
-            </Text>
-            <Text style={[commonStyles.textSecondary, { fontSize: 12, marginTop: 4 }]}>
-              Version 1.0.0
-            </Text>
-          </View>
-        </ScrollView>
-      </View>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleAbout}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingIcon}>
+              <IconSymbol name="info.circle.fill" size={24} color={colors.text} />
+            </View>
+            <Text style={styles.settingText}>{t('about')}</Text>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={handleViewOnboarding}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingIcon}>
+              <IconSymbol name="book.fill" size={24} color={colors.text} />
+            </View>
+            <Text style={styles.settingText}>{t('viewOnboarding')}</Text>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
-  },
-  contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
-  profileHeader: {
+  header: {
     alignItems: 'center',
-    paddingVertical: 24,
+    marginBottom: 32,
   },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 80,
+    height: 80,
     marginBottom: 16,
-    borderWidth: 3,
-    borderColor: colors.primary,
   },
-  avatarLogo: {
-    width: 70,
-    height: 70,
-  },
-  userName: {
-    fontSize: 24,
+  title: {
+    fontSize: 32,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 4,
   },
   statsContainer: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  statsGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 32,
   },
   statCard: {
     flex: 1,
@@ -220,47 +210,42 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+    gap: 8,
   },
-  statNumber: {
+  statValue: {
     fontSize: 28,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 8,
-    marginBottom: 4,
   },
-  sectionTitle: {
-    marginBottom: 16,
+  statLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
-  settingCard: {
+  section: {
+    marginBottom: 24,
+  },
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
+    gap: 12,
   },
   settingIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.highlight,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
-  settingTitle: {
+  settingText: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 2,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  footerLogo: {
-    width: 60,
-    height: 60,
-    marginBottom: 12,
   },
 });

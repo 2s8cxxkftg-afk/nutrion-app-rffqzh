@@ -20,16 +20,21 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { NutritionixFood, PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import { supabase } from '@/utils/supabase';
 import { addPantryItem } from '@/utils/storage';
+import Toast from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const NUTRITIONIX_APP_ID = 'YOUR_APP_ID';
 const NUTRITIONIX_APP_KEY = 'YOUR_APP_KEY';
 
 export default function FoodSearchScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<NutritionixFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -168,23 +173,17 @@ export default function FoodSearchScreen() {
         console.warn('Supabase sync failed:', supabaseError);
       }
 
-      Alert.alert(
-        'Success',
-        `✅ ${food.food_name} added to your pantry!`,
-        [
-          {
-            text: 'Add Another',
-            onPress: () => setSearchQuery(''),
-          },
-          {
-            text: 'View Pantry',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      // Show toast notification
+      setToastMessage(t('itemAdded'));
+      setShowToast(true);
+      
+      // Clear search after a short delay
+      setTimeout(() => {
+        setSearchQuery('');
+      }, 1500);
     } catch (error) {
       console.error('Error adding food:', error);
-      Alert.alert('Error', 'Failed to add food to pantry.');
+      Alert.alert(t('error'), 'Failed to add food to pantry.');
     }
   };
 
@@ -278,7 +277,7 @@ export default function FoodSearchScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Food Search',
+          title: t('foodSearch'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'modal',
@@ -291,7 +290,7 @@ export default function FoodSearchScreen() {
             <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search for food (e.g., banana, chicken)..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -327,7 +326,7 @@ export default function FoodSearchScreen() {
           {loading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Searching foods...</Text>
+              <Text style={styles.loadingText}>{t('loading')}</Text>
             </View>
           )}
 
@@ -341,9 +340,9 @@ export default function FoodSearchScreen() {
           {!loading && !error && searchQuery.length >= 2 && searchResults.length === 0 && (
             <View style={styles.emptyState}>
               <IconSymbol name="magnifyingglass" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>No results found</Text>
+              <Text style={styles.emptyStateTitle}>{t('noResults')}</Text>
               <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
-                Try searching for a different food item
+                {t('tryDifferent')}
               </Text>
             </View>
           )}
@@ -351,9 +350,9 @@ export default function FoodSearchScreen() {
           {!loading && !error && searchQuery.length < 2 && (
             <View style={styles.emptyState}>
               <IconSymbol name="fork.knife" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>Search for Foods</Text>
+              <Text style={styles.emptyStateTitle}>{t('searchForFoods')}</Text>
               <Text style={[commonStyles.textSecondary, { textAlign: 'center', paddingHorizontal: 40 }]}>
-                Type at least 2 characters to see smart food suggestions from Nutritionix
+                {t('searchHint')}
               </Text>
             </View>
           )}
@@ -361,13 +360,21 @@ export default function FoodSearchScreen() {
           {!loading && !error && searchResults.length > 0 && (
             <View style={styles.resultsContainer}>
               <Text style={styles.resultsHeader}>
-                {searchResults.length} results for &quot;{searchQuery}&quot;
+                {t('resultsFor', { count: searchResults.length, query: searchQuery })}
               </Text>
               {searchResults.map((food, index) => renderFoodItem(food, index))}
             </View>
           )}
         </ScrollView>
       </View>
+
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type="success"
+        duration={2000}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }

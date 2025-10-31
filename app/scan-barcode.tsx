@@ -16,12 +16,17 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { OpenFoodFactsProduct, PantryItem } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
+import Toast from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 export default function ScanBarcodeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     console.log('Camera permission status:', permission);
@@ -54,11 +59,11 @@ export default function ScanBarcodeScreen() {
         console.log('Product found:', product.product_name);
         
         Alert.alert(
-          'Product Found!',
+          t('productFound'),
           `${product.product_name || 'Unknown Product'}\n${product.brands ? `Brand: ${product.brands}` : ''}\n\nWould you like to add this to your pantry?`,
           [
             {
-              text: 'Cancel',
+              text: t('cancel'),
               style: 'cancel',
               onPress: () => {
                 setScanned(false);
@@ -66,7 +71,7 @@ export default function ScanBarcodeScreen() {
               },
             },
             {
-              text: 'Add to Pantry',
+              text: t('addToPantry'),
               onPress: async () => {
                 try {
                   const productNameLower = (product.product_name || '').toLowerCase();
@@ -105,26 +110,18 @@ export default function ScanBarcodeScreen() {
                   await addPantryItem(newItem);
                   console.log('Product added to pantry:', newItem);
 
-                  Alert.alert(
-                    'Success',
-                    `✅ ${newItem.name} added to your pantry!`,
-                    [
-                      {
-                        text: 'Scan Another',
-                        onPress: () => {
-                          setScanned(false);
-                          setLoading(false);
-                        },
-                      },
-                      {
-                        text: 'View Pantry',
-                        onPress: () => router.back(),
-                      },
-                    ]
-                  );
+                  // Show toast notification
+                  setToastMessage(t('itemAdded'));
+                  setShowToast(true);
+                  setLoading(false);
+                  
+                  // Navigate back after a short delay
+                  setTimeout(() => {
+                    router.back();
+                  }, 1500);
                 } catch (error) {
                   console.error('Error adding product to pantry:', error);
-                  Alert.alert('Error', 'Failed to add product to pantry');
+                  Alert.alert(t('error'), 'Failed to add product to pantry');
                   setScanned(false);
                   setLoading(false);
                 }
@@ -135,11 +132,11 @@ export default function ScanBarcodeScreen() {
       } else {
         console.log('Product not found in database');
         Alert.alert(
-          'Product Not Found',
-          'This barcode was not found in the database. Please add the item manually.',
+          t('productNotFound'),
+          t('productNotFoundText'),
           [
             {
-              text: 'Add Manually',
+              text: t('addManually'),
               onPress: () => {
                 router.back();
                 setTimeout(() => {
@@ -148,7 +145,7 @@ export default function ScanBarcodeScreen() {
               },
             },
             {
-              text: 'Try Again',
+              text: t('tryAgain'),
               onPress: () => {
                 setScanned(false);
                 setLoading(false);
@@ -160,18 +157,18 @@ export default function ScanBarcodeScreen() {
     } catch (error) {
       console.error('Error fetching product:', error);
       Alert.alert(
-        'Error',
+        t('error'),
         'Failed to fetch product information. Please check your internet connection and try again.',
         [
           {
-            text: 'Try Again',
+            text: t('tryAgain'),
             onPress: () => {
               setScanned(false);
               setLoading(false);
             },
           },
           {
-            text: 'Add Manually',
+            text: t('addManually'),
             onPress: () => {
               router.back();
               setTimeout(() => {
@@ -200,7 +197,7 @@ export default function ScanBarcodeScreen() {
     return (
       <View style={[commonStyles.container, commonStyles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[commonStyles.text, { marginTop: 16 }]}>Requesting camera permission...</Text>
+        <Text style={[commonStyles.text, { marginTop: 16 }]}>{t('loading')}</Text>
       </View>
     );
   }
@@ -211,7 +208,7 @@ export default function ScanBarcodeScreen() {
         <Stack.Screen
           options={{
             headerShown: true,
-            title: 'Scan Barcode',
+            title: t('scanBarcodeTitle'),
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
             presentation: 'modal',
@@ -220,17 +217,17 @@ export default function ScanBarcodeScreen() {
         <View style={[commonStyles.container, styles.permissionContainer]}>
           <IconSymbol name="camera.fill" size={64} color={colors.textSecondary} />
           <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 16 }]}>
-            Camera Permission Required
+            {t('cameraPermission')}
           </Text>
           <Text style={[commonStyles.textSecondary, { textAlign: 'center', marginTop: 8, paddingHorizontal: 40 }]}>
-            We need access to your camera to scan barcodes
+            {t('cameraPermissionText')}
           </Text>
           <TouchableOpacity
             style={styles.permissionButton}
             onPress={requestPermission}
             activeOpacity={0.7}
           >
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+            <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -242,7 +239,7 @@ export default function ScanBarcodeScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Scan Barcode',
+          title: t('scanBarcodeTitle'),
           headerStyle: { backgroundColor: '#000' },
           headerTintColor: '#FFFFFF',
           presentation: 'modal',
@@ -279,7 +276,7 @@ export default function ScanBarcodeScreen() {
           </View>
           
           <Text style={styles.instructionText}>
-            {loading ? 'Looking up product...' : 'Position the barcode within the frame'}
+            {loading ? t('lookingUp') : t('positionBarcode')}
           </Text>
           
           {loading && (
@@ -300,10 +297,18 @@ export default function ScanBarcodeScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={styles.rescanButtonText}>Tap to Scan Again</Text>
+            <Text style={styles.rescanButtonText}>{t('scanAgain')}</Text>
           </TouchableOpacity>
         )}
       </View>
+
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type="success"
+        duration={2000}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }
