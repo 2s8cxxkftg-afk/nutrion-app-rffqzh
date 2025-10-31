@@ -34,35 +34,35 @@ interface OnboardingPage {
   imageUrl: string;
 }
 
-// 3D art style illustrations similar to Foodpanda
+// 3D art style illustrations similar to Foodpanda - precise and relevant to each page
 const pages: OnboardingPage[] = [
   {
     title: 'Welcome to Nutrion',
     description: 'Your smart kitchen companion that helps you manage food, reduce waste, and discover amazing recipes.',
     icon: 'sparkles',
     color: colors.primary,
-    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=80', // 3D food illustration
+    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=80', // 3D colorful food items and kitchen elements
   },
   {
     title: 'Smart Pantry Tracking',
     description: 'Scan barcodes or add items manually. Keep track of everything in your kitchen with ease.',
     icon: 'qrcode.viewfinder',
     color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80', // 3D scanning illustration
+    imageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80', // 3D smartphone scanning with floating elements
   },
   {
     title: 'AI Recipe Suggestions',
     description: 'Get personalized meal ideas based on what you have. Cook delicious meals without extra shopping.',
     icon: 'wand.and.stars',
     color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&q=80', // 3D cooking illustration
+    imageUrl: 'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&q=80', // 3D cooking utensils and ingredients floating
   },
   {
     title: 'Never Waste Food',
     description: 'Smart expiration alerts keep you informed. Save money and help the planet by reducing food waste.',
     icon: 'leaf.fill',
     color: colors.success,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122363-1b8e1b1b1b1b?w=800&q=80', // 3D sustainability illustration
+    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80', // 3D earth/sustainability concept with fresh produce
   },
 ];
 
@@ -142,7 +142,7 @@ export default function OnboardingScreen() {
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
             <View style={styles.pageContent}>
-              {/* 3D Art Style Image Container */}
+              {/* 3D Art Style Image Container - Foodpanda inspired */}
               <View style={styles.imageWrapper}>
                 <View style={[styles.imageBackground, { backgroundColor: page.color + '20' }]}>
                   <Image
@@ -150,7 +150,7 @@ export default function OnboardingScreen() {
                     style={styles.featureImage}
                     resizeMode="cover"
                   />
-                  {/* Floating Icon Badge - Foodpanda style */}
+                  {/* Floating Icon Badge - Foodpanda style accent */}
                   <View style={[styles.iconBadge, { backgroundColor: page.color }]}>
                     <IconSymbol
                       name={page.icon as any}
