@@ -11,15 +11,15 @@ import {
   Image,
   Switch,
 } from 'react-native';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
+import { PantryItem } from '@/types/pantry';
 import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTranslation } from 'react-i18next';
 import { supabase } from '@/utils/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
 import {
   checkBiometricCapabilities,
@@ -30,27 +30,25 @@ import {
   getBiometricTypeName,
   authenticateWithBiometrics,
 } from '@/utils/biometricAuth';
+import { useTranslation } from 'react-i18next';
 
-const ONBOARDING_KEY = '@nutrion_onboarding_completed';
+const ONBOARDING_KEY = '@nutrion_onboarding_complete';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [stats, setStats] = useState({
-    totalItems: 0,
-    expiringSoon: 0,
-    expired: 0,
-  });
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const [expiringSoon, setExpiringSoon] = useState(0);
+  const [expired, setExpired] = useState(0);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabledState] = useState(false);
-  const [biometricType, setBiometricType] = useState('');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [biometricType, setBiometricType] = useState<string>('');
+  const [biometricEnabledState, setBiometricEnabledState] = useState(false);
+  const [has2FA, setHas2FA] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
+      console.log('Profile screen focused');
       loadStats();
       loadUserInfo();
       checkBiometricStatus();
@@ -61,26 +59,19 @@ export default function ProfileScreen() {
   const loadStats = async () => {
     try {
       const items = await loadPantryItems();
-      const now = new Date();
-      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      setTotalItems(items.length);
 
-      const expiringSoon = items.filter((item) => {
-        if (!item.expirationDate) return false;
-        const expDate = new Date(item.expirationDate);
-        return expDate > now && expDate <= threeDaysFromNow;
-      }).length;
+      let expiringSoonCount = 0;
+      let expiredCount = 0;
 
-      const expired = items.filter((item) => {
-        if (!item.expirationDate) return false;
-        const expDate = new Date(item.expirationDate);
-        return expDate <= now;
-      }).length;
-
-      setStats({
-        totalItems: items.length,
-        expiringSoon,
-        expired,
+      items.forEach((item: PantryItem) => {
+        const status = getExpirationStatus(item.expirationDate);
+        if (status === 'warning') expiringSoonCount++;
+        if (status === 'danger') expiredCount++;
       });
+
+      setExpiringSoon(expiringSoonCount);
+      setExpired(expiredCount);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -89,99 +80,108 @@ export default function ProfileScreen() {
   const loadUserInfo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-        setUserId(user.id);
-      }
+      setUser(user);
+      console.log('User loaded:', user?.email);
     } catch (error) {
-      console.error('Error loading user info:', error);
+      console.error('Error loading user:', error);
     }
   };
 
   const checkBiometricStatus = async () => {
-    const capabilities = await checkBiometricCapabilities();
-    setBiometricAvailable(capabilities.isAvailable);
-    
-    if (capabilities.isAvailable) {
-      const enabled = await isBiometricEnabled();
-      setBiometricEnabledState(enabled);
-      setBiometricType(getBiometricTypeName(capabilities.supportedTypes));
+    try {
+      const available = await checkBiometricCapabilities();
+      setBiometricAvailable(available);
+      
+      if (available) {
+        const type = await getBiometricTypeName();
+        setBiometricType(type);
+        
+        const enabled = await isBiometricEnabled();
+        setBiometricEnabledState(enabled);
+        console.log('Biometric status:', { available, type, enabled });
+      }
+    } catch (error) {
+      console.error('Error checking biometric status:', error);
     }
   };
 
   const check2FAStatus = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('two_factor_enabled')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data) {
-        setTwoFactorEnabled(data.two_factor_enabled || false);
-      }
+      const twoFAEnabled = await AsyncStorage.getItem('@nutrion_2fa_enabled');
+      setHas2FA(twoFAEnabled === 'true');
+      console.log('2FA status:', twoFAEnabled === 'true');
     } catch (error) {
       console.error('Error checking 2FA status:', error);
     }
   };
 
   const handleToggleBiometric = async (value: boolean) => {
-    if (!userEmail || !userId) {
-      Toast.show(t('profile.pleaseSignIn'), 'error');
+    if (!user) {
+      Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
 
-    if (value) {
-      // Enable biometric
-      const result = await authenticateWithBiometrics(
-        `Enable ${biometricType} for Nutrion`
-      );
-
-      if (result.success) {
-        try {
-          await setBiometricEnabled(true);
-          await saveBiometricCredentials(userEmail, userId);
-          setBiometricEnabledState(true);
-          Toast.show(t('profile.biometricEnabled'), 'success');
-        } catch (error) {
-          console.error('Error enabling biometric:', error);
-          Toast.show(t('profile.biometricEnableError'), 'error');
+    try {
+      if (value) {
+        // Enable biometric
+        const authenticated = await authenticateWithBiometrics();
+        if (authenticated) {
+          // Get current session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            await saveBiometricCredentials(session.user.email || '', '');
+            await setBiometricEnabled(true);
+            setBiometricEnabledState(true);
+            Toast.show({
+              type: 'success',
+              text: t('profile.biometricEnabled'),
+              duration: 2000,
+            });
+          }
+        } else {
+          Toast.show({
+            type: 'error',
+            text: t('profile.biometricAuthFailed'),
+            duration: 2000,
+          });
         }
       } else {
-        Toast.show(result.error || t('profile.biometricAuthFailed'), 'error');
-      }
-    } else {
-      // Disable biometric
-      Alert.alert(
-        t('profile.disableBiometric'),
-        t('profile.disableBiometricConfirm'),
-        [
-          { text: t('cancel'), style: 'cancel' },
-          {
-            text: t('profile.disable'),
-            style: 'destructive',
-            onPress: async () => {
-              try {
+        // Disable biometric
+        Alert.alert(
+          t('profile.disableBiometric'),
+          t('profile.disableBiometricConfirm'),
+          [
+            { text: t('cancel'), style: 'cancel' },
+            {
+              text: t('profile.disable'),
+              style: 'destructive',
+              onPress: async () => {
                 await clearBiometricCredentials();
+                await setBiometricEnabled(false);
                 setBiometricEnabledState(false);
-                Toast.show(t('profile.biometricDisabled'), 'success');
-              } catch (error) {
-                console.error('Error disabling biometric:', error);
-                Toast.show(t('profile.biometricDisableError'), 'error');
-              }
+                Toast.show({
+                  type: 'success',
+                  text: t('profile.biometricDisabled'),
+                  duration: 2000,
+                });
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling biometric:', error);
+      Toast.show({
+        type: 'error',
+        text: value ? t('profile.biometricEnableError') : t('profile.biometricDisableError'),
+        duration: 2000,
+      });
     }
   };
 
   const handleSetup2FA = () => {
-    if (!userEmail) {
-      Toast.show(t('profile.pleaseSignIn'), 'error');
+    if (!user) {
+      Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
     router.push('/setup-2fa');
@@ -189,8 +189,8 @@ export default function ProfileScreen() {
 
   const handleDisable2FA = () => {
     Alert.alert(
-      t('profile.disable2FA'),
-      t('profile.disable2FAConfirm'),
+      t('profile.disableTwoFa'),
+      t('profile.disableTwoFaConfirm'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
@@ -198,30 +198,21 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) return;
-
-              const { error } = await supabase
-                .from('user_settings')
-                .update({
-                  two_factor_enabled: false,
-                  two_factor_secret: null,
-                  backup_codes: null,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('user_id', user.id);
-
-              if (error) {
-                console.error('Error disabling 2FA:', error);
-                Toast.show(t('profile.2faDisableError'), 'error');
-                return;
-              }
-
-              setTwoFactorEnabled(false);
-              Toast.show(t('profile.2faDisabled'), 'success');
+              await AsyncStorage.removeItem('@nutrion_2fa_enabled');
+              await AsyncStorage.removeItem('@nutrion_2fa_secret');
+              setHas2FA(false);
+              Toast.show({
+                type: 'success',
+                text: t('profile.twoFaDisabled'),
+                duration: 2000,
+              });
             } catch (error) {
               console.error('Error disabling 2FA:', error);
-              Toast.show(t('profile.2faDisableError'), 'error');
+              Toast.show({
+                type: 'error',
+                text: t('profile.twoFaDisableError'),
+                duration: 2000,
+              });
             }
           },
         },
@@ -230,11 +221,7 @@ export default function ProfileScreen() {
   };
 
   const handleNotificationSettings = () => {
-    Alert.alert(
-      t('profile.notifications'),
-      t('profile.notificationsComingSoon'),
-      [{ text: t('ok') }]
-    );
+    Alert.alert(t('profile.notifications'), t('profile.notificationsComingSoon'));
   };
 
   const handleLanguageSettings = () => {
@@ -242,11 +229,7 @@ export default function ProfileScreen() {
   };
 
   const handleAbout = () => {
-    Alert.alert(
-      t('profile.aboutNutrion'),
-      t('profile.aboutNutrionDesc'),
-      [{ text: t('ok') }]
-    );
+    Alert.alert(t('profile.aboutNutrion'), t('profile.aboutNutrionDesc'));
   };
 
   const handleViewOnboarding = async () => {
@@ -263,26 +246,27 @@ export default function ProfileScreen() {
       t('profile.signOut'),
       t('profile.signOutConfirm'),
       [
-        {
-          text: t('cancel'),
-          style: 'cancel',
-        },
+        { text: t('cancel'), style: 'cancel' },
         {
           text: t('profile.signOut'),
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase.auth.signOut();
-              if (error) {
-                console.error('Sign out error:', error);
-                Toast.show(t('profile.signOutError'), 'error');
-                return;
-              }
-              Toast.show(t('profile.signedOut'), 'success');
+              await supabase.auth.signOut();
+              setUser(null);
+              Toast.show({
+                type: 'success',
+                text: t('profile.signedOut'),
+                duration: 2000,
+              });
               router.replace('/auth');
             } catch (error) {
-              console.error('Sign out error:', error);
-              Toast.show(t('profile.signOutError'), 'error');
+              console.error('Error signing out:', error);
+              Toast.show({
+                type: 'error',
+                text: t('profile.signOutError'),
+                duration: 2000,
+              });
             }
           },
         },
@@ -291,251 +275,245 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: false,
+          headerShown: true,
+          title: t('profile.title'),
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '800', fontSize: 20 },
         }}
       />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header with Logo */}
-        <View style={styles.header}>
-          <Image
-            source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-          {userEmail && (
-            <Text style={styles.userEmail}>{userEmail}</Text>
+
+      <ScrollView
+        style={commonStyles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* User Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            {user?.user_metadata?.avatar_url ? (
+              <Image
+                source={{ uri: user.user_metadata.avatar_url }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <IconSymbol name="person.fill" size={48} color={colors.primary} />
+              </View>
+            )}
+          </View>
+          <Text style={styles.userName}>
+            {user?.user_metadata?.full_name || user?.email || t('auth.notLoggedIn')}
+          </Text>
+          {user?.email && (
+            <Text style={styles.userEmail}>{user.email}</Text>
           )}
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, styles.statCardPrimary]}>
-            <IconSymbol name="cube.box.fill" size={32} color={colors.primary} />
-            <Text style={styles.statNumber}>{stats.totalItems}</Text>
-            <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
-          </View>
-
-          <View style={[styles.statCard, styles.statCardWarning]}>
-            <IconSymbol name="clock.fill" size={32} color={colors.warning} />
-            <Text style={styles.statNumber}>{stats.expiringSoon}</Text>
-            <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
-          </View>
-
-          <View style={[styles.statCard, styles.statCardDanger]}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={32} color={colors.danger} />
-            <Text style={styles.statNumber}>{stats.expired}</Text>
-            <Text style={styles.statLabel}>{t('profile.expired')}</Text>
+        {/* Statistics */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profile.statistics')}</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
+              <Text style={styles.statValue}>{totalItems}</Text>
+              <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <IconSymbol name="clock.fill" size={32} color={colors.warning} />
+              <Text style={styles.statValue}>{expiringSoon}</Text>
+              <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={32} color={colors.error} />
+              <Text style={styles.statValue}>{expired}</Text>
+              <Text style={styles.statLabel}>{t('profile.expired')}</Text>
+            </View>
           </View>
         </View>
 
         {/* Security Section */}
-        {userEmail && (
+        {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
-
-            {/* Biometric Authentication */}
-            {biometricAvailable && (
-              <View style={styles.settingItem}>
-                <View style={styles.settingIconContainer}>
-                  <IconSymbol
-                    name={biometricType.includes('Face') ? 'faceid' : 'touchid'}
-                    size={24}
-                    color={colors.primary}
+            <View style={styles.settingsList}>
+              {biometricAvailable && (
+                <View style={styles.settingItem}>
+                  <View style={styles.settingInfo}>
+                    <IconSymbol name="faceid" size={24} color={colors.primary} />
+                    <View style={styles.settingTextContainer}>
+                      <Text style={styles.settingTitle}>{biometricType}</Text>
+                      <Text style={styles.settingDescription}>
+                        {t('profile.biometricDesc')}
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={biometricEnabledState}
+                    onValueChange={handleToggleBiometric}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
                   />
                 </View>
-                <View style={styles.settingContent}>
-                  <Text style={styles.settingTitle}>{biometricType}</Text>
-                  <Text style={styles.settingSubtitle}>
-                    {t('profile.biometricDesc')}
-                  </Text>
-                </View>
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={handleToggleBiometric}
-                  trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                  thumbColor={biometricEnabled ? colors.primary : colors.card}
-                />
-              </View>
-            )}
-
-            {/* Two-Factor Authentication */}
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={twoFactorEnabled ? handleDisable2FA : handleSetup2FA}
-            >
-              <View style={styles.settingIconContainer}>
-                <IconSymbol name="shield.fill" size={24} color={colors.accent} />
-              </View>
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>{t('profile.twoFactor')}</Text>
-                <Text style={styles.settingSubtitle}>
-                  {twoFactorEnabled ? t('profile.twoFactorEnabled') : t('profile.twoFactorDesc')}
-                </Text>
-              </View>
-              {twoFactorEnabled ? (
-                <View style={styles.enabledBadge}>
-                  <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
-                </View>
-              ) : (
-                <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
               )}
-            </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={has2FA ? handleDisable2FA : handleSetup2FA}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingInfo}>
+                  <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingTitle}>{t('profile.twoFactor')}</Text>
+                    <Text style={styles.settingDescription}>
+                      {t('profile.twoFactorDesc')}
+                      {has2FA && ` • ${t('profile.twoFactorEnabled')}`}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleNotificationSettings}>
-            <View style={styles.settingIconContainer}>
-              <IconSymbol name="bell.fill" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
-              <Text style={styles.settingSubtitle}>{t('profile.notificationsDesc')}</Text>
-            </View>
-            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleLanguageSettings}>
-            <View style={styles.settingIconContainer}>
-              <IconSymbol name="globe" size={24} color={colors.accent} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>{t('profile.language')}</Text>
-              <Text style={styles.settingSubtitle}>{t('profile.languageDesc')}</Text>
-            </View>
-            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleViewOnboarding}>
-            <View style={styles.settingIconContainer}>
-              <IconSymbol name="info.circle.fill" size={24} color={colors.secondary} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
-              <Text style={styles.settingSubtitle}>{t('profile.tutorialDesc')}</Text>
-            </View>
-            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleAbout}>
-            <View style={styles.settingIconContainer}>
-              <IconSymbol name="questionmark.circle.fill" size={24} color={colors.textSecondary} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>{t('profile.about')}</Text>
-              <Text style={styles.settingSubtitle}>{t('profile.aboutDesc')}</Text>
-            </View>
-            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Account Section */}
-        {userEmail && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('profile.account')}</Text>
-
-            <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
-              <View style={[styles.settingIconContainer, styles.signOutIconContainer]}>
-                <IconSymbol name="arrow.right.square.fill" size={24} color={colors.danger} />
+          <View style={styles.settingsList}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleNotificationSettings}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
+                  <Text style={styles.settingDescription}>
+                    {t('profile.notificationsDesc')}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.settingContent}>
-                <Text style={[styles.settingTitle, styles.signOutText]}>
-                  {t('profile.signOut')}
-                </Text>
-                <Text style={styles.settingSubtitle}>{t('profile.signOutDesc')}</Text>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleLanguageSettings}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <IconSymbol name="globe" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('profile.language')}</Text>
+                  <Text style={styles.settingDescription}>
+                    {t('profile.languageDesc')}
+                  </Text>
+                </View>
               </View>
-              <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleViewOnboarding}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <IconSymbol name="book.fill" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
+                  <Text style={styles.settingDescription}>
+                    {t('profile.tutorialDesc')}
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleAbout}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('profile.about')}</Text>
+                  <Text style={styles.settingDescription}>
+                    {t('profile.aboutDesc')}
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Sign Out */}
+        {user && (
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="arrow.right.square.fill" size={24} color={colors.error} />
+            <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
+          </TouchableOpacity>
         )}
 
-        {/* App Version */}
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Nutrion v1.0.0</Text>
-        </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
+  profileHeader: {
     alignItems: 'center',
     paddingVertical: 32,
-    paddingHorizontal: 24,
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    marginBottom: 24,
   },
-  logo: {
-    width: 80,
-    height: 80,
+  avatarContainer: {
     marginBottom: 16,
   },
-  headerTitle: {
-    fontSize: 28,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userName: {
+    fontSize: 24,
     fontWeight: '800',
     color: colors.text,
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
   userEmail: {
-    fontSize: 15,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 32,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
-  },
-  statCardPrimary: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-  },
-  statCardWarning: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.warning,
-  },
-  statCardDanger: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.danger,
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-    fontWeight: '600',
-  },
   section: {
-    paddingHorizontal: 24,
     marginBottom: 32,
   },
   sectionTitle: {
@@ -543,30 +521,57 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
     marginBottom: 16,
+    letterSpacing: -0.3,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
+    elevation: 3,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 12,
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  settingsList: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
+    elevation: 3,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 16,
+    justifyContent: 'space-between',
     padding: 16,
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  settingIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
+  settingInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    flex: 1,
+    gap: 16,
   },
-  signOutIconContainer: {
-    backgroundColor: colors.danger + '15',
-  },
-  settingContent: {
+  settingTextContainer: {
     flex: 1,
   },
   settingTitle: {
@@ -575,27 +580,24 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
-  signOutText: {
-    color: colors.danger,
-  },
-  settingSubtitle: {
-    fontSize: 13,
+  settingDescription: {
+    fontSize: 14,
     color: colors.textSecondary,
-    fontWeight: '500',
+    lineHeight: 18,
   },
-  enabledBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: colors.primary + '20',
-  },
-  versionContainer: {
+  signOutButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: colors.error + '15',
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 8,
   },
-  versionText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.error,
   },
 });

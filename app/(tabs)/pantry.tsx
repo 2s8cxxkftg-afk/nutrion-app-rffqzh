@@ -18,9 +18,12 @@ import { colors, commonStyles, expirationColors } from '@/styles/commonStyles';
 import { PantryItem } from '@/types/pantry';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
 import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
+import { useTranslation } from 'react-i18next';
+import Toast from '@/components/Toast';
 
 export default function PantryScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('All');
@@ -40,7 +43,11 @@ export default function PantryScreen() {
       setPantryItems(items);
     } catch (error) {
       console.error('Error loading pantry items:', error);
-      Alert.alert('Error', 'Failed to load pantry items');
+      Toast.show({
+        type: 'error',
+        text: t('error'),
+        duration: 2000,
+      });
     }
   };
 
@@ -55,26 +62,39 @@ export default function PantryScreen() {
     console.log('Delete requested for item:', itemId, itemToDelete?.name);
     
     Alert.alert(
-      'Delete Item',
-      `Remove "${itemToDelete?.name}" from your pantry?`,
+      t('delete'),
+      `${t('deleteConfirm')}\n\n"${itemToDelete?.name}"`,
       [
         { 
-          text: 'Cancel', 
+          text: t('cancel'), 
           style: 'cancel',
           onPress: () => console.log('Delete cancelled')
         },
         {
-          text: 'Delete',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               console.log('Deleting item with ID:', itemId);
               await deletePantryItem(itemId);
               console.log('Item deleted successfully, reloading items...');
+              
+              // Show success toast
+              Toast.show({
+                type: 'success',
+                text: t('itemDeleted'),
+                duration: 2000,
+              });
+              
+              // Reload items
               await loadItems();
             } catch (error) {
               console.error('Error deleting item:', error);
-              Alert.alert('Error', 'Failed to delete item. Please try again.');
+              Toast.show({
+                type: 'error',
+                text: 'Failed to delete item',
+                duration: 2000,
+              });
             }
           },
         },
@@ -103,12 +123,15 @@ export default function PantryScreen() {
               <Text style={styles.itemCategory}>{item.category}</Text>
             </View>
             <TouchableOpacity
-              onPress={() => handleDeleteItem(item.id)}
+              onPress={() => {
+                console.log('Delete button pressed for:', item.id, item.name);
+                handleDeleteItem(item.id);
+              }}
               style={styles.deleteButton}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.6}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
-              <IconSymbol name="trash" size={20} color={colors.error} />
+              <IconSymbol name="trash" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           
@@ -150,7 +173,7 @@ export default function PantryScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'My Pantry',
+          title: t('pantryTitle'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerTitleStyle: { fontWeight: '800', fontSize: 20 },
@@ -164,7 +187,7 @@ export default function PantryScreen() {
             <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search your pantry..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -237,11 +260,11 @@ export default function PantryScreen() {
                 <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
               </View>
               <Text style={styles.emptyStateTitle}>
-                {searchQuery ? 'No items found' : 'Your pantry is empty'}
+                {searchQuery ? t('noResults') : t('pantryTitle')}
               </Text>
               <Text style={styles.emptyStateDescription}>
                 {searchQuery
-                  ? 'Try a different search term'
+                  ? t('tryDifferent')
                   : 'Start adding items to track your food inventory'}
               </Text>
               {!searchQuery && (
@@ -251,7 +274,7 @@ export default function PantryScreen() {
                   activeOpacity={0.7}
                 >
                   <IconSymbol name="magnifyingglass" size={20} color="#FFFFFF" />
-                  <Text style={styles.emptyStateButtonText}>Search Foods</Text>
+                  <Text style={styles.emptyStateButtonText}>{t('searchForFoods')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -335,6 +358,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 16,
+    gap: 12,
   },
   itemName: {
     fontSize: 20,
@@ -349,11 +373,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   deleteButton: {
-    padding: 8,
-    marginRight: -8,
-    marginTop: -4,
-    backgroundColor: colors.error + '15',
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 2px 8px rgba(220, 38, 38, 0.3)',
+    elevation: 3,
   },
   itemDetails: {
     flexDirection: 'row',
