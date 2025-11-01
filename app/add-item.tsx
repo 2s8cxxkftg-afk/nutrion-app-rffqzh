@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
@@ -28,20 +27,75 @@ export default function AddItemScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
   const quantityInputRef = useRef<TextInput>(null);
+  const dateInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
   
   const [name, setName] = useState('');
   const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDate, setExpirationDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [expirationDateText, setExpirationDateText] = useState('');
   const [notes, setNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [dateError, setDateError] = useState('');
+
+  // Format date input as user types (MM/DD/YYYY)
+  const handleDateChange = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    let formatted = '';
+    if (cleaned.length > 0) {
+      // Add first part (month)
+      formatted = cleaned.substring(0, 2);
+      
+      if (cleaned.length >= 3) {
+        // Add slash and day
+        formatted += '/' + cleaned.substring(2, 4);
+      }
+      
+      if (cleaned.length >= 5) {
+        // Add slash and year
+        formatted += '/' + cleaned.substring(4, 8);
+      }
+    }
+    
+    setExpirationDateText(formatted);
+    setDateError('');
+  };
+
+  // Validate date format and create Date object
+  const validateAndParseDate = (dateText: string): Date | null => {
+    // Check format MM/DD/YYYY
+    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/(\d{4})$/;
+    
+    if (!dateRegex.test(dateText)) {
+      return null;
+    }
+
+    const parts = dateText.split('/');
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    // Create date object
+    const date = new Date(year, month - 1, day);
+
+    // Verify the date is valid (handles invalid dates like 02/30/2024)
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return date;
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -55,8 +109,31 @@ export default function AddItemScreen() {
       return;
     }
 
+    // Validate expiration date
+    if (!expirationDateText.trim()) {
+      setDateError('Please enter an expiration date');
+      Alert.alert(t('error'), 'Please enter an expiration date in MM/DD/YYYY format');
+      return;
+    }
+
+    const parsedDate = validateAndParseDate(expirationDateText);
+    if (!parsedDate) {
+      setDateError('Invalid date format. Use MM/DD/YYYY');
+      Alert.alert(t('error'), 'Invalid date format. Please use MM/DD/YYYY (e.g., 10/25/2025)');
+      return;
+    }
+
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (parsedDate < today) {
+      setDateError('Date cannot be in the past');
+      Alert.alert(t('error'), 'Expiration date cannot be in the past');
+      return;
+    }
+
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const formattedDate = expirationDate.toISOString().split('T')[0];
+    const formattedDate = parsedDate.toISOString().split('T')[0];
 
     const newItem: PantryItem = {
       id: uniqueId,
@@ -91,23 +168,6 @@ export default function AddItemScreen() {
     router.push('/scan-barcode');
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    console.log('Date picker event:', event.type, selectedDate);
-    
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-      
-      if (event.type === 'set' && selectedDate) {
-        setExpirationDate(selectedDate);
-        console.log('Date updated to:', selectedDate);
-      }
-    } else if (Platform.OS === 'ios') {
-      if (selectedDate) {
-        setExpirationDate(selectedDate);
-      }
-    }
-  };
-
   const handleQuantityPresetSelect = (value: number) => {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
@@ -118,7 +178,6 @@ export default function AddItemScreen() {
     setShowCategoryPicker(false);
     setShowUnitPicker(false);
     setShowQuantityPicker(false);
-    setShowDatePicker(false);
   };
 
   const openCategoryPicker = () => {
@@ -143,18 +202,6 @@ export default function AddItemScreen() {
     setTimeout(() => {
       setShowQuantityPicker(true);
     }, 150);
-  };
-
-  const openDatePicker = () => {
-    Keyboard.dismiss();
-    closeAllPickers();
-    setTimeout(() => {
-      setShowDatePicker(true);
-    }, 150);
-  };
-
-  const closeDatePicker = () => {
-    setShowDatePicker(false);
   };
 
   return (
@@ -273,11 +320,11 @@ export default function AddItemScreen() {
                   value={quantity}
                   onChangeText={setQuantity}
                   keyboardType="decimal-pad"
-                  returnKeyType="done"
+                  returnKeyType="next"
                   clearButtonMode="while-editing"
                   onFocus={closeAllPickers}
                   onSubmitEditing={() => {
-                    Keyboard.dismiss();
+                    dateInputRef.current?.focus();
                   }}
                   editable={true}
                   selectTextOnFocus={true}
@@ -369,39 +416,36 @@ export default function AddItemScreen() {
           )}
 
           <Text style={styles.label}>{t('expirationDate')} *</Text>
-          <TouchableOpacity
-            style={[commonStyles.input, styles.picker]}
-            onPress={openDatePicker}
-            activeOpacity={0.7}
-          >
-            <Text style={{ color: colors.text }}>
-              {expirationDate.toLocaleDateString()}
-            </Text>
-            <IconSymbol name="calendar" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={expirationDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={onDateChange}
-                minimumDate={new Date()}
-                textColor={colors.text}
-                style={Platform.OS === 'ios' ? styles.iosDatePicker : undefined}
-              />
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={styles.datePickerDoneButton}
-                  onPress={closeDatePicker}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.datePickerDoneText}>Done</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <View>
+            <TextInput
+              ref={dateInputRef}
+              style={[
+                commonStyles.input,
+                dateError ? styles.inputError : null
+              ]}
+              placeholder="MM/DD/YYYY (e.g., 10/25/2025)"
+              placeholderTextColor={colors.textSecondary}
+              value={expirationDateText}
+              onChangeText={handleDateChange}
+              keyboardType="number-pad"
+              returnKeyType="next"
+              maxLength={10}
+              clearButtonMode="while-editing"
+              onFocus={closeAllPickers}
+              onSubmitEditing={() => {
+                notesInputRef.current?.focus();
+              }}
+              editable={true}
+              selectTextOnFocus={true}
+            />
+            {dateError ? (
+              <Text style={styles.errorText}>{dateError}</Text>
+            ) : (
+              <Text style={styles.helperText}>
+                Enter date in MM/DD/YYYY format (e.g., 10/25/2025)
+              </Text>
+            )}
+          </View>
 
           <Text style={styles.label}>{t('notes')} (Optional)</Text>
           <TextInput
@@ -529,31 +573,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  datePickerContainer: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 8,
-    padding: Platform.OS === 'ios' ? 16 : 0,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+  inputError: {
+    borderColor: '#FF3B30',
+    borderWidth: 2,
   },
-  iosDatePicker: {
-    height: 200,
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    marginTop: 4,
+    marginLeft: 4,
   },
-  datePickerDoneButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  datePickerDoneText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+  helperText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginLeft: 4,
   },
   notesInput: {
     height: 80,
