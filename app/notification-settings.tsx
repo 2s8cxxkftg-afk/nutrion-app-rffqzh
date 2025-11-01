@@ -70,14 +70,14 @@ export default function NotificationSettingsScreen() {
       setSettings(newSettings);
       Toast.show({
         type: 'success',
-        text: 'Settings saved',
+        message: 'Settings saved',
         duration: 2000,
       });
     } catch (error) {
       console.error('Error saving notification settings:', error);
       Toast.show({
         type: 'error',
-        text: 'Failed to save settings',
+        message: 'Failed to save settings',
         duration: 2000,
       });
     }
@@ -100,7 +100,7 @@ export default function NotificationSettingsScreen() {
       if (status === 'granted') {
         Toast.show({
           type: 'success',
-          text: 'Notifications enabled',
+          message: 'Notifications enabled',
           duration: 2000,
         });
       } else {

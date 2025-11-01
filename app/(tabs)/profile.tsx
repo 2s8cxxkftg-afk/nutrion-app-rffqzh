@@ -134,14 +134,14 @@ export default function ProfileScreen() {
             setBiometricEnabledState(true);
             Toast.show({
               type: 'success',
-              text: t('profile.biometricEnabled'),
+              message: t('profile.biometricEnabled'),
               duration: 2000,
             });
           }
         } else {
           Toast.show({
             type: 'error',
-            text: t('profile.biometricAuthFailed'),
+            message: t('profile.biometricAuthFailed'),
             duration: 2000,
           });
         }
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
                 setBiometricEnabledState(false);
                 Toast.show({
                   type: 'success',
-                  text: t('profile.biometricDisabled'),
+                  message: t('profile.biometricDisabled'),
                   duration: 2000,
                 });
               },
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
       console.error('Error toggling biometric:', error);
       Toast.show({
         type: 'error',
-        text: value ? t('profile.biometricEnableError') : t('profile.biometricDisableError'),
+        message: value ? t('profile.biometricEnableError') : t('profile.biometricDisableError'),
         duration: 2000,
       });
     }
@@ -203,14 +203,14 @@ export default function ProfileScreen() {
               setHas2FA(false);
               Toast.show({
                 type: 'success',
-                text: t('profile.twoFaDisabled'),
+                message: t('profile.twoFaDisabled'),
                 duration: 2000,
               });
             } catch (error) {
               console.error('Error disabling 2FA:', error);
               Toast.show({
                 type: 'error',
-                text: t('profile.twoFaDisableError'),
+                message: t('profile.twoFaDisableError'),
                 duration: 2000,
               });
             }
@@ -260,14 +260,14 @@ export default function ProfileScreen() {
               setUser(null);
               Toast.show({
                 type: 'success',
-                text: t('profile.signedOut'),
+                message: t('profile.signedOut'),
                 duration: 2000,
               });
             } catch (error) {
               console.error('Error signing out:', error);
               Toast.show({
                 type: 'error',
-                text: t('profile.signOutError'),
+                message: t('profile.signOutError'),
                 duration: 2000,
               });
             }

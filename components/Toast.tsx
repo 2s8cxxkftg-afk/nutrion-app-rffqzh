@@ -1,27 +1,60 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 
-interface ToastProps {
-  visible: boolean;
+interface ToastConfig {
   message: string;
   type?: 'success' | 'error' | 'info';
   duration?: number;
-  onHide?: () => void;
 }
 
-export default function Toast({ 
-  visible, 
-  message, 
-  type = 'success', 
-  duration = 3000,
-  onHide 
-}: ToastProps) {
+interface ToastState extends ToastConfig {
+  visible: boolean;
+  id: number;
+}
+
+let toastListener: ((config: ToastState) => void) | null = null;
+let toastId = 0;
+
+// Static Toast API
+const Toast = {
+  show: (config: ToastConfig) => {
+    const id = ++toastId;
+    if (toastListener) {
+      toastListener({
+        ...config,
+        visible: true,
+        id,
+      });
+    }
+  },
+};
+
+// Toast Component
+export function ToastComponent() {
+  const [toastState, setToastState] = useState<ToastState>({
+    visible: false,
+    message: '',
+    type: 'success',
+    duration: 3000,
+    id: 0,
+  });
+
   const translateY = React.useRef(new Animated.Value(100)).current;
   const opacity = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    toastListener = (config: ToastState) => {
+      setToastState(config);
+    };
+
+    return () => {
+      toastListener = null;
+    };
+  }, []);
 
   const hideToast = useCallback(() => {
     Animated.parallel([
@@ -36,17 +69,17 @@ export default function Toast({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      if (onHide) onHide();
+      setToastState((prev) => ({ ...prev, visible: false }));
     });
-  }, [translateY, opacity, onHide]);
+  }, [translateY, opacity]);
 
   useEffect(() => {
-    if (visible) {
+    if (toastState.visible) {
       // Trigger haptic feedback
       Haptics.notificationAsync(
-        type === 'success' 
-          ? Haptics.NotificationFeedbackType.Success 
-          : type === 'error'
+        toastState.type === 'success'
+          ? Haptics.NotificationFeedbackType.Success
+          : toastState.type === 'error'
           ? Haptics.NotificationFeedbackType.Error
           : Haptics.NotificationFeedbackType.Warning
       );
@@ -68,16 +101,16 @@ export default function Toast({
       // Auto hide after duration
       const timer = setTimeout(() => {
         hideToast();
-      }, duration);
+      }, toastState.duration || 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [visible, type, duration, translateY, opacity, hideToast]);
+  }, [toastState.visible, toastState.type, toastState.duration, toastState.id, translateY, opacity, hideToast]);
 
-  if (!visible) return null;
+  if (!toastState.visible) return null;
 
   const getIconName = () => {
-    switch (type) {
+    switch (toastState.type) {
       case 'success':
         return 'checkmark.circle.fill';
       case 'error':
@@ -90,7 +123,7 @@ export default function Toast({
   };
 
   const getBackgroundColor = () => {
-    switch (type) {
+    switch (toastState.type) {
       case 'success':
         return colors.success;
       case 'error':
@@ -114,7 +147,7 @@ export default function Toast({
       ]}
     >
       <IconSymbol name={getIconName()} size={24} color="#FFFFFF" />
-      <Text style={styles.message}>{message}</Text>
+      <Text style={styles.message}>{toastState.message}</Text>
     </Animated.View>
   );
 }
@@ -142,3 +175,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+export default Toast;

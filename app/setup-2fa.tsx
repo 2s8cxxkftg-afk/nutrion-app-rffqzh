@@ -64,7 +64,7 @@ export default function Setup2FAScreen() {
       
     } catch (error) {
       console.error('Error generating secret:', error);
-      Toast.show(t('auth.2faSetupError'), 'error');
+      Toast.show({ type: 'error', message: t('auth.2faSetupError') });
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function Setup2FAScreen() {
 
   const handleVerify = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      Toast.show(t('auth.enter6DigitCode'), 'error');
+      Toast.show({ type: 'error', message: t('auth.enter6DigitCode') });
       return;
     }
 
@@ -88,7 +88,7 @@ export default function Setup2FAScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        Toast.show(t('auth.notLoggedIn'), 'error');
+        Toast.show({ type: 'error', message: t('auth.notLoggedIn') });
         return;
       }
 
@@ -105,15 +105,15 @@ export default function Setup2FAScreen() {
 
       if (error) {
         console.error('Error saving 2FA settings:', error);
-        Toast.show(t('auth.2faSaveError'), 'error');
+        Toast.show({ type: 'error', message: t('auth.2faSaveError') });
         return;
       }
 
-      Toast.show(t('auth.2faEnabled'), 'success');
+      Toast.show({ type: 'success', message: t('auth.2faEnabled') });
       setStep('backup');
     } catch (error) {
       console.error('Error verifying 2FA:', error);
-      Toast.show(t('auth.2faVerifyError'), 'error');
+      Toast.show({ type: 'error', message: t('auth.2faVerifyError') });
     } finally {
       setVerifying(false);
     }

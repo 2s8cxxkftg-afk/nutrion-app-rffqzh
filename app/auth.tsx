@@ -84,22 +84,22 @@ export default function AuthScreen() {
           const { data: { session }, error } = await supabase.auth.getSession();
           
           if (session) {
-            Toast.show(t('auth.welcomeBack'), 'success');
+            Toast.show({ type: 'success', message: t('auth.welcomeBack') });
             router.replace('/(tabs)/pantry');
           } else {
-            Toast.show(t('auth.biometricLoginFailed'), 'error');
+            Toast.show({ type: 'error', message: t('auth.biometricLoginFailed') });
             setBiometricEnabled(false);
           }
         } else {
-          Toast.show(t('auth.noCredentialsSaved'), 'error');
+          Toast.show({ type: 'error', message: t('auth.noCredentialsSaved') });
           setBiometricEnabled(false);
         }
       } else {
-        Toast.show(result.error || t('auth.biometricAuthFailed'), 'error');
+        Toast.show({ type: 'error', message: result.error || t('auth.biometricAuthFailed') });
       }
     } catch (error: any) {
       console.error('Biometric login error:', error);
-      Toast.show(t('auth.biometricAuthError'), 'error');
+      Toast.show({ type: 'error', message: t('auth.biometricAuthError') });
     } finally {
       setLoading(false);
     }
@@ -112,22 +112,22 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
-      Toast.show(t('auth.fillAllFields'), 'error');
+      Toast.show({ type: 'error', message: t('auth.fillAllFields') });
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show(t('auth.invalidEmail'), 'error');
+      Toast.show({ type: 'error', message: t('auth.invalidEmail') });
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Toast.show(t('auth.passwordsDoNotMatch'), 'error');
+      Toast.show({ type: 'error', message: t('auth.passwordsDoNotMatch') });
       return;
     }
 
     if (password.length < 6) {
-      Toast.show(t('auth.passwordTooShort'), 'error');
+      Toast.show({ type: 'error', message: t('auth.passwordTooShort') });
       return;
     }
 
@@ -142,12 +142,12 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign in error:', error);
-          Toast.show(error.message || t('auth.signInFailed'), 'error');
+          Toast.show({ type: 'error', message: error.message || t('auth.signInFailed') });
           return;
         }
 
         console.log('Sign in successful:', data);
-        Toast.show(t('auth.welcomeBack'), 'success');
+        Toast.show({ type: 'success', message: t('auth.welcomeBack') });
         router.replace('/(tabs)/pantry');
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -160,7 +160,7 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign up error:', error);
-          Toast.show(error.message || t('auth.signUpFailed'), 'error');
+          Toast.show({ type: 'error', message: error.message || t('auth.signUpFailed') });
           return;
         }
 
@@ -174,13 +174,13 @@ export default function AuthScreen() {
           );
           setIsLogin(true);
         } else {
-          Toast.show(t('auth.accountCreated'), 'success');
+          Toast.show({ type: 'success', message: t('auth.accountCreated') });
           router.replace('/(tabs)/pantry');
         }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      Toast.show(t('auth.unexpectedError'), 'error');
+      Toast.show({ type: 'error', message: t('auth.unexpectedError') });
     } finally {
       setLoading(false);
     }
@@ -200,12 +200,12 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Google sign in error:', error);
-          Toast.show(error.message || t('auth.googleSignInFailed'), 'error');
+          Toast.show({ type: 'error', message: error.message || t('auth.googleSignInFailed') });
           return;
         }
 
         console.log('Google sign in successful:', data);
-        Toast.show(t('auth.welcome'), 'success');
+        Toast.show({ type: 'success', message: t('auth.welcome') });
         router.replace('/(tabs)/pantry');
       } else {
         throw new Error('No ID token present!');
@@ -216,11 +216,11 @@ export default function AuthScreen() {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log('User cancelled the login flow');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        Toast.show(t('auth.signInInProgress'), 'info');
+        Toast.show({ type: 'info', message: t('auth.signInInProgress') });
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Toast.show(t('auth.playServicesNotAvailable'), 'error');
+        Toast.show({ type: 'error', message: t('auth.playServicesNotAvailable') });
       } else {
-        Toast.show(t('auth.googleSignInFailed'), 'error');
+        Toast.show({ type: 'error', message: t('auth.googleSignInFailed') });
       }
     } finally {
       setLoading(false);

@@ -38,7 +38,7 @@ export default function PantryScreen() {
       console.error('Error loading pantry items:', error);
       Toast.show({
         type: 'error',
-        text: t('error'),
+        message: t('error'),
         duration: 2000,
       });
     }
@@ -82,7 +82,7 @@ export default function PantryScreen() {
               // Show success toast
               Toast.show({
                 type: 'success',
-                text: t('itemDeleted'),
+                message: t('itemDeleted'),
                 duration: 2000,
               });
               
@@ -92,7 +92,7 @@ export default function PantryScreen() {
               console.error('Error deleting item:', error);
               Toast.show({
                 type: 'error',
-                text: 'Failed to delete item',
+                message: 'Failed to delete item',
                 duration: 2000,
               });
             }

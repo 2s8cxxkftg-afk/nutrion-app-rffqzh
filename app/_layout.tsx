@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import 'react-native-reanimated';
+import { ToastComponent } from '@/components/Toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
         <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
       </Stack>
       <StatusBar style="auto" />
+      <ToastComponent />
     </ThemeProvider>
   );
 }
