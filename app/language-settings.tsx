@@ -45,8 +45,8 @@ export default function LanguageSettingsScreen() {
       
       // Show success message
       Toast.show({
+        message: 'Language changed successfully',
         type: 'success',
-        text: 'Language changed successfully',
         duration: 2000,
       });
       
@@ -57,7 +57,10 @@ export default function LanguageSettingsScreen() {
       
     } catch (error) {
       console.error('Error changing language:', error);
-      Alert.alert('Error', 'Failed to change language. Please try again.');
+      Toast.show({
+        message: 'Failed to change language. Please try again.',
+        type: 'error',
+      });
     } finally {
       setIsChanging(false);
     }
@@ -68,7 +71,7 @@ export default function LanguageSettingsScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('profile.language'),
+          title: t('profile.language') || 'Language',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'modal',

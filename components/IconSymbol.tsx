@@ -21,9 +21,11 @@ const MAPPING = {
   "house": "home-outlined",
   "arrow.left": "arrow-back",
   "arrow.right": "arrow-forward",
+  "arrow_forward": "arrow-forward",
   "arrow.up": "arrow-upward",
   "arrow.down": "arrow-downward",
   "chevron.left": "chevron-left",
+  "chevron_left": "chevron-left",
   "chevron.right": "chevron-right",
   "chevron.up": "keyboard-arrow-up",
   "chevron.down": "keyboard-arrow-down",
@@ -48,6 +50,7 @@ const MAPPING = {
   "plus": "add",
   "minus": "remove",
   "xmark": "close",
+  "xmark.circle.fill": "cancel",
   "checkmark": "check",
   "checkmark.circle.fill": "check-circle",
   "checkmark.circle": "check-circle-outline",
@@ -106,6 +109,7 @@ const MAPPING = {
   // Technology & Code
   "chevron.left.forwardslash.chevron.right": "code",
   "qrcode.viewfinder": "qr-code",
+  "qrcode": "qr-code-scanner",
   "wifi": "wifi",
   "antenna.radiowaves.left.and.right": "signal-cellular-alt",
   "battery.100": "battery-full",
@@ -173,6 +177,15 @@ const MAPPING = {
   "cloud": "cloud",
   "tag": "label",
   "number": "tag",
+  
+  // Additional icons
+  "barcode": "qr-code-scanner",
+  "barcode.viewfinder": "qr-code-scanner",
+  "globe": "language",
+  "text.bubble": "chat-bubble-outline",
+  "shield.fill": "security",
+  "faceid": "face",
+  "touchid": "fingerprint",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],
@@ -199,11 +212,25 @@ export function IconSymbol({
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
+  const mappedName = MAPPING[name];
+  
+  if (!mappedName) {
+    console.warn(`IconSymbol: No mapping found for "${name}". Using default icon.`);
+    return (
+      <MaterialIcons
+        color={color}
+        size={size}
+        name="help-outline"
+        style={style as StyleProp<TextStyle>}
+      />
+    );
+  }
+  
   return (
     <MaterialIcons
       color={color}
       size={size}
-      name={MAPPING[name]}
+      name={mappedName}
       style={style as StyleProp<TextStyle>}
     />
   );

@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { colors, commonStyles, expirationColors } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
 import {
   View,
   Text,
@@ -11,35 +13,32 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, expirationColors } from '@/styles/commonStyles';
+import Toast from '@/components/Toast';
+import React, { useState, useCallback } from 'react';
 import { PantryItem } from '@/types/pantry';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
-import { useTranslation } from 'react-i18next';
-import Toast from '@/components/Toast';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PantryScreen() {
-  const router = useRouter();
   const { t } = useTranslation();
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const router = useRouter();
+  const [items, setItems] = useState<PantryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const loadItems = useCallback(async () => {
     try {
-      const items = await loadPantryItems();
-      console.log('Loaded pantry items:', items.length);
-      setPantryItems(items);
+      console.log('Loading pantry items...');
+      const loadedItems = await loadPantryItems();
+      console.log('Loaded items:', loadedItems.length);
+      setItems(loadedItems);
     } catch (error) {
       console.error('Error loading pantry items:', error);
       Toast.show({
+        message: t('pantry.loadError') || 'Failed to load pantry items',
         type: 'error',
-        message: t('error'),
-        duration: 2000,
       });
     }
   }, [t]);
@@ -51,195 +50,138 @@ export default function PantryScreen() {
     }, [loadItems])
   );
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadItems();
     setRefreshing(false);
-  };
+  }, [loadItems]);
 
-  const handleDeleteItem = async (itemId: string) => {
-    const itemToDelete = pantryItems.find(item => item.id === itemId);
-    console.log('Delete requested for item:', itemId, itemToDelete?.name);
-    
-    Alert.alert(
-      t('delete'),
-      `${t('deleteConfirm')}\n\n"${itemToDelete?.name}"`,
-      [
-        { 
-          text: t('cancel'), 
-          style: 'cancel',
-          onPress: () => console.log('Delete cancelled')
-        },
-        {
-          text: t('delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Deleting item with ID:', itemId);
-              await deletePantryItem(itemId);
-              console.log('Item deleted successfully, reloading items...');
-              
-              // Show success toast
-              Toast.show({
-                type: 'success',
-                message: t('itemDeleted'),
-                duration: 2000,
-              });
-              
-              // Reload items
-              await loadItems();
-            } catch (error) {
-              console.error('Error deleting item:', error);
-              Toast.show({
-                type: 'error',
-                message: 'Failed to delete item',
-                duration: 2000,
-              });
-            }
+  const handleDeleteItem = useCallback(async (itemId: string) => {
+    try {
+      Alert.alert(
+        t('pantry.deleteConfirmTitle') || 'Delete Item',
+        t('pantry.deleteConfirmMessage') || 'Are you sure you want to delete this item?',
+        [
+          {
+            text: t('cancel') || 'Cancel',
+            style: 'cancel',
           },
-        },
-      ]
-    );
-  };
+          {
+            text: t('delete') || 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                console.log('Deleting item:', itemId);
+                await deletePantryItem(itemId);
+                console.log('Item deleted successfully');
+                Toast.show({
+                  message: t('pantry.itemDeleted') || 'Item deleted successfully',
+                  type: 'success',
+                });
+                await loadItems();
+              } catch (error) {
+                console.error('Error deleting item:', error);
+                Toast.show({
+                  message: t('pantry.deleteError') || 'Failed to delete item',
+                  type: 'error',
+                });
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error showing delete confirmation:', error);
+    }
+  }, [t, loadItems]);
 
-  const filteredItems = pantryItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === 'All' || item.category === filterCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const categories = ['All', ...Array.from(new Set(pantryItems.map(item => item.category)))];
-
-  const renderPantryItem = (item: PantryItem) => {
+  const renderPantryItem = useCallback((item: PantryItem) => {
     const status = getExpirationStatus(item.expirationDate);
-    const statusColor = expirationColors[status];
+    const statusColor =
+      status === 'expired'
+        ? expirationColors.expired
+        : status === 'nearExpiry'
+        ? expirationColors.nearExpiry
+        : expirationColors.fresh;
 
     return (
       <View key={item.id} style={styles.itemCard}>
-        <View style={styles.itemContent}>
-          <View style={styles.itemHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemCategory}>{item.category}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                console.log('Delete button pressed for:', item.id, item.name);
-                handleDeleteItem(item.id);
-              }}
-              style={styles.deleteButton}
-              activeOpacity={0.6}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <IconSymbol name="trash" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
+        <View style={styles.itemHeader}>
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemCategory}>{item.category}</Text>
           </View>
-          
-          <View style={styles.itemDetails}>
-            <View style={styles.detailChip}>
-              <IconSymbol name="number" size={14} color={colors.textSecondary} />
-              <Text style={styles.detailText}>
-                {item.quantity} {item.unit}
-              </Text>
-            </View>
-            
-            <View style={styles.detailChip}>
-              <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
-              <Text style={styles.detailText}>
-                {new Date(item.dateAdded).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteItem(item.id)}
+          >
+            <IconSymbol name="trash" size={20} color={colors.error} />
+          </TouchableOpacity>
+        </View>
 
-          <View style={[styles.expirationBadge, { backgroundColor: statusColor }]}>
-            <IconSymbol name="clock" size={14} color="#FFFFFF" />
-            <Text style={styles.expirationText}>
+        <View style={styles.itemDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('pantry.quantity') || 'Quantity'}:</Text>
+            <Text style={styles.detailValue}>
+              {item.quantity} {item.unit}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('pantry.expires') || 'Expires'}:</Text>
+            <Text style={[styles.detailValue, { color: statusColor }]}>
               {formatExpirationText(item.expirationDate)}
             </Text>
           </View>
+        </View>
 
-          {item.notes && (
-            <View style={styles.notesContainer}>
-              <Text style={styles.notesText}>{item.notes}</Text>
-            </View>
-          )}
+        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+          <Text style={styles.statusText}>
+            {status === 'expired'
+              ? t('pantry.expired') || 'Expired'
+              : status === 'nearExpiry'
+              ? t('pantry.nearExpiry') || 'Near Expiry'
+              : t('pantry.fresh') || 'Fresh'}
+          </Text>
         </View>
       </View>
     );
-  };
+  }, [t, handleDeleteItem]);
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: t('pantryTitle'),
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: '800', fontSize: 20 },
+          headerShown: false,
         }}
       />
-      
+
       <View style={commonStyles.container}>
-        {/* Search and Actions Header */}
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('searchPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
-            />
-          </View>
-
+          <Text style={commonStyles.title}>{t('pantry.title') || 'My Pantry'}</Text>
           <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push('/food-search')}
-            activeOpacity={0.7}
-          >
-            <IconSymbol name="magnifyingglass" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.actionButtonPrimary]}
+            style={styles.addButton}
             onPress={() => router.push('/add-item')}
-            activeOpacity={0.7}
           >
             <IconSymbol name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
-        {/* Category Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryScroll}
-          contentContainerStyle={styles.categoryScrollContent}
-        >
-          {categories.map(category => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                commonStyles.chip,
-                filterCategory === category && commonStyles.chipActive,
-              ]}
-              onPress={() => setFilterCategory(category)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  commonStyles.chipText,
-                  filterCategory === category && commonStyles.chipTextActive,
-                ]}
-              >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('pantry.search') || 'Search items...'}
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
         {/* Items List */}
         <ScrollView
@@ -247,34 +189,25 @@ export default function PantryScreen() {
           contentContainerStyle={styles.itemsListContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
           {filteredItems.length === 0 ? (
             <View style={styles.emptyState}>
-              <View style={styles.emptyStateIcon}>
-                <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
-              </View>
-              <Text style={styles.emptyStateTitle}>
-                {searchQuery ? t('noResults') : t('pantryTitle')}
-              </Text>
-              <Text style={styles.emptyStateDescription}>
+              <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
+              <Text style={styles.emptyStateText}>
                 {searchQuery
-                  ? t('tryDifferent')
-                  : 'Start adding items to track your food inventory'}
+                  ? t('pantry.noResults') || 'No items found'
+                  : t('pantry.empty') || 'Your pantry is empty'}
               </Text>
               {!searchQuery && (
                 <TouchableOpacity
                   style={styles.emptyStateButton}
-                  onPress={() => router.push('/food-search')}
-                  activeOpacity={0.7}
+                  onPress={() => router.push('/add-item')}
                 >
-                  <IconSymbol name="magnifyingglass" size={20} color="#FFFFFF" />
-                  <Text style={styles.emptyStateButtonText}>{t('searchForFoods')}</Text>
+                  <Text style={styles.emptyStateButtonText}>
+                    {t('pantry.addFirst') || 'Add your first item'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -290,183 +223,122 @@ export default function PantryScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
+    elevation: 4,
   },
   searchContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
-    fontWeight: '500',
-  },
-  actionButton: {
-    backgroundColor: colors.accent,
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(102, 205, 170, 0.3)',
-    elevation: 4,
-  },
-  actionButtonPrimary: {
-    backgroundColor: colors.primary,
-    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
-  },
-  categoryScroll: {
-    maxHeight: 56,
-    marginBottom: 16,
-  },
-  categoryScrollContent: {
-    paddingHorizontal: 20,
-    gap: 10,
   },
   itemsList: {
     flex: 1,
   },
   itemsListContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 110,
+    paddingBottom: 100,
   },
   itemCard: {
     backgroundColor: colors.card,
-    borderRadius: 20,
-    marginBottom: 16,
-    boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.06)',
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  itemContent: {
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   itemHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 12,
+  },
+  itemInfo: {
+    flex: 1,
   },
   itemName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
-    letterSpacing: -0.3,
   },
   itemCategory: {
     fontSize: 14,
     color: colors.textSecondary,
-    fontWeight: '600',
   },
   deleteButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0px 2px 8px rgba(220, 38, 38, 0.3)',
-    elevation: 3,
+    padding: 8,
   },
   itemDetails: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 12,
   },
-  detailChip: {
+  detailRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.background,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
   },
-  detailText: {
-    fontSize: 13,
+  detailLabel: {
+    fontSize: 14,
     color: colors.textSecondary,
+  },
+  detailValue: {
+    fontSize: 14,
     fontWeight: '600',
+    color: colors.text,
   },
-  expirationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
+  statusBadge: {
     alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  expirationText: {
-    fontSize: 13,
+  statusText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  notesContainer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  notesText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
   emptyState: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyStateIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primary + '15',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+    paddingVertical: 60,
   },
-  emptyStateTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 12,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  emptyStateDescription: {
-    fontSize: 16,
+  emptyStateText: {
+    fontSize: 18,
     color: colors.textSecondary,
+    marginTop: 16,
+    marginBottom: 24,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
   },
   emptyStateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 28,
-    borderRadius: 16,
-    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
-    elevation: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
   },
   emptyStateButtonText: {
     fontSize: 16,

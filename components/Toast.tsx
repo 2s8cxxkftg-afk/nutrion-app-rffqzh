@@ -9,6 +9,7 @@ interface ToastConfig {
   message: string;
   type?: 'success' | 'error' | 'info';
   duration?: number;
+  text?: string; // Backward compatibility
 }
 
 interface ToastState extends ToastConfig {
@@ -21,11 +22,28 @@ let toastId = 0;
 
 // Static Toast API
 const Toast = {
-  show: (config: ToastConfig) => {
+  show: (config: ToastConfig | string, type?: 'success' | 'error' | 'info', duration?: number) => {
     const id = ++toastId;
+    
+    // Handle both object and string parameters for backward compatibility
+    let toastConfig: ToastConfig;
+    if (typeof config === 'string') {
+      toastConfig = {
+        message: config,
+        type: type || 'success',
+        duration: duration || 3000,
+      };
+    } else {
+      toastConfig = {
+        message: config.message || config.text || '',
+        type: config.type || 'success',
+        duration: config.duration || 3000,
+      };
+    }
+    
     if (toastListener) {
       toastListener({
-        ...config,
+        ...toastConfig,
         visible: true,
         id,
       });
@@ -76,13 +94,17 @@ export function ToastComponent() {
   useEffect(() => {
     if (toastState.visible) {
       // Trigger haptic feedback
-      Haptics.notificationAsync(
-        toastState.type === 'success'
-          ? Haptics.NotificationFeedbackType.Success
-          : toastState.type === 'error'
-          ? Haptics.NotificationFeedbackType.Error
-          : Haptics.NotificationFeedbackType.Warning
-      );
+      try {
+        Haptics.notificationAsync(
+          toastState.type === 'success'
+            ? Haptics.NotificationFeedbackType.Success
+            : toastState.type === 'error'
+            ? Haptics.NotificationFeedbackType.Error
+            : Haptics.NotificationFeedbackType.Warning
+        );
+      } catch (error) {
+        console.log('Haptics not available:', error);
+      }
 
       // Animate in
       Animated.parallel([

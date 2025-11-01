@@ -34,12 +34,18 @@ export default function ForgotPasswordScreen() {
 
   const handleResetPassword = async () => {
     if (!email) {
-      Toast.show(t('auth.enterEmail'), 'error');
+      Toast.show({
+        message: t('auth.enterEmail') || 'Please enter your email',
+        type: 'error',
+      });
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show(t('auth.invalidEmail'), 'error');
+      Toast.show({
+        message: t('auth.invalidEmail') || 'Please enter a valid email',
+        type: 'error',
+      });
       return;
     }
 
@@ -52,24 +58,35 @@ export default function ForgotPasswordScreen() {
 
       if (error) {
         console.error('Password reset error:', error);
-        Toast.show(error.message || t('auth.resetPasswordError'), 'error');
+        Toast.show({
+          message: error.message || t('auth.resetPasswordError') || 'Failed to send reset email',
+          type: 'error',
+        });
         return;
       }
 
       setEmailSent(true);
+      Toast.show({
+        message: t('auth.resetPasswordEmailSent') || 'Password reset email sent!',
+        type: 'success',
+      });
+      
       Alert.alert(
-        t('auth.checkEmail'),
-        t('auth.resetPasswordEmailSent'),
+        t('auth.checkEmail') || 'Check Your Email',
+        t('auth.resetPasswordEmailSent') || 'We have sent you a password reset link. Please check your email.',
         [
           {
-            text: t('ok'),
+            text: t('ok') || 'OK',
             onPress: () => router.back(),
           },
         ]
       );
     } catch (error: any) {
       console.error('Password reset error:', error);
-      Toast.show(t('auth.unexpectedError'), 'error');
+      Toast.show({
+        message: t('auth.unexpectedError') || 'An unexpected error occurred',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -91,16 +108,16 @@ export default function ForgotPasswordScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <IconSymbol name="chevron_left" size={24} color={colors.text} />
+            <IconSymbol name="chevron.left" size={24} color={colors.text} />
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <IconSymbol name="lock.fill" size={48} color={colors.primary} />
             </View>
-            <Text style={styles.title}>{t('auth.forgotPassword')}</Text>
+            <Text style={styles.title}>{t('auth.forgotPassword') || 'Forgot Password'}</Text>
             <Text style={styles.subtitle}>
-              {t('auth.forgotPasswordDesc')}
+              {t('auth.forgotPasswordDesc') || 'Enter your email to receive a password reset link'}
             </Text>
           </View>
 
@@ -113,7 +130,7 @@ export default function ForgotPasswordScreen() {
               </View>
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.emailAddress')}
+                placeholder={t('auth.emailAddress') || 'Email Address'}
                 placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
@@ -135,7 +152,7 @@ export default function ForgotPasswordScreen() {
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    {t('auth.sendResetLink')}
+                    {t('auth.sendResetLink') || 'Send Reset Link'}
                   </Text>
                   <IconSymbol name="arrow_forward" size={20} color="#FFFFFF" />
                 </>
@@ -146,7 +163,7 @@ export default function ForgotPasswordScreen() {
             <View style={styles.infoBox}>
               <IconSymbol name="info.circle" size={20} color={colors.textSecondary} />
               <Text style={styles.infoText}>
-                {t('auth.resetPasswordInfo')}
+                {t('auth.resetPasswordInfo') || 'You will receive an email with instructions to reset your password'}
               </Text>
             </View>
 
@@ -157,7 +174,7 @@ export default function ForgotPasswordScreen() {
               disabled={loading}
             >
               <Text style={styles.backToLoginText}>
-                {t('auth.backToLogin')}
+                {t('auth.backToLogin') || 'Back to Login'}
               </Text>
             </TouchableOpacity>
           </View>
