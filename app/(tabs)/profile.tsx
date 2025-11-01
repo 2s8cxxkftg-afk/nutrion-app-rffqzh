@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   Image,
+  Switch,
 } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
+import {
+  checkBiometricCapabilities,
+  isBiometricEnabled,
+  setBiometricEnabled,
+  saveBiometricCredentials,
+  clearBiometricCredentials,
+  getBiometricTypeName,
+  authenticateWithBiometrics,
+} from '@/utils/biometricAuth';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
@@ -32,11 +42,19 @@ export default function ProfileScreen() {
     expired: 0,
   });
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [biometricType, setBiometricType] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
       loadStats();
       loadUserInfo();
+      checkBiometricStatus();
+      check2FAStatus();
     }, [])
   );
 
@@ -73,17 +91,149 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
+        setUserId(user.id);
       }
     } catch (error) {
       console.error('Error loading user info:', error);
     }
   };
 
+  const checkBiometricStatus = async () => {
+    const capabilities = await checkBiometricCapabilities();
+    setBiometricAvailable(capabilities.isAvailable);
+    
+    if (capabilities.isAvailable) {
+      const enabled = await isBiometricEnabled();
+      setBiometricEnabledState(enabled);
+      setBiometricType(getBiometricTypeName(capabilities.supportedTypes));
+    }
+  };
+
+  const check2FAStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('two_factor_enabled')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setTwoFactorEnabled(data.two_factor_enabled || false);
+      }
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+    }
+  };
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (!userEmail || !userId) {
+      Toast.show(t('profile.pleaseSignIn'), 'error');
+      return;
+    }
+
+    if (value) {
+      // Enable biometric
+      const result = await authenticateWithBiometrics(
+        `Enable ${biometricType} for Nutrion`
+      );
+
+      if (result.success) {
+        try {
+          await setBiometricEnabled(true);
+          await saveBiometricCredentials(userEmail, userId);
+          setBiometricEnabledState(true);
+          Toast.show(t('profile.biometricEnabled'), 'success');
+        } catch (error) {
+          console.error('Error enabling biometric:', error);
+          Toast.show(t('profile.biometricEnableError'), 'error');
+        }
+      } else {
+        Toast.show(result.error || t('profile.biometricAuthFailed'), 'error');
+      }
+    } else {
+      // Disable biometric
+      Alert.alert(
+        t('profile.disableBiometric'),
+        t('profile.disableBiometricConfirm'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          {
+            text: t('profile.disable'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await clearBiometricCredentials();
+                setBiometricEnabledState(false);
+                Toast.show(t('profile.biometricDisabled'), 'success');
+              } catch (error) {
+                console.error('Error disabling biometric:', error);
+                Toast.show(t('profile.biometricDisableError'), 'error');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  const handleSetup2FA = () => {
+    if (!userEmail) {
+      Toast.show(t('profile.pleaseSignIn'), 'error');
+      return;
+    }
+    router.push('/setup-2fa');
+  };
+
+  const handleDisable2FA = () => {
+    Alert.alert(
+      t('profile.disable2FA'),
+      t('profile.disable2FAConfirm'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('profile.disable'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+
+              const { error } = await supabase
+                .from('user_settings')
+                .update({
+                  two_factor_enabled: false,
+                  two_factor_secret: null,
+                  backup_codes: null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', user.id);
+
+              if (error) {
+                console.error('Error disabling 2FA:', error);
+                Toast.show(t('profile.2faDisableError'), 'error');
+                return;
+              }
+
+              setTwoFactorEnabled(false);
+              Toast.show(t('profile.2faDisabled'), 'success');
+            } catch (error) {
+              console.error('Error disabling 2FA:', error);
+              Toast.show(t('profile.2faDisableError'), 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleNotificationSettings = () => {
     Alert.alert(
       t('profile.notifications'),
-      'Notification settings coming soon!',
-      [{ text: 'OK' }]
+      t('profile.notificationsComingSoon'),
+      [{ text: t('ok') }]
     );
   };
 
@@ -93,9 +243,9 @@ export default function ProfileScreen() {
 
   const handleAbout = () => {
     Alert.alert(
-      'About Nutrion',
-      'Nutrion v1.0.0\n\nYour smart kitchen companion for managing food and reducing waste.\n\n© 2024 Nutrion',
-      [{ text: 'OK' }]
+      t('profile.aboutNutrion'),
+      t('profile.aboutNutrionDesc'),
+      [{ text: t('ok') }]
     );
   };
 
@@ -110,29 +260,29 @@ export default function ProfileScreen() {
 
   const handleSignOut = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('profile.signOut'),
+      t('profile.signOutConfirm'),
       [
         {
-          text: 'Cancel',
+          text: t('cancel'),
           style: 'cancel',
         },
         {
-          text: 'Sign Out',
+          text: t('profile.signOut'),
           style: 'destructive',
           onPress: async () => {
             try {
               const { error } = await supabase.auth.signOut();
               if (error) {
                 console.error('Sign out error:', error);
-                Toast.show('Failed to sign out', 'error');
+                Toast.show(t('profile.signOutError'), 'error');
                 return;
               }
-              Toast.show('Signed out successfully', 'success');
+              Toast.show(t('profile.signedOut'), 'success');
               router.replace('/auth');
             } catch (error) {
               console.error('Sign out error:', error);
-              Toast.show('Failed to sign out', 'error');
+              Toast.show(t('profile.signOutError'), 'error');
             }
           },
         },
@@ -181,6 +331,61 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>{t('profile.expired')}</Text>
           </View>
         </View>
+
+        {/* Security Section */}
+        {userEmail && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
+
+            {/* Biometric Authentication */}
+            {biometricAvailable && (
+              <View style={styles.settingItem}>
+                <View style={styles.settingIconContainer}>
+                  <IconSymbol
+                    name={biometricType.includes('Face') ? 'faceid' : 'touchid'}
+                    size={24}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingTitle}>{biometricType}</Text>
+                  <Text style={styles.settingSubtitle}>
+                    {t('profile.biometricDesc')}
+                  </Text>
+                </View>
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={handleToggleBiometric}
+                  trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                  thumbColor={biometricEnabled ? colors.primary : colors.card}
+                />
+              </View>
+            )}
+
+            {/* Two-Factor Authentication */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={twoFactorEnabled ? handleDisable2FA : handleSetup2FA}
+            >
+              <View style={styles.settingIconContainer}>
+                <IconSymbol name="shield.fill" size={24} color={colors.accent} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>{t('profile.twoFactor')}</Text>
+                <Text style={styles.settingSubtitle}>
+                  {twoFactorEnabled ? t('profile.twoFactorEnabled') : t('profile.twoFactorDesc')}
+                </Text>
+              </View>
+              {twoFactorEnabled ? (
+                <View style={styles.enabledBadge}>
+                  <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
+                </View>
+              ) : (
+                <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Settings Section */}
         <View style={styles.section}>
@@ -234,15 +439,17 @@ export default function ProfileScreen() {
         {/* Account Section */}
         {userEmail && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
+            <Text style={styles.sectionTitle}>{t('profile.account')}</Text>
 
             <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
               <View style={[styles.settingIconContainer, styles.signOutIconContainer]}>
                 <IconSymbol name="arrow.right.square.fill" size={24} color={colors.danger} />
               </View>
               <View style={styles.settingContent}>
-                <Text style={[styles.settingTitle, styles.signOutText]}>Sign Out</Text>
-                <Text style={styles.settingSubtitle}>Sign out of your account</Text>
+                <Text style={[styles.settingTitle, styles.signOutText]}>
+                  {t('profile.signOut')}
+                </Text>
+                <Text style={styles.settingSubtitle}>{t('profile.signOutDesc')}</Text>
               </View>
               <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -375,6 +582,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  enabledBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: colors.primary + '20',
   },
   versionContainer: {
     alignItems: 'center',

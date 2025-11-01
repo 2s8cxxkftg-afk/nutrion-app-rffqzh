@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,15 +24,24 @@ import {
   GoogleSigninButton,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import {
+  checkBiometricCapabilities,
+  authenticateWithBiometrics,
+  isBiometricEnabled,
+  getBiometricCredentials,
+  getBiometricTypeName,
+} from '@/utils/biometricAuth';
+import { useTranslation } from 'react-i18next';
 
 // Configure Google Sign-In
 GoogleSignin.configure({
-  webClientId: 'YOUR_WEB_CLIENT_ID_FROM_GOOGLE_CONSOLE.apps.googleusercontent.com', // Replace with your actual Web Client ID
+  webClientId: 'YOUR_WEB_CLIENT_ID_FROM_GOOGLE_CONSOLE.apps.googleusercontent.com',
   offlineAccess: true,
 });
 
 export default function AuthScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +49,61 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricType, setBiometricType] = useState('');
+
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    const capabilities = await checkBiometricCapabilities();
+    setBiometricAvailable(capabilities.isAvailable);
+    
+    if (capabilities.isAvailable) {
+      const enabled = await isBiometricEnabled();
+      setBiometricEnabled(enabled);
+      setBiometricType(getBiometricTypeName(capabilities.supportedTypes));
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const result = await authenticateWithBiometrics(
+        `Sign in to Nutrion with ${biometricType}`
+      );
+
+      if (result.success) {
+        const credentials = await getBiometricCredentials();
+        
+        if (credentials) {
+          setLoading(true);
+          
+          // Get the user session
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (session) {
+            Toast.show(t('auth.welcomeBack'), 'success');
+            router.replace('/(tabs)/pantry');
+          } else {
+            Toast.show(t('auth.biometricLoginFailed'), 'error');
+            setBiometricEnabled(false);
+          }
+        } else {
+          Toast.show(t('auth.noCredentialsSaved'), 'error');
+          setBiometricEnabled(false);
+        }
+      } else {
+        Toast.show(result.error || t('auth.biometricAuthFailed'), 'error');
+      }
+    } catch (error: any) {
+      console.error('Biometric login error:', error);
+      Toast.show(t('auth.biometricAuthError'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,24 +111,23 @@ export default function AuthScreen() {
   };
 
   const handleEmailAuth = async () => {
-    // Validation
     if (!email || !password) {
-      Toast.show('Please fill in all fields', 'error');
+      Toast.show(t('auth.fillAllFields'), 'error');
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show('Please enter a valid email address', 'error');
+      Toast.show(t('auth.invalidEmail'), 'error');
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Toast.show('Passwords do not match', 'error');
+      Toast.show(t('auth.passwordsDoNotMatch'), 'error');
       return;
     }
 
     if (password.length < 6) {
-      Toast.show('Password must be at least 6 characters', 'error');
+      Toast.show(t('auth.passwordTooShort'), 'error');
       return;
     }
 
@@ -72,7 +135,6 @@ export default function AuthScreen() {
 
     try {
       if (isLogin) {
-        // Sign In
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -80,15 +142,14 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign in error:', error);
-          Toast.show(error.message || 'Failed to sign in', 'error');
+          Toast.show(error.message || t('auth.signInFailed'), 'error');
           return;
         }
 
         console.log('Sign in successful:', data);
-        Toast.show('Welcome back!', 'success');
+        Toast.show(t('auth.welcomeBack'), 'success');
         router.replace('/(tabs)/pantry');
       } else {
-        // Sign Up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -99,28 +160,27 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign up error:', error);
-          Toast.show(error.message || 'Failed to sign up', 'error');
+          Toast.show(error.message || t('auth.signUpFailed'), 'error');
           return;
         }
 
         console.log('Sign up successful:', data);
         
-        // Check if email confirmation is required
         if (data.user && !data.session) {
           Alert.alert(
-            'Verify Your Email',
-            'We\'ve sent a verification link to your email. Please check your inbox and verify your email address before signing in.',
-            [{ text: 'OK' }]
+            t('auth.verifyEmail'),
+            t('auth.verifyEmailMessage'),
+            [{ text: t('ok') }]
           );
-          setIsLogin(true); // Switch to login mode
+          setIsLogin(true);
         } else {
-          Toast.show('Account created successfully!', 'success');
+          Toast.show(t('auth.accountCreated'), 'success');
           router.replace('/(tabs)/pantry');
         }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      Toast.show('An unexpected error occurred', 'error');
+      Toast.show(t('auth.unexpectedError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -140,12 +200,12 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Google sign in error:', error);
-          Toast.show(error.message || 'Failed to sign in with Google', 'error');
+          Toast.show(error.message || t('auth.googleSignInFailed'), 'error');
           return;
         }
 
         console.log('Google sign in successful:', data);
-        Toast.show('Welcome!', 'success');
+        Toast.show(t('auth.welcome'), 'success');
         router.replace('/(tabs)/pantry');
       } else {
         throw new Error('No ID token present!');
@@ -156,15 +216,19 @@ export default function AuthScreen() {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log('User cancelled the login flow');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        Toast.show('Sign in is already in progress', 'info');
+        Toast.show(t('auth.signInInProgress'), 'info');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Toast.show('Play services not available or outdated', 'error');
+        Toast.show(t('auth.playServicesNotAvailable'), 'error');
       } else {
-        Toast.show('Failed to sign in with Google', 'error');
+        Toast.show(t('auth.googleSignInFailed'), 'error');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    router.push('/forgot-password');
   };
 
   const handleSkip = () => {
@@ -191,9 +255,27 @@ export default function AuthScreen() {
             />
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
-              {isLogin ? 'Welcome back!' : 'Create your account'}
+              {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
             </Text>
           </View>
+
+          {/* Biometric Login Button (only show on login screen if enabled) */}
+          {isLogin && biometricAvailable && biometricEnabled && (
+            <TouchableOpacity
+              style={styles.biometricButton}
+              onPress={handleBiometricLogin}
+              disabled={loading}
+            >
+              <IconSymbol
+                name={biometricType.includes('Face') ? 'faceid' : 'touchid'}
+                size={32}
+                color={colors.primary}
+              />
+              <Text style={styles.biometricButtonText}>
+                {t('auth.signInWith')} {biometricType}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Form */}
           <View style={styles.form}>
@@ -204,7 +286,7 @@ export default function AuthScreen() {
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Email address"
+                placeholder={t('auth.emailAddress')}
                 placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
@@ -222,7 +304,7 @@ export default function AuthScreen() {
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={setPassword}
@@ -251,7 +333,7 @@ export default function AuthScreen() {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Confirm password"
+                  placeholder={t('auth.confirmPassword')}
                   placeholderTextColor={colors.textSecondary}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -273,6 +355,19 @@ export default function AuthScreen() {
               </View>
             )}
 
+            {/* Forgot Password Link (Login only) */}
+            {isLogin && (
+              <TouchableOpacity
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
+                disabled={loading}
+              >
+                <Text style={styles.forgotPasswordText}>
+                  {t('auth.forgotPassword')}?
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[styles.submitButton, loading && styles.submitButtonDisabled]}
@@ -284,7 +379,7 @@ export default function AuthScreen() {
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    {isLogin ? 'Sign In' : 'Create Account'}
+                    {isLogin ? t('auth.signIn') : t('auth.createAccount')}
                   </Text>
                   <IconSymbol name="arrow_forward" size={20} color="#FFFFFF" />
                 </>
@@ -294,7 +389,7 @@ export default function AuthScreen() {
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
+              <Text style={styles.dividerText}>{t('auth.orContinueWith')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -307,17 +402,17 @@ export default function AuthScreen() {
               <View style={styles.googleIconContainer}>
                 <IconSymbol name="g.circle.fill" size={24} color={colors.primary} />
               </View>
-              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+              <Text style={styles.googleButtonText}>{t('auth.signInWithGoogle')}</Text>
             </TouchableOpacity>
 
             {/* Toggle Login/Signup */}
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleText}>
-                {isLogin ? "Don't have an account?" : 'Already have an account?'}
+                {isLogin ? t('auth.noAccount') : t('auth.haveAccount')}
               </Text>
               <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}>
                 <Text style={styles.toggleLink}>
-                  {isLogin ? 'Sign Up' : 'Sign In'}
+                  {isLogin ? t('auth.signUp') : t('auth.signIn')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -328,7 +423,7 @@ export default function AuthScreen() {
               onPress={handleSkip}
               disabled={loading}
             >
-              <Text style={styles.skipButtonText}>Skip for now</Text>
+              <Text style={styles.skipButtonText}>{t('auth.skipForNow')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -372,6 +467,25 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
+  biometricButton: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 12,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
+  },
+  biometricButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   form: {
     flex: 1,
   },
@@ -397,6 +511,15 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 8,
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   submitButton: {
     backgroundColor: colors.primary,
