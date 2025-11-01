@@ -34,35 +34,35 @@ interface OnboardingPage {
   imageUrl: string;
 }
 
-// 3D art style illustrations similar to Foodpanda - precise and relevant to each page
+// Low-poly 3D art style illustrations similar to Foodpanda
 const pages: OnboardingPage[] = [
   {
     title: 'Welcome to Nutrion',
     description: 'Your smart kitchen companion that helps you manage food, reduce waste, and discover amazing recipes.',
     icon: 'sparkles',
     color: colors.primary,
-    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=80', // 3D colorful food items and kitchen elements
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80', // Low-poly 3D abstract colorful shapes
   },
   {
     title: 'Smart Pantry Tracking',
     description: 'Scan barcodes or add items manually. Keep track of everything in your kitchen with ease.',
     icon: 'qrcode.viewfinder',
     color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80', // 3D smartphone scanning with floating elements
+    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80', // Low-poly 3D geometric shapes in blue/green
   },
   {
     title: 'AI Recipe Suggestions',
     description: 'Get personalized meal ideas based on what you have. Cook delicious meals without extra shopping.',
     icon: 'wand.and.stars',
     color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&q=80', // 3D cooking utensils and ingredients floating
+    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80', // Low-poly 3D colorful geometric composition
   },
   {
     title: 'Never Waste Food',
     description: 'Smart expiration alerts keep you informed. Save money and help the planet by reducing food waste.',
     icon: 'leaf.fill',
     color: colors.success,
-    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80', // 3D earth/sustainability concept with fresh produce
+    imageUrl: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80', // Low-poly 3D green/nature themed shapes
   },
 ];
 
@@ -142,9 +142,9 @@ export default function OnboardingScreen() {
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
             <View style={styles.pageContent}>
-              {/* 3D Art Style Image Container - Foodpanda inspired */}
+              {/* Low-Poly 3D Art Container - Foodpanda inspired */}
               <View style={styles.imageWrapper}>
-                <View style={[styles.imageBackground, { backgroundColor: page.color + '20' }]}>
+                <View style={[styles.imageBackground, { backgroundColor: page.color + '15' }]}>
                   <Image
                     source={{ uri: page.imageUrl }}
                     style={styles.featureImage}
@@ -158,6 +158,8 @@ export default function OnboardingScreen() {
                       color="#FFFFFF"
                     />
                   </View>
+                  {/* Decorative gradient overlay for depth */}
+                  <View style={styles.gradientOverlay} />
                 </View>
               </View>
 
@@ -301,29 +303,37 @@ const styles = StyleSheet.create({
   },
   imageBackground: {
     width: '100%',
-    height: 320,
+    height: 340,
     borderRadius: 32,
     overflow: 'hidden',
     position: 'relative',
-    boxShadow: '0px 12px 32px rgba(0, 0, 0, 0.12)',
-    elevation: 8,
+    boxShadow: '0px 16px 40px rgba(0, 0, 0, 0.15)',
+    elevation: 10,
   },
   featureImage: {
     width: '100%',
     height: '100%',
   },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)',
+  },
   iconBadge: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    bottom: 24,
+    right: 24,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 6px 20px rgba(0, 0, 0, 0.25)',
-    elevation: 8,
-    borderWidth: 4,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    elevation: 12,
+    borderWidth: 5,
     borderColor: '#FFFFFF',
   },
   textContent: {
