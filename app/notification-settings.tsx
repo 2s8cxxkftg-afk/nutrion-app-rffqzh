@@ -9,6 +9,7 @@ import {
   Switch,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -108,7 +109,16 @@ export default function NotificationSettingsScreen() {
           'Please enable notifications in your device settings to receive alerts.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Notifications.openSettingsAsync() },
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              }
+            },
           ]
         );
       }

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -29,14 +29,7 @@ export default function PantryScreen() {
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('Pantry screen focused, loading items...');
-      loadItems();
-    }, [])
-  );
-
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     try {
       const items = await loadPantryItems();
       console.log('Loaded pantry items:', items.length);
@@ -49,7 +42,14 @@ export default function PantryScreen() {
         duration: 2000,
       });
     }
-  };
+  }, [t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Pantry screen focused, loading items...');
+      loadItems();
+    }, [loadItems])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
