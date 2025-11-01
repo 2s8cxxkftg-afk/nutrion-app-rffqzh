@@ -336,14 +336,6 @@ export default function AuthScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Info Message about Google Sign-In */}
-            <View style={styles.infoBox}>
-              <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
-              <Text style={styles.infoText}>
-                Google Sign-In is available in the production build. Use email authentication in Expo Go.
-              </Text>
-            </View>
-
             {/* Toggle Login/Signup */}
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleText}>
@@ -364,6 +356,14 @@ export default function AuthScreen() {
             >
               <Text style={styles.skipButtonText}>{t('auth.skipForNow')}</Text>
             </TouchableOpacity>
+
+            {/* Info Message about Google Sign-In - Moved to bottom */}
+            <View style={styles.infoBox}>
+              <IconSymbol name="info.circle.fill" size={18} color={colors.textSecondary} />
+              <Text style={styles.infoText}>
+                Google Sign-In is available in production builds. Use email authentication in Expo Go.
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -482,22 +482,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary + '15',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    fontWeight: '500',
-  },
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -518,10 +502,28 @@ const styles = StyleSheet.create({
   skipButton: {
     alignItems: 'center',
     paddingVertical: 12,
+    marginBottom: 20,
   },
   skipButtonText: {
     fontSize: 15,
     color: colors.textSecondary,
     fontWeight: '600',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.border || colors.textSecondary + '20',
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });
