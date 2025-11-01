@@ -221,7 +221,7 @@ export default function ProfileScreen() {
   };
 
   const handleNotificationSettings = () => {
-    Alert.alert(t('profile.notifications'), t('profile.notificationsComingSoon'));
+    router.push('/notification-settings');
   };
 
   const handleLanguageSettings = () => {
@@ -229,7 +229,7 @@ export default function ProfileScreen() {
   };
 
   const handleAbout = () => {
-    Alert.alert(t('profile.aboutNutrion'), t('profile.aboutNutrionDesc'));
+    router.push('/about');
   };
 
   const handleViewOnboarding = async () => {
@@ -239,6 +239,10 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Error resetting onboarding:', error);
     }
+  };
+
+  const handleSignIn = () => {
+    router.push('/auth');
   };
 
   const handleSignOut = () => {
@@ -259,7 +263,6 @@ export default function ProfileScreen() {
                 text: t('profile.signedOut'),
                 duration: 2000,
               });
-              router.replace('/auth');
             } catch (error) {
               console.error('Error signing out:', error);
               Toast.show({
@@ -311,6 +314,18 @@ export default function ProfileScreen() {
           {user?.email && (
             <Text style={styles.userEmail}>{user.email}</Text>
           )}
+
+          {/* Sign In Button - Only shown when user is not logged in */}
+          {!user && (
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={handleSignIn}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="person.badge.key.fill" size={20} color="#FFFFFF" />
+              <Text style={styles.signInButtonText}>{t('auth.signIn')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Statistics */}
@@ -335,7 +350,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Security Section */}
+        {/* Security Section - Only shown when user is logged in */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
@@ -455,7 +470,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Sign Out */}
+        {/* Sign Out - Only shown when user is logged in */}
         {user && (
           <TouchableOpacity
             style={styles.signOutButton}
@@ -512,6 +527,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  signInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginTop: 20,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
+  },
+  signInButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   section: {
     marginBottom: 32,
