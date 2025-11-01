@@ -101,11 +101,11 @@ export default function OnboardingScreen() {
   const handleGetStarted = async () => {
     try {
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      console.log('Onboarding completed, navigating to app');
-      router.replace('/(tabs)/pantry');
+      console.log('Onboarding completed, navigating to auth');
+      router.replace('/auth');
     } catch (error) {
       console.error('Error saving onboarding status:', error);
-      router.replace('/(tabs)/pantry');
+      router.replace('/auth');
     }
   };
 

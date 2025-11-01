@@ -10,48 +10,79 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/utils/supabase';
+import Toast from '@/components/Toast';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function ProfileScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
-  const [totalItems, setTotalItems] = useState(0);
-  const [expiringItems, setExpiringItems] = useState(0);
+  const { t } = useTranslation();
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    expiringSoon: 0,
+    expired: 0,
+  });
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
       loadStats();
+      loadUserInfo();
     }, [])
   );
 
   const loadStats = async () => {
     try {
       const items = await loadPantryItems();
-      setTotalItems(items.length);
+      const now = new Date();
+      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-      const expiring = items.filter(item => {
-        const status = getExpirationStatus(item.expirationDate);
-        return status === 'nearExpiry' || status === 'expired';
+      const expiringSoon = items.filter((item) => {
+        if (!item.expirationDate) return false;
+        const expDate = new Date(item.expirationDate);
+        return expDate > now && expDate <= threeDaysFromNow;
+      }).length;
+
+      const expired = items.filter((item) => {
+        if (!item.expirationDate) return false;
+        const expDate = new Date(item.expirationDate);
+        return expDate <= now;
+      }).length;
+
+      setStats({
+        totalItems: items.length,
+        expiringSoon,
+        expired,
       });
-      setExpiringItems(expiring.length);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
 
+  const loadUserInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    } catch (error) {
+      console.error('Error loading user info:', error);
+    }
+  };
+
   const handleNotificationSettings = () => {
     Alert.alert(
-      t('notifications'),
-      'Notification settings will be available in a future update.',
+      t('profile.notifications'),
+      'Notification settings coming soon!',
       [{ text: 'OK' }]
     );
   };
@@ -62,8 +93,8 @@ export default function ProfileScreen() {
 
   const handleAbout = () => {
     Alert.alert(
-      t('about'),
-      'Nutrion v1.0.0\n\nA smart pantry management app to help you track food inventory, reduce waste, and plan meals efficiently.',
+      'About Nutrion',
+      'Nutrion v1.0.0\n\nYour smart kitchen companion for managing food and reducing waste.\n\n© 2024 Nutrion',
       [{ text: 'OK' }]
     );
   };
@@ -77,94 +108,150 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.auth.signOut();
+              if (error) {
+                console.error('Sign out error:', error);
+                Toast.show('Failed to sign out', 'error');
+                return;
+              }
+              Toast.show('Signed out successfully', 'success');
+              router.replace('/auth');
+            } catch (error) {
+              console.error('Sign out error:', error);
+              Toast.show('Failed to sign out', 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
-      
-      <ScrollView
-        style={commonStyles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header with Logo */}
         <View style={styles.header}>
           <Image
-            source={require('@/assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+            source={require('../../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}>{t('profileTitle')}</Text>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
+          {userEmail && (
+            <Text style={styles.userEmail}>{userEmail}</Text>
+          )}
         </View>
 
+        {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>{t('statistics')}</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <IconSymbol name="cube.box.fill" size={32} color={colors.primary} />
-              <Text style={styles.statValue}>{totalItems}</Text>
-              <Text style={styles.statLabel}>{t('totalItems')}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <IconSymbol name="clock.fill" size={32} color={colors.warning} />
-              <Text style={styles.statValue}>{expiringItems}</Text>
-              <Text style={styles.statLabel}>{t('expiringItems')}</Text>
-            </View>
+          <View style={[styles.statCard, styles.statCardPrimary]}>
+            <IconSymbol name="cube.box.fill" size={32} color={colors.primary} />
+            <Text style={styles.statNumber}>{stats.totalItems}</Text>
+            <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
+          </View>
+
+          <View style={[styles.statCard, styles.statCardWarning]}>
+            <IconSymbol name="clock.fill" size={32} color={colors.warning} />
+            <Text style={styles.statNumber}>{stats.expiringSoon}</Text>
+            <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
+          </View>
+
+          <View style={[styles.statCard, styles.statCardDanger]}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={32} color={colors.danger} />
+            <Text style={styles.statNumber}>{stats.expired}</Text>
+            <Text style={styles.statLabel}>{t('profile.expired')}</Text>
           </View>
         </View>
 
+        {/* Settings Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings')}</Text>
-          
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={handleNotificationSettings}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIcon}>
-              <IconSymbol name="bell.fill" size={24} color={colors.text} />
+          <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
+
+          <TouchableOpacity style={styles.settingItem} onPress={handleNotificationSettings}>
+            <View style={styles.settingIconContainer}>
+              <IconSymbol name="bell.fill" size={24} color={colors.primary} />
             </View>
-            <Text style={styles.settingText}>{t('notifications')}</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
+              <Text style={styles.settingSubtitle}>{t('profile.notificationsDesc')}</Text>
+            </View>
+            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={handleLanguageSettings}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIcon}>
-              <IconSymbol name="globe" size={24} color={colors.text} />
+          <TouchableOpacity style={styles.settingItem} onPress={handleLanguageSettings}>
+            <View style={styles.settingIconContainer}>
+              <IconSymbol name="globe" size={24} color={colors.accent} />
             </View>
-            <Text style={styles.settingText}>{t('language')}</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>{t('profile.language')}</Text>
+              <Text style={styles.settingSubtitle}>{t('profile.languageDesc')}</Text>
+            </View>
+            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={handleAbout}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIcon}>
-              <IconSymbol name="info.circle.fill" size={24} color={colors.text} />
+          <TouchableOpacity style={styles.settingItem} onPress={handleViewOnboarding}>
+            <View style={styles.settingIconContainer}>
+              <IconSymbol name="info.circle.fill" size={24} color={colors.secondary} />
             </View>
-            <Text style={styles.settingText}>{t('about')}</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
+              <Text style={styles.settingSubtitle}>{t('profile.tutorialDesc')}</Text>
+            </View>
+            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={handleViewOnboarding}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIcon}>
-              <IconSymbol name="book.fill" size={24} color={colors.text} />
+          <TouchableOpacity style={styles.settingItem} onPress={handleAbout}>
+            <View style={styles.settingIconContainer}>
+              <IconSymbol name="questionmark.circle.fill" size={24} color={colors.textSecondary} />
             </View>
-            <Text style={styles.settingText}>{t('viewOnboarding')}</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>{t('profile.about')}</Text>
+              <Text style={styles.settingSubtitle}>{t('profile.aboutDesc')}</Text>
+            </View>
+            <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
+        </View>
+
+        {/* Account Section */}
+        {userEmail && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account</Text>
+
+            <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
+              <View style={[styles.settingIconContainer, styles.signOutIconContainer]}>
+                <IconSymbol name="arrow.right.square.fill" size={24} color={colors.danger} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingTitle, styles.signOutText]}>Sign Out</Text>
+                <Text style={styles.settingSubtitle}>Sign out of your account</Text>
+              </View>
+              <IconSymbol name="chevron_right" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* App Version */}
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>Nutrion v1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -172,80 +259,130 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
   logo: {
     width: 80,
     height: 80,
     marginBottom: 16,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.text,
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   statsContainer: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  statsGrid: {
     flexDirection: 'row',
+    paddingHorizontal: 24,
+    marginBottom: 32,
     gap: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
-    gap: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
   },
-  statValue: {
+  statCardPrimary: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  statCardWarning: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
+  },
+  statCardDanger: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.danger,
+  },
+  statNumber: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
+    marginTop: 8,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '600',
   },
   section: {
-    marginBottom: 24,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    gap: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary + '20',
-    alignItems: 'center',
+  settingIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.background,
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  settingText: {
+  signOutIconContainer: {
+    backgroundColor: colors.danger + '15',
+  },
+  settingContent: {
     flex: 1,
+  },
+  settingTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
+    marginBottom: 4,
+  },
+  signOutText: {
+    color: colors.danger,
+  },
+  settingSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  versionText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });

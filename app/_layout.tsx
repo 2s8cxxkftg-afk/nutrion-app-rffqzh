@@ -33,6 +33,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="email-confirmed" options={{ headerShown: false }} />
         <Stack.Screen name="add-item" options={{ headerShown: false }} />
         <Stack.Screen name="food-search" options={{ headerShown: false }} />
         <Stack.Screen name="scan-barcode" options={{ headerShown: false }} />
