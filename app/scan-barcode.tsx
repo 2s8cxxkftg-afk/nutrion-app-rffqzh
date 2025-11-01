@@ -25,8 +25,6 @@ export default function ScanBarcodeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     console.log('Camera permission status:', permission);
@@ -110,12 +108,9 @@ export default function ScanBarcodeScreen() {
                   await addPantryItem(newItem);
                   console.log('Product added to pantry:', newItem);
 
-                  // Show toast notification
-                  setToastMessage(t('itemAdded'));
-                  setShowToast(true);
+                  Toast.show(t('itemAdded'), 'success', 1500);
                   setLoading(false);
                   
-                  // Navigate back after a short delay
                   setTimeout(() => {
                     router.back();
                   }, 1500);
@@ -301,14 +296,6 @@ export default function ScanBarcodeScreen() {
           </TouchableOpacity>
         )}
       </View>
-
-      <Toast
-        visible={showToast}
-        message={toastMessage}
-        type="success"
-        duration={2000}
-        onHide={() => setShowToast(false)}
-      />
     </SafeAreaView>
   );
 }

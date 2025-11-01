@@ -40,8 +40,6 @@ export default function AddItemScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [dateError, setDateError] = useState('');
   const [aiEstimation, setAiEstimation] = useState<string | null>(null);
 
@@ -172,8 +170,7 @@ export default function AddItemScreen() {
       await addPantryItem(newItem);
       console.log('Item added successfully:', newItem);
       
-      setToastMessage(t('itemAdded'));
-      setShowToast(true);
+      Toast.show(t('itemAdded'), 'success', 1500);
       
       setTimeout(() => {
         router.back();
@@ -516,14 +513,6 @@ export default function AddItemScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Toast
-        visible={showToast}
-        message={toastMessage}
-        type="success"
-        duration={2000}
-        onHide={() => setShowToast(false)}
-      />
     </SafeAreaView>
   );
 }

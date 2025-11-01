@@ -34,8 +34,6 @@ export default function FoodSearchScreen() {
   const [searchResults, setSearchResults] = useState<NutritionixFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -175,8 +173,7 @@ export default function FoodSearchScreen() {
         console.warn('Supabase sync failed:', supabaseError);
       }
 
-      setToastMessage(t('itemAdded'));
-      setShowToast(true);
+      Toast.show(t('itemAdded'), 'success', 1500);
       
       setTimeout(() => {
         setSearchQuery('');
@@ -376,14 +373,6 @@ export default function FoodSearchScreen() {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
-
-      <Toast
-        visible={showToast}
-        message={toastMessage}
-        type="success"
-        duration={2000}
-        onHide={() => setShowToast(false)}
-      />
     </SafeAreaView>
   );
 }
