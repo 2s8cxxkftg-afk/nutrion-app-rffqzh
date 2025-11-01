@@ -22,7 +22,7 @@ export default function EmailConfirmedScreen() {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const handleContinue = () => {
     router.replace('/auth');

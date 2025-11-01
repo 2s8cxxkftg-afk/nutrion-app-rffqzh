@@ -86,11 +86,11 @@ const resources = {
         backupCodesDesc: 'Save these backup codes in a safe place. You can use them to access your account if you lose your device.',
         backupCodesWarning: 'These codes will only be shown once. Make sure to save them securely.',
         done: 'Done',
-        2faSetupError: 'Failed to setup 2FA',
+        '2faSetupError': 'Failed to setup 2FA',
         enter6DigitCode: 'Please enter a 6-digit code',
-        2faSaveError: 'Failed to save 2FA settings',
-        2faEnabled: 'Two-factor authentication enabled!',
-        2faVerifyError: 'Failed to verify 2FA code',
+        '2faSaveError': 'Failed to save 2FA settings',
+        '2faEnabled': 'Two-factor authentication enabled!',
+        '2faVerifyError': 'Failed to verify 2FA code',
       },
       
       // Pantry
@@ -191,8 +191,8 @@ const resources = {
         twoFactorEnabled: 'Enabled',
         disable2FA: 'Disable 2FA',
         disable2FAConfirm: 'Are you sure you want to disable two-factor authentication?',
-        2faDisableError: 'Failed to disable 2FA',
-        2faDisabled: 'Two-factor authentication disabled',
+        '2faDisableError': 'Failed to disable 2FA',
+        '2faDisabled': 'Two-factor authentication disabled',
         pleaseSignIn: 'Please sign in to use this feature',
       },
       
@@ -223,27 +223,24 @@ const resources = {
       // Onboarding
       skip: 'Skip',
       getStarted: 'Get Started',
-      onboarding1Title: 'Smart Pantry Management',
-      onboarding1Desc: 'Track your food inventory with ease. Scan barcodes or add items manually to keep your pantry organized.',
-      onboarding2Title: 'Never Waste Food Again',
-      onboarding2Desc: 'Get timely expiration alerts and smart suggestions to use ingredients before they spoil.',
-      onboarding3Title: 'AI-Powered Meal Planning',
-      onboarding3Desc: 'Discover delicious recipes based on what you already have. Let AI help you plan balanced meals effortlessly.',
+      onboardingOneTitle: 'Smart Pantry Management',
+      onboardingOneDesc: 'Track your food inventory with ease. Scan barcodes or add items manually to keep your pantry organized.',
+      onboardingTwoTitle: 'Never Waste Food Again',
+      onboardingTwoDesc: 'Get timely expiration alerts and smart suggestions to use ingredients before they spoil.',
+      onboardingThreeTitle: 'AI-Powered Meal Planning',
+      onboardingThreeDesc: 'Discover delicious recipes based on what you already have. Let AI help you plan balanced meals effortlessly.',
     },
   },
-  // Add other languages with similar structure...
   es: {
     translation: {
-      // Spanish translations would go here
-      // For brevity, I'll include just a few key translations
+      // Spanish translations
       cancel: 'Cancelar',
       ok: 'OK',
       next: 'Siguiente',
       loading: 'Cargando...',
-      // ... rest of Spanish translations
+      // Add more Spanish translations as needed
     },
   },
-  // Add other languages (zh, ja, de, nl, fr) similarly
 };
 
 // Get saved language or use device locale

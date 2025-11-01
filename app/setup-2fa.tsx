@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,11 +30,7 @@ export default function Setup2FAScreen() {
   const [step, setStep] = useState<'setup' | 'verify' | 'backup'>('setup');
   const [verifying, setVerifying] = useState(false);
 
-  useEffect(() => {
-    generateSecret();
-  }, []);
-
-  const generateSecret = async () => {
+  const generateSecret = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -72,7 +68,11 @@ export default function Setup2FAScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    generateSecret();
+  }, [generateSecret]);
 
   const handleVerify = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
