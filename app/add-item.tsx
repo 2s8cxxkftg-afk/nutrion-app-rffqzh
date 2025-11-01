@@ -512,7 +512,7 @@ export default function AddItemScreen() {
             onPress={handleSave}
             activeOpacity={0.7}
           >
-            <Text style={styles.saveButtonText}>{t('addToPantry')}</Text>
+            <Text style={buttonStyles.primaryText}>{t('addToPantry')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -672,10 +672,5 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: 32,
     marginBottom: 20,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
   },
 });

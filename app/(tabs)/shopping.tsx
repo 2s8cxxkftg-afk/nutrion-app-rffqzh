@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { ShoppingItem } from '@/types/pantry';
 import { loadShoppingItems, saveShoppingItems } from '@/utils/storage';
 
@@ -140,7 +140,7 @@ export default function ShoppingScreen() {
           item.checked && styles.checkboxChecked
         ]}>
           {item.checked && (
-            <IconSymbol name="checkmark" size={16} color={colors.text} />
+            <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
           )}
         </View>
         
@@ -272,7 +272,7 @@ export default function ShoppingScreen() {
             onPress={() => setShowAddForm(true)}
             activeOpacity={0.8}
           >
-            <IconSymbol name="plus" size={28} color={colors.text} />
+            <IconSymbol name="plus" size={28} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </KeyboardAvoidingView>
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   itemsList: {
     flex: 1,
