@@ -4,37 +4,37 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 // Nutrion App Colors - Clean, minimalist design with vibrant accents
 export const colors = {
   // Backgrounds
-  background: '#F8F9FA',        // Light gray background
-  backgroundSecondary: '#FFFFFF', // Pure white
+  background: '#F8F9FA',
+  backgroundSecondary: '#FFFFFF',
   
   // Text
-  text: '#1A1A1A',              // Almost black for primary text
-  textSecondary: '#6B7280',     // Gray for secondary text
-  textTertiary: '#9CA3AF',      // Light gray for tertiary text
+  text: '#1A1A1A',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
   
   // Brand Colors
-  primary: '#10B981',           // Emerald green (fresh, natural)
-  primaryLight: '#6EE7B7',      // Light emerald
-  primaryDark: '#059669',       // Dark emerald
+  primary: '#10B981',
+  primaryLight: '#6EE7B7',
+  primaryDark: '#059669',
   
-  secondary: '#F59E0B',         // Amber (warm accent)
-  secondaryLight: '#FCD34D',    // Light amber
+  secondary: '#F59E0B',
+  secondaryLight: '#FCD34D',
   
-  accent: '#3B82F6',            // Blue (info/action)
-  accentLight: '#93C5FD',       // Light blue
+  accent: '#3B82F6',
+  accentLight: '#93C5FD',
   
   // Status Colors
-  success: '#10B981',           // Green
-  warning: '#F59E0B',           // Amber
-  error: '#EF4444',             // Red
-  info: '#3B82F6',              // Blue
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  info: '#3B82F6',
   
   // UI Elements
-  card: '#FFFFFF',              // White cards
-  cardHover: '#F9FAFB',         // Subtle hover state
-  border: '#E5E7EB',            // Light gray borders
-  borderLight: '#F3F4F6',       // Very light borders
-  divider: '#E5E7EB',           // Divider lines
+  card: '#FFFFFF',
+  cardHover: '#F9FAFB',
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+  divider: '#E5E7EB',
   
   // Shadows
   shadow: 'rgba(0, 0, 0, 0.08)',

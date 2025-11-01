@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import {
@@ -69,7 +69,6 @@ export default function AuthScreen() {
         if (credentials) {
           setLoading(true);
           
-          // Get the user session
           const { data: { session }, error } = await supabase.auth.getSession();
           
           if (session) {
@@ -202,14 +201,12 @@ export default function AuthScreen() {
               resizeMode="contain"
             />
             <Text style={styles.appName}>Nutrion</Text>
-            {!isLogin && (
-              <Text style={styles.subtitle}>
-                {t('auth.createAccount')}
-              </Text>
-            )}
+            <Text style={styles.subtitle}>
+              {isLogin ? 'Welcome back!' : 'Create your account'}
+            </Text>
           </View>
 
-          {/* Biometric Login Button (only show on login screen if enabled) */}
+          {/* Biometric Login Button */}
           {isLogin && biometricAvailable && biometricEnabled && (
             <TouchableOpacity
               style={styles.biometricButton}
@@ -218,11 +215,11 @@ export default function AuthScreen() {
             >
               <IconSymbol
                 name={biometricType.includes('Face') ? 'faceid' : 'touchid'}
-                size={32}
+                size={28}
                 color={colors.primary}
               />
               <Text style={styles.biometricButtonText}>
-                {t('auth.signInWith')} {biometricType}
+                Sign in with {biometricType}
               </Text>
             </TouchableOpacity>
           )}
@@ -230,78 +227,87 @@ export default function AuthScreen() {
           {/* Form */}
           <View style={styles.form}>
             {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIconContainer}>
-                <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconContainer}>
+                  <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="your@email.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  editable={!loading}
+                />
               </View>
-              <TextInput
-                style={styles.input}
-                placeholder={t('auth.emailAddress')}
-                placeholderTextColor={colors.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                editable={!loading}
-              />
             </View>
 
             {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIconContainer}>
-                <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder={t('auth.password')}
-                placeholderTextColor={colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete={isLogin ? 'password' : 'new-password'}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <IconSymbol
-                  name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Confirm Password Input (Sign Up only) */}
-            {!isLogin && (
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
                   <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder={t('auth.confirmPassword')}
+                  placeholder="Enter your password"
                   placeholderTextColor={colors.textSecondary}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  autoComplete="new-password"
+                  autoComplete={isLogin ? 'password' : 'new-password'}
                   editable={!loading}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onPress={() => setShowPassword(!showPassword)}
                 >
                   <IconSymbol
-                    name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
+                    name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
                     size={20}
                     color={colors.textSecondary}
                   />
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirm Password Input (Sign Up only) */}
+            {!isLogin && (
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Confirm Password</Text>
+                <View style={styles.inputContainer}>
+                  <View style={styles.inputIconContainer}>
+                    <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Confirm your password"
+                    placeholderTextColor={colors.textSecondary}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <IconSymbol
+                      name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -313,7 +319,7 @@ export default function AuthScreen() {
                 disabled={loading}
               >
                 <Text style={styles.forgotPasswordText}>
-                  {t('auth.forgotPassword')}?
+                  Forgot your password?
                 </Text>
               </TouchableOpacity>
             )}
@@ -329,9 +335,9 @@ export default function AuthScreen() {
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    {isLogin ? t('auth.signIn') : t('auth.createAccount')}
+                    {isLogin ? 'Sign In' : 'Create Account'}
                   </Text>
-                  <IconSymbol name="arrow_forward" size={20} color="#FFFFFF" />
+                  <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
                 </>
               )}
             </TouchableOpacity>
@@ -339,11 +345,11 @@ export default function AuthScreen() {
             {/* Toggle Login/Signup */}
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleText}>
-                {isLogin ? t('auth.noAccount') : t('auth.haveAccount')}
+                {isLogin ? "Don't have an account?" : 'Already have an account?'}
               </Text>
               <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}>
                 <Text style={styles.toggleLink}>
-                  {isLogin ? t('auth.signUp') : t('auth.signIn')}
+                  {isLogin ? 'Sign Up' : 'Sign In'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -354,16 +360,8 @@ export default function AuthScreen() {
               onPress={handleSkip}
               disabled={loading}
             >
-              <Text style={styles.skipButtonText}>{t('auth.skipForNow')}</Text>
+              <Text style={styles.skipButtonText}>Skip for now</Text>
             </TouchableOpacity>
-
-            {/* Info Message about Google Sign-In - Moved to bottom */}
-            <View style={styles.infoBox}>
-              <IconSymbol name="info.circle.fill" size={18} color={colors.textSecondary} />
-              <Text style={styles.infoText}>
-                Google Sign-In is available in production builds. Use email authentication in Expo Go.
-              </Text>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -381,149 +379,131 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.huge,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.huge,
   },
   logo: {
     width: 100,
     height: 100,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   appName: {
-    fontSize: 32,
-    fontWeight: '800',
+    ...typography.displayMedium,
     color: colors.primary,
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 18,
+    ...typography.bodyLarge,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   biometricButton: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    gap: 12,
+    marginBottom: spacing.xxl,
+    gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.primary,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+    boxShadow: `0px 4px 12px ${colors.primary}20`,
+    elevation: 3,
   },
   biometricButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.h4,
     color: colors.primary,
   },
   form: {
     flex: 1,
   },
+  inputWrapper: {
+    marginBottom: spacing.xl,
+  },
+  inputLabel: {
+    ...typography.label,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 16,
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
     height: 56,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   inputIconContainer: {
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
     color: colors.text,
-    fontWeight: '500',
   },
   eyeIcon: {
-    padding: 8,
+    padding: spacing.sm,
   },
   forgotPasswordButton: {
     alignSelf: 'flex-end',
-    marginBottom: 8,
+    marginBottom: spacing.lg,
   },
   forgotPasswordText: {
-    fontSize: 14,
+    ...typography.bodySmall,
     color: colors.primary,
     fontWeight: '600',
   },
   submitButton: {
     backgroundColor: colors.primary,
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-    gap: 12,
-    boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
+    marginTop: spacing.md,
+    marginBottom: spacing.xxl,
+    gap: spacing.md,
+    boxShadow: `0px 8px 24px ${colors.primary}40`,
     elevation: 6,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...typography.h3,
     color: '#FFFFFF',
-    letterSpacing: 0.3,
   },
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 6,
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
   },
   toggleText: {
-    fontSize: 15,
+    ...typography.body,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   toggleLink: {
-    fontSize: 15,
+    ...typography.body,
     color: colors.primary,
     fontWeight: '700',
   },
   skipButton: {
     alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 20,
+    paddingVertical: spacing.md,
   },
   skipButtonText: {
-    fontSize: 15,
+    ...typography.body,
     color: colors.textSecondary,
     fontWeight: '600',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 14,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: colors.border || colors.textSecondary + '20',
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    fontWeight: '500',
   },
 });
