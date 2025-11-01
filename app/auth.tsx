@@ -20,11 +20,6 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import {
-  GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
-import {
   checkBiometricCapabilities,
   authenticateWithBiometrics,
   isBiometricEnabled,
@@ -32,12 +27,6 @@ import {
   getBiometricTypeName,
 } from '@/utils/biometricAuth';
 import { useTranslation } from 'react-i18next';
-
-// Configure Google Sign-In
-GoogleSignin.configure({
-  webClientId: 'YOUR_WEB_CLIENT_ID_FROM_GOOGLE_CONSOLE.apps.googleusercontent.com',
-  offlineAccess: true,
-});
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -181,47 +170,6 @@ export default function AuthScreen() {
     } catch (error: any) {
       console.error('Auth error:', error);
       Toast.show({ type: 'error', message: t('auth.unexpectedError') });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      
-      if (userInfo.data?.idToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: userInfo.data.idToken,
-        });
-
-        if (error) {
-          console.error('Google sign in error:', error);
-          Toast.show({ type: 'error', message: error.message || t('auth.googleSignInFailed') });
-          return;
-        }
-
-        console.log('Google sign in successful:', data);
-        Toast.show({ type: 'success', message: t('auth.welcome') });
-        router.replace('/(tabs)/pantry');
-      } else {
-        throw new Error('No ID token present!');
-      }
-    } catch (error: any) {
-      console.error('Google sign in error:', error);
-      
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled the login flow');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        Toast.show({ type: 'info', message: t('auth.signInInProgress') });
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Toast.show({ type: 'error', message: t('auth.playServicesNotAvailable') });
-      } else {
-        Toast.show({ type: 'error', message: t('auth.googleSignInFailed') });
-      }
     } finally {
       setLoading(false);
     }
@@ -388,24 +336,13 @@ export default function AuthScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth.orContinueWith')}</Text>
-              <View style={styles.dividerLine} />
+            {/* Info Message about Google Sign-In */}
+            <View style={styles.infoBox}>
+              <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+              <Text style={styles.infoText}>
+                Google Sign-In is available in the production build. Use email authentication in Expo Go.
+              </Text>
             </View>
-
-            {/* Google Sign In Button */}
-            <TouchableOpacity
-              style={styles.googleButton}
-              onPress={handleGoogleSignIn}
-              disabled={loading}
-            >
-              <View style={styles.googleIconContainer}>
-                <IconSymbol name="g.circle.fill" size={24} color={colors.primary} />
-              </View>
-              <Text style={styles.googleButtonText}>{t('auth.signInWithGoogle')}</Text>
-            </TouchableOpacity>
 
             {/* Toggle Login/Signup */}
             <View style={styles.toggleContainer}>
@@ -545,48 +482,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  divider: {
+  infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginHorizontal: 16,
-    fontWeight: '500',
-  },
-  googleButton: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.primary + '15',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 24,
     gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
   },
-  googleIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+  infoText: {
+    flex: 1,
+    fontSize: 14,
     color: colors.text,
+    lineHeight: 20,
+    fontWeight: '500',
   },
   toggleContainer: {
     flexDirection: 'row',
