@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Platform,
   RefreshControl,
   Alert,
   ActivityIndicator,
@@ -14,11 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { Recipe, PantryItem } from '@/types/pantry';
-import { loadRecipes } from '@/utils/storage';
-import { loadPantryItems } from '@/utils/storage';
+import { loadRecipes, loadPantryItems } from '@/utils/storage';
 import { useRecipeSuggestions, RecipeSuggestion } from '@/hooks/useRecipeSuggestions';
+import * as Haptics from 'expo-haptics';
 
 export default function PlannerScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -30,7 +29,6 @@ export default function PlannerScreen() {
 
   const { generateSuggestions, loading, error, data } = useRecipeSuggestions();
 
-  // Load data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadData();
@@ -57,7 +55,6 @@ export default function PlannerScreen() {
       setRecipes(loadedRecipes);
       setPantryItems(loadedPantry);
       
-      // Simple recipe suggestion based on available ingredients
       const suggested = loadedRecipes.filter(recipe => {
         const availableIngredients = loadedPantry.map(item => 
           item.name.toLowerCase()
@@ -94,6 +91,12 @@ export default function PlannerScreen() {
       return;
     }
 
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
     const pantryItemNames = pantryItems.map(item => item.name);
     await generateSuggestions(pantryItemNames);
   };
@@ -111,39 +114,44 @@ export default function PlannerScreen() {
     );
 
     return (
-      <View key={recipe.id} style={[commonStyles.card, styles.recipeCard]}>
+      <View key={recipe.id} style={styles.recipeCard}>
         <View style={styles.recipeHeader}>
           <Text style={styles.recipeName}>{recipe.name}</Text>
-          <View style={[styles.matchBadge, { 
-            backgroundColor: matchPercentage >= 75 ? colors.success : 
-                           matchPercentage >= 50 ? colors.warning : 
-                           colors.textSecondary 
-          }]}>
-            <Text style={styles.matchText}>{matchPercentage}% match</Text>
+          <View style={[
+            styles.matchBadge, 
+            { 
+              backgroundColor: matchPercentage >= 75 ? colors.success : 
+                             matchPercentage >= 50 ? colors.warning : 
+                             colors.textSecondary 
+            }
+          ]}>
+            <Text style={styles.matchText}>{matchPercentage}%</Text>
           </View>
         </View>
 
         <View style={styles.recipeInfo}>
-          <View style={styles.infoItem}>
+          <View style={styles.infoChip}>
             <IconSymbol name="clock" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{recipe.prepTime} min</Text>
           </View>
-          <View style={styles.infoItem}>
+          <View style={styles.infoChip}>
             <IconSymbol name="person.2" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{recipe.servings} servings</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Ingredients:</Text>
+        <View style={styles.divider} />
+
+        <Text style={styles.sectionLabel}>Ingredients</Text>
         <View style={styles.ingredientsList}>
-          {recipe.ingredients.map((ingredient, index) => {
+          {recipe.ingredients.slice(0, 5).map((ingredient, index) => {
             const isAvailable = matchingIngredients.includes(ingredient);
             return (
               <View key={index} style={styles.ingredientRow}>
                 <IconSymbol 
                   name={isAvailable ? "checkmark.circle.fill" : "circle"} 
                   size={16} 
-                  color={isAvailable ? colors.success : colors.textSecondary} 
+                  color={isAvailable ? colors.success : colors.border} 
                 />
                 <Text style={[
                   styles.ingredientText,
@@ -154,10 +162,12 @@ export default function PlannerScreen() {
               </View>
             );
           })}
+          {recipe.ingredients.length > 5 && (
+            <Text style={styles.moreText}>
+              +{recipe.ingredients.length - 5} more ingredients
+            </Text>
+          )}
         </View>
-
-        <Text style={styles.sectionTitle}>Instructions:</Text>
-        <Text style={commonStyles.textSecondary}>{recipe.instructions}</Text>
       </View>
     );
   };
@@ -172,41 +182,46 @@ export default function PlannerScreen() {
     );
 
     return (
-      <View key={`ai-${index}`} style={[commonStyles.card, styles.recipeCard, styles.aiRecipeCard]}>
+      <View key={`ai-${index}`} style={[styles.recipeCard, styles.aiRecipeCard]}>
         <View style={styles.aiRecipeBadge}>
-          <IconSymbol name="sparkles" size={14} color={colors.card} />
+          <IconSymbol name="sparkles" size={14} color="#FFFFFF" />
           <Text style={styles.aiRecipeBadgeText}>AI Suggested</Text>
         </View>
 
         <View style={styles.recipeHeader}>
           <Text style={styles.recipeName}>{recipe.name}</Text>
-          <View style={[styles.matchBadge, { 
-            backgroundColor: recipe.matchPercentage >= 75 ? colors.success : 
-                           recipe.matchPercentage >= 50 ? colors.warning : 
-                           colors.textSecondary 
-          }]}>
-            <Text style={styles.matchText}>{recipe.matchPercentage}% match</Text>
+          <View style={[
+            styles.matchBadge, 
+            { 
+              backgroundColor: recipe.matchPercentage >= 75 ? colors.success : 
+                             recipe.matchPercentage >= 50 ? colors.warning : 
+                             colors.textSecondary 
+            }
+          ]}>
+            <Text style={styles.matchText}>{recipe.matchPercentage}%</Text>
           </View>
         </View>
 
         <View style={styles.recipeInfo}>
-          <View style={styles.infoItem}>
+          <View style={styles.infoChip}>
             <IconSymbol name="clock" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{recipe.prepTime} min</Text>
           </View>
-          <View style={styles.infoItem}>
+          <View style={styles.infoChip}>
             <IconSymbol name="person.2" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{recipe.servings} servings</Text>
           </View>
-          <View style={styles.infoItem}>
+          <View style={styles.infoChip}>
             <IconSymbol name="tag" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{recipe.category}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Ingredients:</Text>
+        <View style={styles.divider} />
+
+        <Text style={styles.sectionLabel}>Ingredients</Text>
         <View style={styles.ingredientsList}>
-          {recipe.ingredients.map((ingredient, idx) => {
+          {recipe.ingredients.slice(0, 5).map((ingredient, idx) => {
             const isAvailable = matchingIngredients.some(match => 
               match.toLowerCase().includes(ingredient.toLowerCase()) ||
               ingredient.toLowerCase().includes(match.toLowerCase())
@@ -216,7 +231,7 @@ export default function PlannerScreen() {
                 <IconSymbol 
                   name={isAvailable ? "checkmark.circle.fill" : "circle"} 
                   size={16} 
-                  color={isAvailable ? colors.success : colors.textSecondary} 
+                  color={isAvailable ? colors.success : colors.border} 
                 />
                 <Text style={[
                   styles.ingredientText,
@@ -227,10 +242,12 @@ export default function PlannerScreen() {
               </View>
             );
           })}
+          {recipe.ingredients.length > 5 && (
+            <Text style={styles.moreText}>
+              +{recipe.ingredients.length - 5} more ingredients
+            </Text>
+          )}
         </View>
-
-        <Text style={styles.sectionTitle}>Instructions:</Text>
-        <Text style={commonStyles.textSecondary}>{recipe.instructions}</Text>
       </View>
     );
   };
@@ -239,14 +256,21 @@ export default function PlannerScreen() {
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: 'Meal Planner',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
+          headerShown: false,
         }}
       />
       
       <View style={commonStyles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Meal Planner</Text>
+            <Text style={styles.headerSubtitle}>
+              {pantryItems.length} ingredients available
+            </Text>
+          </View>
+        </View>
+
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
@@ -259,17 +283,20 @@ export default function PlannerScreen() {
             />
           }
         >
+          {/* Stats Card */}
           <View style={styles.statsCard}>
             <View style={styles.statItem}>
+              <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
               <Text style={styles.statNumber}>{pantryItems.length}</Text>
-              <Text style={commonStyles.textSecondary}>Items in Pantry</Text>
+              <Text style={styles.statLabel}>Ingredients</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
+              <IconSymbol name="book.closed.fill" size={32} color={colors.secondary} />
               <Text style={styles.statNumber}>
                 {showAiSuggestions ? aiSuggestions.length : suggestedRecipes.length}
               </Text>
-              <Text style={commonStyles.textSecondary}>Recipes Available</Text>
+              <Text style={styles.statLabel}>Recipes</Text>
             </View>
           </View>
 
@@ -278,21 +305,22 @@ export default function PlannerScreen() {
             style={[styles.aiButton, loading && styles.aiButtonLoading]}
             onPress={handleGetAiSuggestions}
             disabled={loading}
+            activeOpacity={0.8}
           >
             {loading ? (
               <>
-                <ActivityIndicator color={colors.card} size="small" />
-                <Text style={styles.aiButtonText}>Generating Suggestions...</Text>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+                <Text style={styles.aiButtonText}>Generating...</Text>
               </>
             ) : (
               <>
-                <IconSymbol name="sparkles" size={20} color={colors.card} />
+                <IconSymbol name="sparkles" size={24} color="#FFFFFF" />
                 <Text style={styles.aiButtonText}>Get AI Recipe Suggestions</Text>
               </>
             )}
           </TouchableOpacity>
 
-          {/* Toggle between AI and default suggestions */}
+          {/* Toggle Buttons */}
           {aiSuggestions.length > 0 && (
             <View style={styles.toggleContainer}>
               <TouchableOpacity
@@ -301,11 +329,12 @@ export default function PlannerScreen() {
                   showAiSuggestions && styles.toggleButtonActive,
                 ]}
                 onPress={() => setShowAiSuggestions(true)}
+                activeOpacity={0.7}
               >
                 <IconSymbol 
                   name="sparkles" 
-                  size={16} 
-                  color={showAiSuggestions ? colors.card : colors.text} 
+                  size={18} 
+                  color={showAiSuggestions ? '#FFFFFF' : colors.text} 
                 />
                 <Text style={[
                   styles.toggleButtonText,
@@ -321,11 +350,12 @@ export default function PlannerScreen() {
                   !showAiSuggestions && styles.toggleButtonActive,
                 ]}
                 onPress={() => setShowAiSuggestions(false)}
+                activeOpacity={0.7}
               >
                 <IconSymbol 
                   name="book.closed" 
-                  size={16} 
-                  color={!showAiSuggestions ? colors.card : colors.text} 
+                  size={18} 
+                  color={!showAiSuggestions ? '#FFFFFF' : colors.text} 
                 />
                 <Text style={[
                   styles.toggleButtonText,
@@ -337,17 +367,20 @@ export default function PlannerScreen() {
             </View>
           )}
 
-          <Text style={[commonStyles.subtitle, styles.sectionHeader]}>
+          {/* Recipes List */}
+          <Text style={styles.sectionHeader}>
             {showAiSuggestions ? 'AI-Powered Suggestions' : 'Suggested Recipes'}
           </Text>
 
           {showAiSuggestions ? (
             aiSuggestions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <IconSymbol name="sparkles" size={64} color={colors.textSecondary} />
-                <Text style={styles.emptyStateTitle}>No AI suggestions yet</Text>
-                <Text style={commonStyles.textSecondary}>
-                  Tap the button above to get AI-powered recipe suggestions
+              <View style={commonStyles.emptyState}>
+                <View style={commonStyles.emptyStateIcon}>
+                  <IconSymbol name="sparkles" size={64} color={colors.textTertiary} />
+                </View>
+                <Text style={commonStyles.emptyStateTitle}>No AI suggestions yet</Text>
+                <Text style={commonStyles.emptyStateDescription}>
+                  Tap the button above to get personalized recipe suggestions based on your pantry
                 </Text>
               </View>
             ) : (
@@ -355,10 +388,12 @@ export default function PlannerScreen() {
             )
           ) : (
             suggestedRecipes.length === 0 ? (
-              <View style={styles.emptyState}>
-                <IconSymbol name="book.closed" size={64} color={colors.textSecondary} />
-                <Text style={styles.emptyStateTitle}>No recipes available</Text>
-                <Text style={commonStyles.textSecondary}>
+              <View style={commonStyles.emptyState}>
+                <View style={commonStyles.emptyStateIcon}>
+                  <IconSymbol name="book.closed" size={64} color={colors.textTertiary} />
+                </View>
+                <Text style={commonStyles.emptyStateTitle}>No recipes available</Text>
+                <Text style={commonStyles.emptyStateDescription}>
                   Add items to your pantry to see recipe suggestions
                 </Text>
               </View>
@@ -373,21 +408,34 @@ export default function PlannerScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  headerTitle: {
+    ...typography.displayMedium,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 100,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 120,
   },
   statsCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 2,
   },
   statItem: {
@@ -395,40 +443,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.primary,
+    ...typography.displaySmall,
+    color: colors.text,
+    marginTop: spacing.sm,
     marginBottom: 4,
+  },
+  statLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
   },
   statDivider: {
     width: 1,
-    backgroundColor: colors.textSecondary + '30',
-    marginHorizontal: 16,
+    backgroundColor: colors.divider,
+    marginHorizontal: spacing.lg,
   },
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    gap: 8,
-    boxShadow: '0px 4px 12px rgba(76, 175, 80, 0.3)',
-    elevation: 4,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+    boxShadow: `0px 4px 16px ${colors.primary}40`,
+    elevation: 6,
   },
   aiButtonLoading: {
     opacity: 0.7,
   },
   aiButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.card,
+    ...typography.h4,
+    color: '#FFFFFF',
   },
   toggleContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   toggleButton: {
     flex: 1,
@@ -436,10 +487,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    gap: 6,
-    borderWidth: 2,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+    borderWidth: 1.5,
     borderColor: colors.border,
   },
   toggleButtonActive: {
@@ -447,18 +498,24 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   toggleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.text,
   },
   toggleButtonTextActive: {
-    color: colors.card,
+    color: '#FFFFFF',
   },
   sectionHeader: {
-    marginBottom: 16,
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.lg,
   },
   recipeCard: {
-    marginBottom: 16,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 2,
   },
   aiRecipeCard: {
     borderWidth: 2,
@@ -469,89 +526,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-    marginBottom: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
   aiRecipeBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.card,
+    ...typography.labelSmall,
+    color: '#FFFFFF',
   },
   recipeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   recipeName: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...typography.h2,
     color: colors.text,
     flex: 1,
+    marginRight: spacing.md,
   },
   matchBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   matchText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.card,
+    ...typography.labelSmall,
+    color: '#FFFFFF',
   },
   recipeInfo: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
+    gap: spacing.md,
     flexWrap: 'wrap',
   },
-  infoItem: {
+  infoChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   infoText: {
-    fontSize: 14,
+    ...typography.bodySmall,
     color: colors.textSecondary,
-  },
-  sectionTitle: {
-    fontSize: 16,
     fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginVertical: spacing.lg,
+  },
+  sectionLabel: {
+    ...typography.h4,
     color: colors.text,
-    marginTop: 8,
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
   ingredientsList: {
-    gap: 6,
-    marginBottom: 12,
+    gap: spacing.sm,
   },
   ingredientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   ingredientText: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.textSecondary,
     flex: 1,
   },
   ingredientAvailable: {
     color: colors.text,
-    fontWeight: '500',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
     fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+  },
+  moreText: {
+    ...typography.bodySmall,
+    color: colors.textTertiary,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
   },
 });

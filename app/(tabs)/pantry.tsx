@@ -1,7 +1,5 @@
 
-import { useTranslation } from 'react-i18next';
-import { colors, commonStyles, expirationColors } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,16 +8,18 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Platform,
   RefreshControl,
 } from 'react-native';
-import Toast from '@/components/Toast';
-import React, { useState, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles, expirationColors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { PantryItem } from '@/types/pantry';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 
 export default function PantryScreen() {
   const { t } = useTranslation();
@@ -27,6 +27,7 @@ export default function PantryScreen() {
   const [items, setItems] = useState<PantryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'fresh' | 'nearExpiry' | 'expired'>('all');
 
   const loadItems = useCallback(async () => {
     try {
@@ -95,9 +96,21 @@ export default function PantryScreen() {
     }
   }, [t, loadItems]);
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (filterStatus === 'all') return matchesSearch;
+    
+    const status = getExpirationStatus(item.expirationDate);
+    return matchesSearch && status === filterStatus;
+  });
+
+  // Calculate stats
+  const stats = {
+    total: items.length,
+    fresh: items.filter(item => getExpirationStatus(item.expirationDate) === 'fresh').length,
+    nearExpiry: items.filter(item => getExpirationStatus(item.expirationDate) === 'nearExpiry').length,
+    expired: items.filter(item => getExpirationStatus(item.expirationDate) === 'expired').length,
+  };
 
   const renderPantryItem = useCallback((item: PantryItem) => {
     const status = getExpirationStatus(item.expirationDate);
@@ -110,42 +123,51 @@ export default function PantryScreen() {
 
     return (
       <View key={item.id} style={styles.itemCard}>
-        <View style={styles.itemHeader}>
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemCategory}>{item.category}</Text>
+        {/* Status Indicator Bar */}
+        <View style={[styles.statusBar, { backgroundColor: statusColor }]} />
+        
+        <View style={styles.itemContent}>
+          <View style={styles.itemHeader}>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <View style={styles.itemMeta}>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{item.category}</Text>
+                </View>
+                <Text style={styles.quantityText}>
+                  {item.quantity} {item.unit}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => {
+                try {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch (error) {
+                  console.log('Haptics not available:', error);
+                }
+                handleDeleteItem(item.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="trash" size={20} color={colors.error} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteItem(item.id)}
-          >
-            <IconSymbol name="trash" size={20} color={colors.error} />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.itemDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('pantry.quantity') || 'Quantity'}:</Text>
-            <Text style={styles.detailValue}>
-              {item.quantity} {item.unit}
-            </Text>
+          <View style={styles.expirationRow}>
+            <View style={styles.expirationInfo}>
+              <IconSymbol 
+                name="calendar" 
+                size={16} 
+                color={statusColor} 
+              />
+              <Text style={[styles.expirationText, { color: statusColor }]}>
+                {formatExpirationText(item.expirationDate)}
+              </Text>
+            </View>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('pantry.expires') || 'Expires'}:</Text>
-            <Text style={[styles.detailValue, { color: statusColor }]}>
-              {formatExpirationText(item.expirationDate)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-          <Text style={styles.statusText}>
-            {status === 'expired'
-              ? t('pantry.expired') || 'Expired'
-              : status === 'nearExpiry'
-              ? t('pantry.nearExpiry') || 'Near Expiry'
-              : t('pantry.fresh') || 'Fresh'}
-          </Text>
         </View>
       </View>
     );
@@ -162,13 +184,42 @@ export default function PantryScreen() {
       <View style={commonStyles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={commonStyles.title}>{t('pantry.title') || 'My Pantry'}</Text>
+          <View>
+            <Text style={styles.headerTitle}>{t('pantry.title') || 'My Pantry'}</Text>
+            <Text style={styles.headerSubtitle}>
+              {stats.total} {stats.total === 1 ? 'item' : 'items'} in stock
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push('/add-item')}
+            onPress={() => {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              } catch (error) {
+                console.log('Haptics not available:', error);
+              }
+              router.push('/add-item');
+            }}
+            activeOpacity={0.8}
           >
             <IconSymbol name="plus" size={24} color="#FFFFFF" />
           </TouchableOpacity>
+        </View>
+
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { backgroundColor: expirationColors.fresh + '15' }]}>
+            <Text style={[styles.statNumber, { color: expirationColors.fresh }]}>{stats.fresh}</Text>
+            <Text style={styles.statLabel}>Fresh</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: expirationColors.nearExpiry + '15' }]}>
+            <Text style={[styles.statNumber, { color: expirationColors.nearExpiry }]}>{stats.nearExpiry}</Text>
+            <Text style={styles.statLabel}>Expiring</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: expirationColors.expired + '15' }]}>
+            <Text style={[styles.statNumber, { color: expirationColors.expired }]}>{stats.expired}</Text>
+            <Text style={styles.statLabel}>Expired</Text>
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -181,7 +232,59 @@ export default function PantryScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Filter Chips */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContainer}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'all' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('all')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.filterChipText, filterStatus === 'all' && styles.filterChipTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'fresh' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('fresh')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.filterDot, { backgroundColor: expirationColors.fresh }]} />
+            <Text style={[styles.filterChipText, filterStatus === 'fresh' && styles.filterChipTextActive]}>
+              Fresh
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'nearExpiry' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('nearExpiry')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.filterDot, { backgroundColor: expirationColors.nearExpiry }]} />
+            <Text style={[styles.filterChipText, filterStatus === 'nearExpiry' && styles.filterChipTextActive]}>
+              Expiring Soon
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterStatus === 'expired' && styles.filterChipActive]}
+            onPress={() => setFilterStatus('expired')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.filterDot, { backgroundColor: expirationColors.expired }]} />
+            <Text style={[styles.filterChipText, filterStatus === 'expired' && styles.filterChipTextActive]}>
+              Expired
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
 
         {/* Items List */}
         <ScrollView
@@ -189,22 +292,39 @@ export default function PantryScreen() {
           contentContainerStyle={styles.itemsListContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
           }
         >
           {filteredItems.length === 0 ? (
-            <View style={styles.emptyState}>
-              <IconSymbol name="archivebox" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateText}>
+            <View style={commonStyles.emptyState}>
+              <View style={commonStyles.emptyStateIcon}>
+                <IconSymbol 
+                  name={searchQuery ? "magnifyingglass" : "archivebox"} 
+                  size={64} 
+                  color={colors.textTertiary} 
+                />
+              </View>
+              <Text style={commonStyles.emptyStateTitle}>
                 {searchQuery
                   ? t('pantry.noResults') || 'No items found'
                   : t('pantry.empty') || 'Your pantry is empty'}
+              </Text>
+              <Text style={commonStyles.emptyStateDescription}>
+                {searchQuery
+                  ? 'Try searching with different keywords'
+                  : 'Start adding items to track your food inventory'}
               </Text>
               {!searchQuery && (
                 <TouchableOpacity
                   style={styles.emptyStateButton}
                   onPress={() => router.push('/add-item')}
+                  activeOpacity={0.8}
                 >
+                  <IconSymbol name="plus" size={20} color="#FFFFFF" />
                   <Text style={styles.emptyStateButtonText}>
                     {t('pantry.addFirst') || 'Add your first item'}
                   </Text>
@@ -225,124 +345,192 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  headerTitle: {
+    ...typography.displayMedium,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
   },
   addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(46, 139, 87, 0.3)',
-    elevation: 4,
+    boxShadow: `0px 4px 16px ${colors.primary}40`,
+    elevation: 6,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  statNumber: {
+    ...typography.displaySmall,
+    marginBottom: 4,
+  },
+  statLabel: {
+    ...typography.labelSmall,
+    color: colors.textSecondary,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    gap: 12,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
+    fontWeight: '500',
+  },
+  filterContainer: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    ...typography.label,
+    color: colors.text,
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: borderRadius.full,
   },
   itemsList: {
     flex: 1,
   },
   itemsListContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 120,
   },
   itemCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 2,
+  },
+  statusBar: {
+    height: 4,
+    width: '100%',
+  },
+  itemContent: {
+    padding: spacing.lg,
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   itemInfo: {
     flex: 1,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.h3,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
-  itemCategory: {
-    fontSize: 14,
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  categoryBadge: {
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.xs,
+  },
+  categoryText: {
+    ...typography.labelSmall,
+    color: colors.primary,
+  },
+  quantityText: {
+    ...typography.bodySmall,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   deleteButton: {
-    padding: 8,
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  itemDetails: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  detailRow: {
+  expirationRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  expirationInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  detailLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  detailValue: {
-    fontSize: 14,
+  expirationText: {
+    ...typography.bodySmall,
     fontWeight: '600',
-    color: colors.text,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    color: colors.textSecondary,
-    marginTop: 16,
-    marginBottom: 24,
-    textAlign: 'center',
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: borderRadius.full,
   },
   emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: borderRadius.lg,
+    boxShadow: `0px 4px 12px ${colors.primary}40`,
+    elevation: 4,
   },
   emptyStateButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.h4,
     color: '#FFFFFF',
   },
 });

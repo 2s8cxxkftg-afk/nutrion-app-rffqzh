@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,18 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Platform,
   RefreshControl,
   Keyboard,
   KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { ShoppingItem } from '@/types/pantry';
 import { loadShoppingItems, saveShoppingItems } from '@/utils/storage';
+import * as Haptics from 'expo-haptics';
 
 export default function ShoppingScreen() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
@@ -71,6 +72,12 @@ export default function ShoppingScreen() {
       setNewItemName('');
       setShowAddForm(false);
       Keyboard.dismiss();
+      
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptics not available:', error);
+      }
     } catch (error) {
       console.error('Error adding item:', error);
       Alert.alert('Error', 'Failed to add item');
@@ -78,6 +85,12 @@ export default function ShoppingScreen() {
   };
 
   const handleToggleItem = async (itemId: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+    
     try {
       const updatedItems = shoppingItems.map(item =>
         item.id === itemId ? { ...item, checked: !item.checked } : item
@@ -95,6 +108,12 @@ export default function ShoppingScreen() {
       const updatedItems = shoppingItems.filter(item => item.id !== itemId);
       await saveShoppingItems(updatedItems);
       setShoppingItems(updatedItems);
+      
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptics not available:', error);
+      }
     } catch (error) {
       console.error('Error deleting item:', error);
       Alert.alert('Error', 'Failed to delete item');
@@ -129,7 +148,7 @@ export default function ShoppingScreen() {
   const checkedItems = shoppingItems.filter(item => item.checked);
 
   const renderShoppingItem = (item: ShoppingItem) => (
-    <View key={item.id} style={[commonStyles.card, styles.itemCard]}>
+    <View key={item.id} style={styles.itemCard}>
       <TouchableOpacity
         style={styles.itemContent}
         onPress={() => handleToggleItem(item.id)}
@@ -140,18 +159,18 @@ export default function ShoppingScreen() {
           item.checked && styles.checkboxChecked
         ]}>
           {item.checked && (
-            <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
+            <IconSymbol name="checkmark" size={18} color="#FFFFFF" />
           )}
         </View>
         
-        <View style={{ flex: 1 }}>
+        <View style={styles.itemInfo}>
           <Text style={[
             styles.itemName,
             item.checked && styles.itemNameChecked
           ]}>
             {item.name}
           </Text>
-          <Text style={commonStyles.textSecondary}>
+          <Text style={styles.itemQuantity}>
             {item.quantity} {item.unit}
           </Text>
         </View>
@@ -171,10 +190,7 @@ export default function ShoppingScreen() {
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: 'Shopping List',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
+          headerShown: false,
         }}
       />
       
@@ -183,34 +199,44 @@ export default function ShoppingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.statsRow}>
-            <Text style={commonStyles.text}>
-              {uncheckedItems.length} items to buy
+          <View>
+            <Text style={styles.headerTitle}>Shopping List</Text>
+            <Text style={styles.headerSubtitle}>
+              {uncheckedItems.length} {uncheckedItems.length === 1 ? 'item' : 'items'} to buy
             </Text>
-            {checkedItems.length > 0 && (
-              <TouchableOpacity onPress={handleClearCompleted} activeOpacity={0.7}>
-                <Text style={styles.clearText}>Clear completed</Text>
-              </TouchableOpacity>
-            )}
           </View>
+          {checkedItems.length > 0 && (
+            <TouchableOpacity 
+              onPress={handleClearCompleted} 
+              activeOpacity={0.7}
+              style={styles.clearButton}
+            >
+              <Text style={styles.clearText}>Clear</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
+        {/* Add Form */}
         {showAddForm && (
           <View style={styles.addForm}>
-            <TextInput
-              style={commonStyles.input}
-              placeholder="Item name"
-              placeholderTextColor={colors.textSecondary}
-              value={newItemName}
-              onChangeText={setNewItemName}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={handleAddItem}
-            />
+            <View style={styles.addInputContainer}>
+              <IconSymbol name="plus.circle.fill" size={24} color={colors.primary} />
+              <TextInput
+                style={styles.addInput}
+                placeholder="Item name"
+                placeholderTextColor={colors.textSecondary}
+                value={newItemName}
+                onChangeText={setNewItemName}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAddItem}
+              />
+            </View>
             <View style={styles.formButtons}>
               <TouchableOpacity
-                style={[styles.formButton, styles.cancelButton]}
+                style={styles.cancelButton}
                 onPress={() => {
                   setShowAddForm(false);
                   setNewItemName('');
@@ -221,16 +247,17 @@ export default function ShoppingScreen() {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.formButton, styles.addFormButton]}
+                style={styles.addButton}
                 onPress={handleAddItem}
                 activeOpacity={0.7}
               >
-                <Text style={styles.addButtonText}>Add</Text>
+                <Text style={styles.addButtonText}>Add Item</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
+        {/* Items List */}
         <ScrollView
           style={styles.itemsList}
           contentContainerStyle={styles.itemsListContent}
@@ -246,26 +273,37 @@ export default function ShoppingScreen() {
           }
         >
           {uncheckedItems.length === 0 && checkedItems.length === 0 ? (
-            <View style={styles.emptyState}>
-              <IconSymbol name="cart" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyStateTitle}>Shopping list is empty</Text>
-              <Text style={commonStyles.textSecondary}>
-                Add items you need to buy
+            <View style={commonStyles.emptyState}>
+              <View style={commonStyles.emptyStateIcon}>
+                <IconSymbol name="cart" size={64} color={colors.textTertiary} />
+              </View>
+              <Text style={commonStyles.emptyStateTitle}>Shopping list is empty</Text>
+              <Text style={commonStyles.emptyStateDescription}>
+                Add items you need to buy from the store
               </Text>
             </View>
           ) : (
             <>
-              {uncheckedItems.map(renderShoppingItem)}
+              {/* Unchecked Items */}
+              {uncheckedItems.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>To Buy</Text>
+                  {uncheckedItems.map(renderShoppingItem)}
+                </View>
+              )}
+              
+              {/* Checked Items */}
               {checkedItems.length > 0 && (
-                <>
+                <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Completed</Text>
                   {checkedItems.map(renderShoppingItem)}
-                </>
+                </View>
               )}
             </>
           )}
         </ScrollView>
 
+        {/* FAB */}
         {!showAddForm && (
           <TouchableOpacity
             style={styles.fab}
@@ -282,76 +320,123 @@ export default function ShoppingScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  headerTitle: {
+    ...typography.displayMedium,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  clearButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.error + '15',
+    borderRadius: borderRadius.md,
   },
   clearText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
+    ...typography.label,
+    color: colors.error,
   },
   addForm: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  addInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    boxShadow: `0px 4px 12px ${colors.primary}20`,
+    elevation: 3,
+  },
+  addInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
   },
   formButtons: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  formButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
+    gap: spacing.md,
   },
   cancelButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.textSecondary + '40',
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.h4,
     color: colors.text,
   },
-  addFormButton: {
+  addButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
     backgroundColor: colors.primary,
+    boxShadow: `0px 4px 12px ${colors.primary}40`,
+    elevation: 4,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.h4,
     color: '#FFFFFF',
   },
   itemsList: {
     flex: 1,
   },
   itemsListContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
     paddingBottom: 120,
+  },
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.lg,
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 2,
   },
   itemContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
     borderWidth: 2,
-    borderColor: colors.textSecondary,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -359,9 +444,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
+  itemInfo: {
+    flex: 1,
+  },
   itemName: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.h4,
     color: colors.text,
     marginBottom: 2,
   },
@@ -369,39 +456,25 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: colors.textSecondary,
   },
-  deleteButton: {
-    padding: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  itemQuantity: {
+    ...typography.bodySmall,
     color: colors.textSecondary,
-    marginTop: 16,
-    marginBottom: 16,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+  deleteButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
   },
   fab: {
     position: 'absolute',
-    right: 20,
+    right: spacing.xl,
     bottom: 100,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    boxShadow: `0px 8px 24px ${colors.primary}60`,
+    elevation: 8,
   },
 });

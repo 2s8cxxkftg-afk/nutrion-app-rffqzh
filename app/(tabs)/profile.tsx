@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography, expirationColors } from '@/styles/commonStyles';
 import { PantryItem } from '@/types/pantry';
 import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
@@ -31,6 +31,7 @@ import {
   authenticateWithBiometrics,
 } from '@/utils/biometricAuth';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_complete';
 
@@ -66,8 +67,8 @@ export default function ProfileScreen() {
 
       items.forEach((item: PantryItem) => {
         const status = getExpirationStatus(item.expirationDate);
-        if (status === 'warning') expiringSoonCount++;
-        if (status === 'danger') expiredCount++;
+        if (status === 'nearExpiry') expiringSoonCount++;
+        if (status === 'expired') expiredCount++;
       });
 
       setExpiringSoon(expiringSoonCount);
@@ -122,11 +123,15 @@ export default function ProfileScreen() {
     }
 
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
+    try {
       if (value) {
-        // Enable biometric
         const authenticated = await authenticateWithBiometrics();
         if (authenticated) {
-          // Get current session
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             await saveBiometricCredentials(session.user.email || '', '');
@@ -146,7 +151,6 @@ export default function ProfileScreen() {
           });
         }
       } else {
-        // Disable biometric
         Alert.alert(
           t('profile.disableBiometric'),
           t('profile.disableBiometricConfirm'),
@@ -281,11 +285,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: t('profile.title'),
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: '800', fontSize: 20 },
+          headerShown: false,
         }}
       />
 
@@ -294,8 +294,13 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* User Profile Header */}
-        <View style={styles.profileHeader}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{t('profile.title') || 'Profile'}</Text>
+        </View>
+
+        {/* User Profile Card */}
+        <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             {user?.user_metadata?.avatar_url ? (
               <Image
@@ -315,7 +320,6 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user.email}</Text>
           )}
 
-          {/* Sign In Button - Only shown when user is not logged in */}
           {!user && (
             <TouchableOpacity
               style={styles.signInButton}
@@ -332,25 +336,25 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.statistics')}</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.primary + '15' }]}>
               <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
-              <Text style={styles.statValue}>{totalItems}</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{totalItems}</Text>
               <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
             </View>
-            <View style={styles.statCard}>
-              <IconSymbol name="clock.fill" size={32} color={colors.warning} />
-              <Text style={styles.statValue}>{expiringSoon}</Text>
+            <View style={[styles.statCard, { backgroundColor: expirationColors.nearExpiry + '15' }]}>
+              <IconSymbol name="clock.fill" size={32} color={expirationColors.nearExpiry} />
+              <Text style={[styles.statValue, { color: expirationColors.nearExpiry }]}>{expiringSoon}</Text>
               <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
             </View>
-            <View style={styles.statCard}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={32} color={colors.error} />
-              <Text style={styles.statValue}>{expired}</Text>
+            <View style={[styles.statCard, { backgroundColor: expirationColors.expired + '15' }]}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={32} color={expirationColors.expired} />
+              <Text style={[styles.statValue, { color: expirationColors.expired }]}>{expired}</Text>
               <Text style={styles.statLabel}>{t('profile.expired')}</Text>
             </View>
           </View>
         </View>
 
-        {/* Security Section - Only shown when user is logged in */}
+        {/* Security Section */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
@@ -358,7 +362,9 @@ export default function ProfileScreen() {
               {biometricAvailable && (
                 <View style={styles.settingItem}>
                   <View style={styles.settingInfo}>
-                    <IconSymbol name="faceid" size={24} color={colors.primary} />
+                    <View style={styles.settingIcon}>
+                      <IconSymbol name="faceid" size={24} color={colors.primary} />
+                    </View>
                     <View style={styles.settingTextContainer}>
                       <Text style={styles.settingTitle}>{biometricType}</Text>
                       <Text style={styles.settingDescription}>
@@ -381,7 +387,9 @@ export default function ProfileScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.settingInfo}>
-                  <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
+                  <View style={styles.settingIcon}>
+                    <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
+                  </View>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>{t('profile.twoFactor')}</Text>
                     <Text style={styles.settingDescription}>
@@ -406,7 +414,9 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.settingInfo}>
-                <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                <View style={styles.settingIcon}>
+                  <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
                   <Text style={styles.settingDescription}>
@@ -423,7 +433,9 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.settingInfo}>
-                <IconSymbol name="globe" size={24} color={colors.primary} />
+                <View style={styles.settingIcon}>
+                  <IconSymbol name="globe" size={24} color={colors.primary} />
+                </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.language')}</Text>
                   <Text style={styles.settingDescription}>
@@ -440,7 +452,9 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.settingInfo}>
-                <IconSymbol name="book.fill" size={24} color={colors.primary} />
+                <View style={styles.settingIcon}>
+                  <IconSymbol name="book.fill" size={24} color={colors.primary} />
+                </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
                   <Text style={styles.settingDescription}>
@@ -457,7 +471,9 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.settingInfo}>
-                <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
+                <View style={styles.settingIcon}>
+                  <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
+                </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.about')}</Text>
                   <Text style={styles.settingDescription}>
@@ -470,7 +486,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Sign Out - Only shown when user is logged in */}
+        {/* Sign Out */}
         {user && (
           <TouchableOpacity
             style={styles.signOutButton}
@@ -482,7 +498,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -490,112 +506,107 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: spacing.xl,
   },
-  profileHeader: {
+  header: {
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  headerTitle: {
+    ...typography.displayMedium,
+    color: colors.text,
+  },
+  profileCard: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: spacing.xxxl,
     backgroundColor: colors.card,
-    borderRadius: 20,
-    marginBottom: 24,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xxl,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 2,
   },
   avatarContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   avatar: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: borderRadius.full,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
   userName: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.h1,
     color: colors.text,
-    marginBottom: 4,
-    letterSpacing: -0.3,
+    marginBottom: spacing.xs,
   },
   userEmail: {
-    fontSize: 16,
+    ...typography.body,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   signInButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: spacing.sm,
     backgroundColor: colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 20,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.xl,
+    boxShadow: `0px 4px 12px ${colors.primary}40`,
     elevation: 4,
   },
   signInButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
+    ...typography.h4,
     color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.xxxl,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...typography.h2,
     color: colors.text,
-    marginBottom: 16,
-    letterSpacing: -0.3,
+    marginBottom: spacing.lg,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
-    elevation: 3,
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: 12,
-    marginBottom: 4,
-    letterSpacing: -0.5,
+    ...typography.displaySmall,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
   },
   statLabel: {
-    fontSize: 12,
+    ...typography.labelSmall,
     color: colors.textSecondary,
-    fontWeight: '600',
     textAlign: 'center',
   },
   settingsList: {
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
-    elevation: 3,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 2,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -603,19 +614,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 16,
+    gap: spacing.md,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   settingTextContainer: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.h4,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   settingDescription: {
-    fontSize: 14,
+    ...typography.bodySmall,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -623,15 +641,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.error + '15',
-    borderRadius: 16,
-    padding: 18,
-    marginTop: 8,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
   },
   signOutText: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.h4,
     color: colors.error,
   },
 });
