@@ -254,9 +254,11 @@ export default function AuthScreen() {
               resizeMode="contain"
             />
             <Text style={styles.appName}>Nutrion</Text>
-            <Text style={styles.subtitle}>
-              {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
-            </Text>
+            {!isLogin && (
+              <Text style={styles.subtitle}>
+                {t('auth.createAccount')}
+              </Text>
+            )}
           </View>
 
           {/* Biometric Login Button (only show on login screen if enabled) */}
