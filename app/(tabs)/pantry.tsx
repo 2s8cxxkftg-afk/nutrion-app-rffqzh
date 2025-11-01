@@ -185,7 +185,7 @@ export default function PantryScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>{t('pantry.title') || 'My Pantry'}</Text>
+            <Text style={styles.headerTitle}>Pantry</Text>
             <Text style={styles.headerSubtitle}>
               {stats.total} {stats.total === 1 ? 'item' : 'items'} in stock
             </Text>
