@@ -10,6 +10,8 @@ interface FreshFoodShelfLife {
   refrigeratedDays: number;
   roomTempDays: number;
   description: string;
+  minDays?: number;
+  maxDays?: number;
 }
 
 // Comprehensive database of fresh food shelf life
@@ -20,6 +22,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['beef', 'steak', 'ground beef', 'pork', 'lamb', 'veal', 'meat'],
     refrigeratedDays: 3,
     roomTempDays: 0,
+    minDays: 2,
+    maxDays: 5,
     description: 'Raw red meat (refrigerated)',
   },
   {
@@ -27,6 +31,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['chicken', 'turkey', 'duck', 'poultry'],
     refrigeratedDays: 2,
     roomTempDays: 0,
+    minDays: 1,
+    maxDays: 3,
     description: 'Raw poultry (refrigerated)',
   },
   {
@@ -34,6 +40,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['ground chicken', 'ground turkey', 'ground pork', 'minced meat'],
     refrigeratedDays: 2,
     roomTempDays: 0,
+    minDays: 1,
+    maxDays: 2,
     description: 'Ground/minced meat (refrigerated)',
   },
   {
@@ -41,6 +49,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['fish', 'salmon', 'tuna', 'cod', 'shrimp', 'prawns', 'crab', 'lobster', 'seafood', 'shellfish'],
     refrigeratedDays: 2,
     roomTempDays: 0,
+    minDays: 1,
+    maxDays: 2,
     description: 'Fresh seafood (refrigerated)',
   },
   
@@ -50,6 +60,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['eggs', 'egg'],
     refrigeratedDays: 35,
     roomTempDays: 21,
+    minDays: 21,
+    maxDays: 35,
     description: 'Fresh eggs',
   },
   {
@@ -57,6 +69,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['milk', 'fresh milk', 'whole milk', 'skim milk'],
     refrigeratedDays: 7,
     roomTempDays: 0,
+    minDays: 5,
+    maxDays: 7,
     description: 'Fresh milk (refrigerated)',
   },
   {
@@ -64,6 +78,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['mozzarella', 'ricotta', 'cottage cheese', 'cream cheese', 'soft cheese'],
     refrigeratedDays: 7,
     roomTempDays: 0,
+    minDays: 5,
+    maxDays: 10,
     description: 'Soft cheese (refrigerated)',
   },
   {
@@ -71,6 +87,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['cheddar', 'parmesan', 'swiss', 'gouda', 'hard cheese'],
     refrigeratedDays: 21,
     roomTempDays: 0,
+    minDays: 14,
+    maxDays: 28,
     description: 'Hard cheese (refrigerated)',
   },
   
@@ -80,6 +98,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['strawberry', 'strawberries', 'blueberry', 'blueberries', 'raspberry', 'raspberries', 'blackberry', 'blackberries', 'berries'],
     refrigeratedDays: 5,
     roomTempDays: 1,
+    minDays: 3,
+    maxDays: 7,
     description: 'Fresh berries',
   },
   {
@@ -87,6 +107,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['orange', 'oranges', 'lemon', 'lemons', 'lime', 'limes', 'grapefruit', 'citrus'],
     refrigeratedDays: 21,
     roomTempDays: 7,
+    minDays: 14,
+    maxDays: 28,
     description: 'Citrus fruits',
   },
   {
@@ -94,6 +116,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['apple', 'apples'],
     refrigeratedDays: 42,
     roomTempDays: 7,
+    minDays: 30,
+    maxDays: 60,
     description: 'Apples',
   },
   {
@@ -101,6 +125,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['banana', 'bananas'],
     refrigeratedDays: 7,
     roomTempDays: 5,
+    minDays: 3,
+    maxDays: 7,
     description: 'Bananas',
   },
   {
@@ -108,6 +134,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['peach', 'peaches', 'plum', 'plums', 'nectarine', 'nectarines', 'apricot', 'apricots'],
     refrigeratedDays: 5,
     roomTempDays: 3,
+    minDays: 3,
+    maxDays: 7,
     description: 'Stone fruits',
   },
   {
@@ -115,6 +143,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['grape', 'grapes'],
     refrigeratedDays: 7,
     roomTempDays: 3,
+    minDays: 5,
+    maxDays: 10,
     description: 'Grapes',
   },
   {
@@ -122,6 +152,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['watermelon', 'cantaloupe', 'honeydew', 'melon'],
     refrigeratedDays: 7,
     roomTempDays: 3,
+    minDays: 5,
+    maxDays: 10,
     description: 'Melons (whole)',
   },
   {
@@ -129,6 +161,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['mango', 'mangoes', 'pineapple', 'papaya', 'kiwi'],
     refrigeratedDays: 7,
     roomTempDays: 3,
+    minDays: 5,
+    maxDays: 10,
     description: 'Tropical fruits',
   },
   
@@ -138,6 +172,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['lettuce', 'spinach', 'kale', 'arugula', 'salad', 'greens'],
     refrigeratedDays: 5,
     roomTempDays: 1,
+    minDays: 3,
+    maxDays: 7,
     description: 'Leafy greens (refrigerated)',
   },
   {
@@ -145,6 +181,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['broccoli', 'cauliflower'],
     refrigeratedDays: 7,
     roomTempDays: 2,
+    minDays: 5,
+    maxDays: 10,
     description: 'Broccoli and cauliflower',
   },
   {
@@ -152,6 +190,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['carrot', 'carrots'],
     refrigeratedDays: 21,
     roomTempDays: 7,
+    minDays: 14,
+    maxDays: 28,
     description: 'Carrots',
   },
   {
@@ -159,6 +199,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['tomato', 'tomatoes'],
     refrigeratedDays: 7,
     roomTempDays: 5,
+    minDays: 5,
+    maxDays: 10,
     description: 'Tomatoes',
   },
   {
@@ -166,6 +208,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['pepper', 'peppers', 'bell pepper', 'capsicum'],
     refrigeratedDays: 7,
     roomTempDays: 3,
+    minDays: 5,
+    maxDays: 10,
     description: 'Peppers',
   },
   {
@@ -173,6 +217,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['cucumber', 'cucumbers'],
     refrigeratedDays: 7,
     roomTempDays: 3,
+    minDays: 5,
+    maxDays: 10,
     description: 'Cucumbers',
   },
   {
@@ -180,6 +226,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['mushroom', 'mushrooms'],
     refrigeratedDays: 7,
     roomTempDays: 1,
+    minDays: 5,
+    maxDays: 10,
     description: 'Mushrooms',
   },
   {
@@ -187,6 +235,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['potato', 'potatoes'],
     refrigeratedDays: 14,
     roomTempDays: 30,
+    minDays: 14,
+    maxDays: 60,
     description: 'Potatoes (cool, dark place)',
   },
   {
@@ -194,6 +244,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['onion', 'onions'],
     refrigeratedDays: 30,
     roomTempDays: 30,
+    minDays: 21,
+    maxDays: 60,
     description: 'Onions (cool, dark place)',
   },
   {
@@ -201,6 +253,8 @@ const FRESH_FOOD_DATABASE: FreshFoodShelfLife[] = [
     items: ['garlic'],
     refrigeratedDays: 90,
     roomTempDays: 60,
+    minDays: 60,
+    maxDays: 120,
     description: 'Garlic (cool, dark place)',
   },
 ];
@@ -243,6 +297,51 @@ const PACKAGED_FOOD_PATTERNS: { [key: string]: number } = {
   'soup': 730,
   'beans': 730,
   'tuna': 1095,
+};
+
+/**
+ * Get expiration estimation text for a food item
+ * @param foodName - Name of the food item
+ * @param isRefrigerated - Whether the food is stored in refrigerator
+ * @returns Estimation text (e.g., "Expires within 3-5 weeks")
+ */
+export const getExpirationEstimation = (
+  foodName: string,
+  isRefrigerated: boolean = true
+): string | null => {
+  const normalizedName = foodName.toLowerCase().trim();
+  
+  // Check if it's a fresh food item
+  for (const freshFood of FRESH_FOOD_DATABASE) {
+    const matchedItem = freshFood.items.find(item => 
+      normalizedName.includes(item) || item.includes(normalizedName)
+    );
+    
+    if (matchedItem) {
+      const minDays = freshFood.minDays || freshFood.refrigeratedDays;
+      const maxDays = freshFood.maxDays || freshFood.refrigeratedDays;
+      
+      // Convert days to weeks if appropriate
+      if (minDays >= 7 && maxDays >= 7) {
+        const minWeeks = Math.floor(minDays / 7);
+        const maxWeeks = Math.ceil(maxDays / 7);
+        
+        if (minWeeks === maxWeeks) {
+          return `Expires within ${minWeeks} week${minWeeks !== 1 ? 's' : ''}`;
+        } else {
+          return `Expires within ${minWeeks}-${maxWeeks} weeks`;
+        }
+      } else {
+        if (minDays === maxDays) {
+          return `Expires within ${minDays} day${minDays !== 1 ? 's' : ''}`;
+        } else {
+          return `Expires within ${minDays}-${maxDays} days`;
+        }
+      }
+    }
+  }
+  
+  return null;
 };
 
 /**

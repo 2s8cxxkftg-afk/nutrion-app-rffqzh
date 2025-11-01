@@ -18,6 +18,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
+import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -42,6 +43,27 @@ export default function AddItemScreen() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [dateError, setDateError] = useState('');
+  const [aiEstimation, setAiEstimation] = useState<string | null>(null);
+
+  // Update AI estimation when name changes
+  const handleNameChange = (text: string) => {
+    setName(text);
+    
+    // Get AI estimation for the food item
+    if (text.trim().length > 0) {
+      const estimation = getExpirationEstimation(text, true);
+      setAiEstimation(estimation);
+      
+      // Auto-fill expiration date if estimation is available
+      if (estimation && !expirationDateText) {
+        const predictedDate = predictExpirationDate(text, category, new Date(), true);
+        const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
+        setExpirationDateText(formattedDate);
+      }
+    } else {
+      setAiEstimation(null);
+    }
+  };
 
   // Format date input as user types (MM/DD/YYYY)
   const handleDateChange = (text: string) => {
@@ -248,7 +270,7 @@ export default function AddItemScreen() {
             placeholder="e.g., Milk, Eggs, Bread"
             placeholderTextColor={colors.textSecondary}
             value={name}
-            onChangeText={setName}
+            onChangeText={handleNameChange}
             autoCapitalize="words"
             returnKeyType="next"
             autoCorrect={false}
@@ -260,6 +282,18 @@ export default function AddItemScreen() {
             editable={true}
             selectTextOnFocus={true}
           />
+
+          {aiEstimation && (
+            <View style={styles.aiEstimationBanner}>
+              <View style={styles.aiEstimationIcon}>
+                <IconSymbol name="sparkles" size={16} color={colors.primary} />
+              </View>
+              <View style={styles.aiEstimationContent}>
+                <Text style={styles.aiEstimationTitle}>AI Prediction</Text>
+                <Text style={styles.aiEstimationText}>{aiEstimation}</Text>
+              </View>
+            </View>
+          )}
 
           <Text style={styles.label}>{t('category')} *</Text>
           <TouchableOpacity
@@ -290,6 +324,12 @@ export default function AddItemScreen() {
                       setCategory(cat);
                       setShowCategoryPicker(false);
                       console.log('Category selected:', cat);
+                      
+                      // Update AI estimation when category changes
+                      if (name.trim().length > 0) {
+                        const estimation = getExpirationEstimation(name, true);
+                        setAiEstimation(estimation);
+                      }
                     }}
                     activeOpacity={0.7}
                   >
@@ -442,7 +482,9 @@ export default function AddItemScreen() {
               <Text style={styles.errorText}>{dateError}</Text>
             ) : (
               <Text style={styles.helperText}>
-                Enter date in MM/DD/YYYY format (e.g., 10/25/2025)
+                {aiEstimation 
+                  ? 'AI-predicted date filled. You can edit if needed.'
+                  : 'Enter date in MM/DD/YYYY format (e.g., 10/25/2025)'}
               </Text>
             )}
           </View>
@@ -523,6 +565,40 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 8,
     marginTop: 16,
+  },
+  aiEstimationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '15',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+    gap: 12,
+  },
+  aiEstimationIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary + '25',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiEstimationContent: {
+    flex: 1,
+  },
+  aiEstimationTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  aiEstimationText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',
