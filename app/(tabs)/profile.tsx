@@ -33,7 +33,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
-const ONBOARDING_KEY = '@nutrion_onboarding_complete';
+const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -239,6 +239,7 @@ export default function ProfileScreen() {
   const handleViewOnboarding = async () => {
     try {
       await AsyncStorage.removeItem(ONBOARDING_KEY);
+      console.log('Onboarding key removed, navigating to onboarding');
       router.replace('/onboarding');
     } catch (error) {
       console.error('Error resetting onboarding:', error);
