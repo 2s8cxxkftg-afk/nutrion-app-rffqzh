@@ -27,15 +27,20 @@ export default function ScanBarcodeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
 
   useEffect(() => {
+    console.log('=== Barcode Scanner Initialized ===');
     console.log('Camera permission status:', permission);
+    console.log('Permission granted:', permission?.granted);
+    console.log('Can ask again:', permission?.canAskAgain);
   }, [permission]);
 
   const fetchProductFromBarcode = async (barcode: string) => {
     try {
       setLoading(true);
-      console.log('Fetching product for barcode:', barcode);
+      console.log('=== Fetching Product ===');
+      console.log('Barcode:', barcode);
       
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
@@ -47,19 +52,24 @@ export default function ScanBarcodeScreen() {
         }
       );
       
+      console.log('API Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
       console.log('Open Food Facts response status:', data.status);
+      console.log('Product found:', data.status === 1);
       
       if (data.status === 1 && data.product) {
         const product: OpenFoodFactsProduct = data.product;
-        console.log('Product found:', product.product_name);
+        console.log('Product name:', product.product_name);
+        console.log('Product brands:', product.brands);
         
         // Auto-categorize the product
         const autoCategory = categorizeFoodItem(product.product_name || 'Unknown Product');
+        console.log('Auto-categorized as:', autoCategory);
         
         // Predict expiration date using AI
         const predictedExpiration = predictExpirationDate(
@@ -74,6 +84,9 @@ export default function ScanBarcodeScreen() {
           true
         );
         
+        console.log('Predicted expiration:', predictedExpiration);
+        console.log('Expiration estimation:', expirationEstimation);
+        
         Alert.alert(
           t('productFound'),
           `${product.product_name || 'Unknown Product'}\n${product.brands ? `Brand: ${product.brands}` : ''}\n\nCategory: ${autoCategory}\n${expirationEstimation ? `\n✨ AI Prediction: ${expirationEstimation}` : ''}\n\nWould you like to add this to your pantry?`,
@@ -82,6 +95,7 @@ export default function ScanBarcodeScreen() {
               text: t('cancel'),
               style: 'cancel',
               onPress: () => {
+                console.log('User cancelled adding product');
                 setScanned(false);
                 setLoading(false);
               },
@@ -90,6 +104,7 @@ export default function ScanBarcodeScreen() {
               text: t('addToPantry'),
               onPress: async () => {
                 try {
+                  console.log('Adding product to pantry...');
                   const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                   const newItem: PantryItem = {
                     id: uniqueId,
@@ -107,7 +122,7 @@ export default function ScanBarcodeScreen() {
                   };
 
                   await addPantryItem(newItem);
-                  console.log('Product added to pantry:', newItem);
+                  console.log('✅ Product successfully added to pantry');
 
                   Toast.show({
                     message: t('pantry.itemAdded'),
@@ -119,7 +134,7 @@ export default function ScanBarcodeScreen() {
                     router.back();
                   }, 1500);
                 } catch (error) {
-                  console.error('Error adding product to pantry:', error);
+                  console.error('❌ Error adding product to pantry:', error);
                   Alert.alert(t('error'), 'Failed to add product to pantry');
                   setScanned(false);
                   setLoading(false);
@@ -129,7 +144,7 @@ export default function ScanBarcodeScreen() {
           ]
         );
       } else {
-        console.log('Product not found in database');
+        console.log('❌ Product not found in Open Food Facts database');
         Alert.alert(
           t('productNotFound'),
           t('productNotFoundText'),
@@ -137,6 +152,7 @@ export default function ScanBarcodeScreen() {
             {
               text: t('addManually'),
               onPress: () => {
+                console.log('User chose to add manually');
                 setLoading(false);
                 router.back();
                 setTimeout(() => {
@@ -147,6 +163,7 @@ export default function ScanBarcodeScreen() {
             {
               text: t('tryAgain'),
               onPress: () => {
+                console.log('User chose to try again');
                 setScanned(false);
                 setLoading(false);
               },
@@ -155,7 +172,7 @@ export default function ScanBarcodeScreen() {
         );
       }
     } catch (error) {
-      console.error('Error fetching product:', error);
+      console.error('❌ Error fetching product:', error);
       Alert.alert(
         t('error'),
         'Failed to fetch product information. Please check your internet connection and try again.',
@@ -184,17 +201,26 @@ export default function ScanBarcodeScreen() {
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (scanned || loading) {
-      console.log('Already processing a scan, ignoring...');
+      console.log('⚠️ Already processing a scan, ignoring...');
       return;
     }
     
-    console.log('Barcode scanned - Type:', type, 'Data:', data);
-    setScanned(true);
+    console.log('=== Barcode Detected ===');
+    console.log('Type:', type);
+    console.log('Data:', data);
+    console.log('Camera ready:', cameraReady);
     
+    setScanned(true);
     fetchProductFromBarcode(data);
   };
 
+  const handleCameraReady = () => {
+    console.log('✅ Camera is ready');
+    setCameraReady(true);
+  };
+
   if (!permission) {
+    console.log('⏳ Waiting for permission status...');
     return (
       <View style={[commonStyles.container, commonStyles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -204,6 +230,7 @@ export default function ScanBarcodeScreen() {
   }
 
   if (!permission.granted) {
+    console.log('❌ Camera permission not granted');
     return (
       <SafeAreaView style={commonStyles.safeArea}>
         <Stack.Screen
@@ -225,7 +252,10 @@ export default function ScanBarcodeScreen() {
           </Text>
           <TouchableOpacity
             style={styles.permissionButton}
-            onPress={requestPermission}
+            onPress={() => {
+              console.log('Requesting camera permission...');
+              requestPermission();
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
@@ -235,6 +265,7 @@ export default function ScanBarcodeScreen() {
     );
   }
 
+  console.log('✅ Rendering camera view');
   return (
     <SafeAreaView style={[commonStyles.safeArea, { backgroundColor: '#000' }]} edges={['top', 'bottom']}>
       <Stack.Screen
@@ -252,6 +283,7 @@ export default function ScanBarcodeScreen() {
           style={styles.camera}
           facing="back"
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          onCameraReady={handleCameraReady}
           barcodeScannerSettings={{
             barcodeTypes: [
               'qr',
@@ -264,6 +296,9 @@ export default function ScanBarcodeScreen() {
               'code93',
               'codabar',
               'itf14',
+              'aztec',
+              'datamatrix',
+              'pdf417',
             ],
           }}
         />
@@ -277,10 +312,22 @@ export default function ScanBarcodeScreen() {
           </View>
           
           <Text style={styles.instructionText}>
-            {loading ? t('lookingUp') : t('positionBarcode')}
+            {loading 
+              ? t('lookingUp') 
+              : !cameraReady 
+              ? 'Initializing camera...' 
+              : t('positionBarcode')}
           </Text>
           
           {loading && (
+            <ActivityIndicator 
+              size="large" 
+              color={colors.primary} 
+              style={{ marginTop: 16 }}
+            />
+          )}
+          
+          {!cameraReady && !loading && (
             <ActivityIndicator 
               size="large" 
               color={colors.primary} 
@@ -293,7 +340,7 @@ export default function ScanBarcodeScreen() {
           <TouchableOpacity
             style={styles.rescanButton}
             onPress={() => {
-              console.log('Resetting scanner');
+              console.log('🔄 Resetting scanner');
               setScanned(false);
             }}
             activeOpacity={0.7}

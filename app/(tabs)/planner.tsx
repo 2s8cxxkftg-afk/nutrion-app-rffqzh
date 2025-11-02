@@ -55,7 +55,7 @@ export default function PlannerScreen() {
       setAiSuggestions(data.recipes);
       setShowAiSuggestions(true);
       Toast.show({
-        message: `Generated ${data.recipes.length} recipe suggestions!`,
+        message: `Generated ${data.recipes.length} diverse recipe suggestions!`,
         type: 'success',
         duration: 2000,
       });
@@ -230,6 +230,22 @@ export default function PlannerScreen() {
           </View>
         </View>
 
+        {/* Cuisine and Origin Badge */}
+        <View style={styles.cuisineBadge}>
+          <IconSymbol name="globe" size={16} color={colors.primary} />
+          <Text style={styles.cuisineText}>
+            {recipe.cuisine} {recipe.origin && `• ${recipe.origin}`}
+          </Text>
+        </View>
+
+        {/* Cultural Context */}
+        {recipe.culturalContext && (
+          <View style={styles.culturalContextContainer}>
+            <IconSymbol name="info.circle" size={14} color={colors.textSecondary} />
+            <Text style={styles.culturalContextText}>{recipe.culturalContext}</Text>
+          </View>
+        )}
+
         <View style={styles.recipeInfo}>
           <View style={styles.infoChip}>
             <IconSymbol name="clock" size={16} color={colors.textSecondary} />
@@ -276,6 +292,17 @@ export default function PlannerScreen() {
             </Text>
           )}
         </View>
+
+        {/* Instructions Preview */}
+        {recipe.instructions && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>Instructions</Text>
+            <Text style={styles.instructionsPreview} numberOfLines={3}>
+              {recipe.instructions}
+            </Text>
+          </>
+        )}
       </View>
     );
   };
@@ -338,7 +365,7 @@ export default function PlannerScreen() {
             {loading ? (
               <>
                 <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.aiButtonText}>Generating...</Text>
+                <Text style={styles.aiButtonText}>Generating diverse recipes...</Text>
               </>
             ) : (
               <>
@@ -397,7 +424,7 @@ export default function PlannerScreen() {
 
           {/* Recipes List */}
           <Text style={styles.sectionHeader}>
-            {showAiSuggestions ? 'AI-Powered Suggestions' : 'Suggested Recipes'}
+            {showAiSuggestions ? '🌍 World Cuisine Suggestions' : 'Suggested Recipes'}
           </Text>
 
           {showAiSuggestions ? (
@@ -408,7 +435,7 @@ export default function PlannerScreen() {
                 </View>
                 <Text style={commonStyles.emptyStateTitle}>No AI suggestions yet</Text>
                 <Text style={commonStyles.emptyStateDescription}>
-                  Tap the button above to get personalized recipe suggestions based on your pantry
+                  Tap the button above to get personalized recipe suggestions from cuisines around the world
                 </Text>
               </View>
             ) : (
@@ -585,6 +612,40 @@ const styles = StyleSheet.create({
     ...typography.labelSmall,
     color: '#FFFFFF',
   },
+  cuisineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    alignSelf: 'flex-start',
+  },
+  cuisineText: {
+    ...typography.label,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  culturalContextContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    backgroundColor: colors.background,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
+  },
+  culturalContextText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    flex: 1,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
   recipeInfo: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -636,5 +697,10 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     fontStyle: 'italic',
     marginTop: spacing.xs,
+  },
+  instructionsPreview: {
+    ...typography.body,
+    color: colors.textSecondary,
+    lineHeight: 22,
   },
 });
