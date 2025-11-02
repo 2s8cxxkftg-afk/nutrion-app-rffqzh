@@ -17,9 +17,12 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { Recipe, PantryItem } from '@/types/pantry';
 import { loadRecipes, loadPantryItems } from '@/utils/storage';
 import { useRecipeSuggestions, RecipeSuggestion } from '@/hooks/useRecipeSuggestions';
+import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
+import Toast from '@/components/Toast';
 
 export default function PlannerScreen() {
+  const { t } = useTranslation();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [suggestedRecipes, setSuggestedRecipes] = useState<Recipe[]>([]);
@@ -37,14 +40,25 @@ export default function PlannerScreen() {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Error', error);
+      console.error('Recipe suggestion error:', error);
+      Toast.show({
+        message: error,
+        type: 'error',
+        duration: 3000,
+      });
     }
   }, [error]);
 
   useEffect(() => {
     if (data?.recipes) {
+      console.log('Received AI suggestions:', data.recipes.length);
       setAiSuggestions(data.recipes);
       setShowAiSuggestions(true);
+      Toast.show({
+        message: `Generated ${data.recipes.length} recipe suggestions!`,
+        type: 'success',
+        duration: 2000,
+      });
     }
   }, [data]);
 
@@ -83,6 +97,9 @@ export default function PlannerScreen() {
   };
 
   const handleGetAiSuggestions = async () => {
+    console.log('=== Get AI Suggestions Clicked ===');
+    console.log('Pantry items count:', pantryItems.length);
+    
     if (pantryItems.length === 0) {
       Alert.alert(
         'No Pantry Items',
@@ -92,13 +109,24 @@ export default function PlannerScreen() {
     }
 
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
       console.log('Haptics not available:', error);
     }
 
     const pantryItemNames = pantryItems.map(item => item.name);
-    await generateSuggestions(pantryItemNames);
+    console.log('Generating suggestions for items:', pantryItemNames);
+    
+    try {
+      await generateSuggestions(pantryItemNames);
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      Toast.show({
+        message: 'Failed to generate suggestions. Please try again.',
+        type: 'error',
+        duration: 3000,
+      });
+    }
   };
 
   const renderRecipeCard = (recipe: Recipe) => {
@@ -264,9 +292,9 @@ export default function PlannerScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>Meal Planner</Text>
+            <Text style={styles.headerTitle}>{t('planner.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              {pantryItems.length} ingredients available
+              {t('planner.ingredientsAvailable', { count: pantryItems.length })}
             </Text>
           </View>
         </View>
@@ -315,7 +343,7 @@ export default function PlannerScreen() {
             ) : (
               <>
                 <IconSymbol name="sparkles" size={24} color="#FFFFFF" />
-                <Text style={styles.aiButtonText}>Get AI Recipe Suggestions</Text>
+                <Text style={styles.aiButtonText}>{t('planner.getAiSuggestions')}</Text>
               </>
             )}
           </TouchableOpacity>

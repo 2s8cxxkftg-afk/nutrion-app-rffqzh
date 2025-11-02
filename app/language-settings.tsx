@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -15,6 +15,7 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from '@/utils/i18n';
 import Toast from '@/components/Toast';
+import * as Haptics from 'expo-haptics';
 
 export default function LanguageSettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -23,6 +24,20 @@ export default function LanguageSettingsScreen() {
   const [isChanging, setIsChanging] = useState(false);
   const languages = getAvailableLanguages();
 
+  useEffect(() => {
+    // Update current language when i18n language changes
+    const handleLanguageChange = (lng: string) => {
+      console.log('Language changed event:', lng);
+      setCurrentLang(lng);
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
+
   const handleLanguageChange = async (languageCode: string) => {
     if (isChanging || languageCode === currentLang) {
       return;
@@ -30,30 +45,39 @@ export default function LanguageSettingsScreen() {
 
     try {
       setIsChanging(true);
+      
+      // Haptic feedback
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.log('Haptics not available:', error);
+      }
+      
       console.log('Changing language from', currentLang, 'to', languageCode);
       
-      // Change the language
-      await changeLanguage(languageCode);
+      // Change the language - this will trigger app-wide update
+      const success = await changeLanguage(languageCode);
       
-      // Update local state
-      setCurrentLang(languageCode);
-      
-      // Force i18n to update
-      await i18n.changeLanguage(languageCode);
-      
-      console.log('Language changed successfully to:', languageCode);
-      
-      // Show success message
-      Toast.show({
-        message: 'Language changed successfully',
-        type: 'success',
-        duration: 2000,
-      });
-      
-      // Navigate back after a short delay to allow the toast to show
-      setTimeout(() => {
-        router.back();
-      }, 500);
+      if (success) {
+        // Update local state
+        setCurrentLang(languageCode);
+        
+        console.log('Language changed successfully to:', languageCode);
+        
+        // Show success message
+        Toast.show({
+          message: 'Language changed successfully',
+          type: 'success',
+          duration: 2000,
+        });
+        
+        // Navigate back after a short delay to allow the toast to show
+        setTimeout(() => {
+          router.back();
+        }, 500);
+      } else {
+        throw new Error('Failed to change language');
+      }
       
     } catch (error) {
       console.error('Error changing language:', error);
@@ -85,7 +109,7 @@ export default function LanguageSettingsScreen() {
       >
         <Text style={styles.sectionTitle}>Select Language</Text>
         <Text style={styles.sectionDescription}>
-          Choose your preferred language for the app
+          Choose your preferred language. The entire app will update immediately.
         </Text>
 
         <View style={styles.languageList}>
@@ -106,9 +130,11 @@ export default function LanguageSettingsScreen() {
                   <Text style={styles.languageName}>{language.name}</Text>
                   <Text style={styles.languageNative}>{language.nativeName}</Text>
                 </View>
-                {isSelected && (
+                {isChanging && currentLang === language.code ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : isSelected ? (
                   <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
-                )}
+                ) : null}
               </TouchableOpacity>
             );
           })}
@@ -117,7 +143,7 @@ export default function LanguageSettingsScreen() {
         <View style={styles.infoBox}>
           <IconSymbol name="info.circle" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
-            The app will update immediately when you select a new language
+            The app will update immediately when you select a new language. All screens, buttons, and text will be translated.
           </Text>
         </View>
       </ScrollView>
@@ -141,6 +167,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 24,
+    lineHeight: 22,
   },
   languageList: {
     gap: 12,

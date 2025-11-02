@@ -10,7 +10,7 @@ const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -24,6 +24,8 @@ export default function Index() {
       // Check onboarding status
       const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
       console.log('Onboarding value from AsyncStorage:', onboardingValue);
+      
+      // If null or undefined, user hasn't completed onboarding
       const completedOnboarding = onboardingValue === 'true';
       console.log('Has completed onboarding:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
@@ -40,6 +42,7 @@ export default function Index() {
       }, 1500);
     } catch (error) {
       console.error('Error checking app status:', error);
+      // On error, assume onboarding not completed
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
       setTimeout(() => {
@@ -48,7 +51,7 @@ export default function Index() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || hasCompletedOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
         <Image
