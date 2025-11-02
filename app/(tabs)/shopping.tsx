@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 export default function ShoppingScreen() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [showAddForm, setShowAddForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -56,10 +57,16 @@ export default function ShoppingScreen() {
       return;
     }
 
+    const quantityNum = parseFloat(newItemQuantity);
+    if (isNaN(quantityNum) || quantityNum <= 0) {
+      Alert.alert('Error', 'Please enter a valid quantity');
+      return;
+    }
+
     const newItem: ShoppingItem = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: newItemName.trim(),
-      quantity: 1,
+      quantity: quantityNum,
       unit: 'pcs',
       category: 'Other',
       checked: false,
@@ -70,6 +77,7 @@ export default function ShoppingScreen() {
       await saveShoppingItems(updatedItems);
       setShoppingItems(updatedItems);
       setNewItemName('');
+      setNewItemQuantity('1');
       setShowAddForm(false);
       Keyboard.dismiss();
       
@@ -171,7 +179,7 @@ export default function ShoppingScreen() {
             {item.name}
           </Text>
           <Text style={styles.itemQuantity}>
-            {item.quantity} {item.unit}
+            Qty: {item.quantity} {item.unit}
           </Text>
         </View>
       </TouchableOpacity>
@@ -230,16 +238,55 @@ export default function ShoppingScreen() {
                 value={newItemName}
                 onChangeText={setNewItemName}
                 autoFocus
-                returnKeyType="done"
-                onSubmitEditing={handleAddItem}
+                returnKeyType="next"
+                onSubmitEditing={() => {}}
               />
             </View>
+            
+            <View style={styles.quantityRow}>
+              <Text style={styles.quantityLabel}>Quantity:</Text>
+              <View style={styles.quantityInputContainer}>
+                <TouchableOpacity
+                  style={styles.quantityButton}
+                  onPress={() => {
+                    const current = parseFloat(newItemQuantity) || 1;
+                    if (current > 1) {
+                      setNewItemQuantity((current - 1).toString());
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={18} color={colors.text} />
+                </TouchableOpacity>
+                
+                <TextInput
+                  style={styles.quantityInput}
+                  value={newItemQuantity}
+                  onChangeText={setNewItemQuantity}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                
+                <TouchableOpacity
+                  style={styles.quantityButton}
+                  onPress={() => {
+                    const current = parseFloat(newItemQuantity) || 1;
+                    setNewItemQuantity((current + 1).toString());
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="plus" size={18} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            
             <View style={styles.formButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
                   setShowAddForm(false);
                   setNewItemName('');
+                  setNewItemQuantity('1');
                   Keyboard.dismiss();
                 }}
                 activeOpacity={0.7}
@@ -369,6 +416,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     fontWeight: '500',
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+  },
+  quantityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  quantityInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  quantityButton: {
+    padding: spacing.md,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 44,
+  },
+  quantityInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
+    minWidth: 60,
+    paddingHorizontal: spacing.sm,
   },
   formButtons: {
     flexDirection: 'row',

@@ -14,10 +14,12 @@ import { Stack, useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { OpenFoodFactsProduct, PantryItem } from '@/types/pantry';
+import { OpenFoodFactsProduct, PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
+import { predictExpirationDate, getExpirationEstimation } from '@/utils/expirationHelper';
+import { categorizeFoodItem } from '@/utils/categoryHelper';
 
 export default function ScanBarcodeScreen() {
   const { t } = useTranslation();
@@ -56,9 +58,25 @@ export default function ScanBarcodeScreen() {
         const product: OpenFoodFactsProduct = data.product;
         console.log('Product found:', product.product_name);
         
+        // Auto-categorize the product
+        const autoCategory = categorizeFoodItem(product.product_name || 'Unknown Product');
+        
+        // Predict expiration date using AI
+        const predictedExpiration = predictExpirationDate(
+          product.product_name || 'Unknown Product',
+          autoCategory,
+          new Date(),
+          true
+        );
+        
+        const expirationEstimation = getExpirationEstimation(
+          product.product_name || 'Unknown Product',
+          true
+        );
+        
         Alert.alert(
           t('productFound'),
-          `${product.product_name || 'Unknown Product'}\n${product.brands ? `Brand: ${product.brands}` : ''}\n\nWould you like to add this to your pantry?`,
+          `${product.product_name || 'Unknown Product'}\n${product.brands ? `Brand: ${product.brands}` : ''}\n\nCategory: ${autoCategory}\n${expirationEstimation ? `\n✨ AI Prediction: ${expirationEstimation}` : ''}\n\nWould you like to add this to your pantry?`,
           [
             {
               text: t('cancel'),
@@ -72,43 +90,29 @@ export default function ScanBarcodeScreen() {
               text: t('addToPantry'),
               onPress: async () => {
                 try {
-                  const productNameLower = (product.product_name || '').toLowerCase();
-                  let category = 'Other';
-                  
-                  if (productNameLower.includes('milk') || productNameLower.includes('cheese') || productNameLower.includes('yogurt')) {
-                    category = 'Dairy';
-                  } else if (productNameLower.includes('chicken') || productNameLower.includes('beef') || productNameLower.includes('pork') || productNameLower.includes('meat')) {
-                    category = 'Meat';
-                  } else if (productNameLower.includes('bread') || productNameLower.includes('rice') || productNameLower.includes('pasta')) {
-                    category = 'Grains';
-                  } else if (productNameLower.includes('juice') || productNameLower.includes('soda') || productNameLower.includes('water')) {
-                    category = 'Beverages';
-                  } else if (productNameLower.includes('chips') || productNameLower.includes('cookie') || productNameLower.includes('candy')) {
-                    category = 'Snacks';
-                  } else if (productNameLower.includes('sauce') || productNameLower.includes('ketchup') || productNameLower.includes('mayo')) {
-                    category = 'Condiments';
-                  }
-
                   const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                   const newItem: PantryItem = {
                     id: uniqueId,
                     name: product.product_name || 'Unknown Product',
-                    category: category,
+                    category: autoCategory,
                     quantity: 1,
                     unit: 'pcs',
                     dateAdded: new Date().toISOString(),
-                    expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    expirationDate: predictedExpiration.toISOString().split('T')[0],
                     brandName: product.brands,
                     calories: product.nutriments?.['energy-kcal'] || 0,
                     photo: product.image_url,
                     barcode: barcode,
-                    notes: '',
+                    notes: expirationEstimation ? `AI Prediction: ${expirationEstimation}` : '',
                   };
 
                   await addPantryItem(newItem);
                   console.log('Product added to pantry:', newItem);
 
-                  Toast.show(t('itemAdded'), 'success', 1500);
+                  Toast.show({
+                    message: t('pantry.itemAdded'),
+                    type: 'success',
+                  });
                   setLoading(false);
                   
                   setTimeout(() => {
@@ -133,6 +137,7 @@ export default function ScanBarcodeScreen() {
             {
               text: t('addManually'),
               onPress: () => {
+                setLoading(false);
                 router.back();
                 setTimeout(() => {
                   router.push('/add-item');
@@ -165,6 +170,7 @@ export default function ScanBarcodeScreen() {
           {
             text: t('addManually'),
             onPress: () => {
+              setLoading(false);
               router.back();
               setTimeout(() => {
                 router.push('/add-item');
@@ -320,7 +326,7 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   camera: {
     flex: 1,
@@ -388,6 +394,6 @@ const styles = StyleSheet.create({
   rescanButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });

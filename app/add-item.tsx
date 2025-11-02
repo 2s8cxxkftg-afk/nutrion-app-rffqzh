@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
+import { categorizeFoodItem } from '@/utils/categoryHelper';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -42,26 +43,47 @@ export default function AddItemScreen() {
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
   const [dateError, setDateError] = useState('');
   const [aiEstimation, setAiEstimation] = useState<string | null>(null);
+  const [autoCategory, setAutoCategory] = useState<string | null>(null);
 
-  // Update AI estimation when name changes
+  // Update AI estimation and auto-category when name changes
   const handleNameChange = (text: string) => {
     setName(text);
     
     // Get AI estimation for the food item
     if (text.trim().length > 0) {
+      // Auto-categorize
+      const detectedCategory = categorizeFoodItem(text);
+      setAutoCategory(detectedCategory);
+      setCategory(detectedCategory);
+      
+      // Get expiration estimation
       const estimation = getExpirationEstimation(text, true);
       setAiEstimation(estimation);
       
-      // Auto-fill expiration date if estimation is available
+      // Auto-fill expiration date with EARLIEST predicted date
       if (estimation && !expirationDateText) {
-        const predictedDate = predictExpirationDate(text, category, new Date(), true);
+        const predictedDate = predictExpirationDate(text, detectedCategory, new Date(), true);
         const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
         setExpirationDateText(formattedDate);
       }
     } else {
       setAiEstimation(null);
+      setAutoCategory(null);
     }
   };
+
+  // Update expiration date when category changes (for better accuracy)
+  useEffect(() => {
+    if (name.trim().length > 0 && category) {
+      const predictedDate = predictExpirationDate(name, category, new Date(), true);
+      const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
+      setExpirationDateText(formattedDate);
+      
+      // Update estimation text
+      const estimation = getExpirationEstimation(name, true);
+      setAiEstimation(estimation);
+    }
+  }, [category]);
 
   // Format date input as user types (MM/DD/YYYY)
   const handleDateChange = (text: string) => {
@@ -120,6 +142,7 @@ export default function AddItemScreen() {
   const handleSave = async () => {
     console.log('=== Save Button Pressed ===');
     console.log('Name:', name);
+    console.log('Category:', category);
     console.log('Quantity:', quantity);
     console.log('Expiration Date:', expirationDateText);
     
@@ -168,7 +191,7 @@ export default function AddItemScreen() {
       unit,
       dateAdded: new Date().toISOString(),
       expirationDate: formattedDate,
-      notes: notes.trim(),
+      notes: notes.trim() || (aiEstimation ? `AI Prediction: ${aiEstimation}` : ''),
     };
 
     try {
@@ -177,7 +200,7 @@ export default function AddItemScreen() {
       console.log('Item added successfully');
       
       Toast.show({
-        message: 'Item added to pantry!',
+        message: `${name} added to pantry! 🎉`,
         type: 'success',
       });
       
@@ -275,7 +298,7 @@ export default function AddItemScreen() {
           <TextInput
             ref={nameInputRef}
             style={commonStyles.input}
-            placeholder="e.g., Milk, Eggs, Bread"
+            placeholder="e.g., Milk, Eggs, Bread, Butter"
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={handleNameChange}
@@ -291,19 +314,31 @@ export default function AddItemScreen() {
             selectTextOnFocus={true}
           />
 
-          {aiEstimation && (
+          {(aiEstimation || autoCategory) && (
             <View style={styles.aiEstimationBanner}>
               <View style={styles.aiEstimationIcon}>
                 <IconSymbol name="sparkles" size={16} color={colors.primary} />
               </View>
               <View style={styles.aiEstimationContent}>
-                <Text style={styles.aiEstimationTitle}>AI Prediction</Text>
-                <Text style={styles.aiEstimationText}>{aiEstimation}</Text>
+                <Text style={styles.aiEstimationTitle}>✨ AI Prediction</Text>
+                {autoCategory && (
+                  <Text style={styles.aiEstimationText}>
+                    Category: {autoCategory}
+                  </Text>
+                )}
+                {aiEstimation && (
+                  <Text style={styles.aiEstimationText}>
+                    {aiEstimation}
+                  </Text>
+                )}
+                <Text style={styles.aiEstimationSubtext}>
+                  Earliest expiration date auto-filled
+                </Text>
               </View>
             </View>
           )}
 
-          <Text style={styles.label}>Category *</Text>
+          <Text style={styles.label}>Category * {autoCategory && '(Auto-detected)'}</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openCategoryPicker}
@@ -332,12 +367,6 @@ export default function AddItemScreen() {
                       setCategory(cat);
                       setShowCategoryPicker(false);
                       console.log('Category selected:', cat);
-                      
-                      // Update AI estimation when category changes
-                      if (name.trim().length > 0) {
-                        const estimation = getExpirationEstimation(name, true);
-                        setAiEstimation(estimation);
-                      }
                     }}
                     activeOpacity={0.7}
                   >
@@ -463,7 +492,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Expiration Date *</Text>
+          <Text style={styles.label}>Expiration Date * (Earliest Predicted)</Text>
           <View>
             <TextInput
               ref={dateInputRef}
@@ -491,7 +520,7 @@ export default function AddItemScreen() {
             ) : (
               <Text style={styles.helperText}>
                 {aiEstimation 
-                  ? 'AI-predicted date filled. You can edit if needed.'
+                  ? '✨ AI predicted the earliest expiration date. You can edit if needed.'
                   : 'Enter date in MM/DD/YYYY format (e.g., 10/25/2025)'}
               </Text>
             )}
@@ -568,7 +597,7 @@ const styles = StyleSheet.create({
   },
   aiEstimationBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.primary + '15',
     borderRadius: 12,
     padding: 12,
@@ -591,14 +620,22 @@ const styles = StyleSheet.create({
   },
   aiEstimationTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   aiEstimationText: {
     fontSize: 14,
     fontWeight: '500',
     color: colors.text,
+    marginBottom: 2,
+  },
+  aiEstimationSubtext: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   row: {
     flexDirection: 'row',
