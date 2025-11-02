@@ -38,11 +38,11 @@ export default function PantryScreen() {
     } catch (error) {
       console.error('Error loading pantry items:', error);
       Toast.show({
-        message: t('pantry.loadError') || 'Failed to load pantry items',
+        message: 'Failed to load pantry items',
         type: 'error',
       });
     }
-  }, [t]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,8 +60,8 @@ export default function PantryScreen() {
   const handleDeleteItem = useCallback(async (itemId: string) => {
     try {
       Alert.alert(
-        t('pantry.deleteConfirmTitle') || 'Delete Item',
-        t('pantry.deleteConfirmMessage') || 'Are you sure you want to delete this item?',
+        'Delete Item',
+        'Are you sure you want to delete this item?',
         [
           {
             text: t('cancel') || 'Cancel',
@@ -76,14 +76,14 @@ export default function PantryScreen() {
                 await deletePantryItem(itemId);
                 console.log('Item deleted successfully');
                 Toast.show({
-                  message: t('pantry.itemDeleted') || 'Item deleted successfully',
+                  message: 'Item deleted successfully',
                   type: 'success',
                 });
                 await loadItems();
               } catch (error) {
                 console.error('Error deleting item:', error);
                 Toast.show({
-                  message: t('pantry.deleteError') || 'Failed to delete item',
+                  message: 'Failed to delete item',
                   type: 'error',
                 });
               }
@@ -171,7 +171,7 @@ export default function PantryScreen() {
         </View>
       </View>
     );
-  }, [t, handleDeleteItem]);
+  }, [handleDeleteItem]);
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
@@ -198,6 +198,7 @@ export default function PantryScreen() {
               } catch (error) {
                 console.log('Haptics not available:', error);
               }
+              console.log('Navigating to add-item screen');
               router.push('/add-item');
             }}
             activeOpacity={0.8}
@@ -227,7 +228,7 @@ export default function PantryScreen() {
           <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder={t('pantry.search') || 'Search items...'}
+            placeholder="Search items..."
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -310,8 +311,8 @@ export default function PantryScreen() {
               </View>
               <Text style={commonStyles.emptyStateTitle}>
                 {searchQuery
-                  ? t('pantry.noResults') || 'No items found'
-                  : t('pantry.empty') || 'Your pantry is empty'}
+                  ? 'No items found'
+                  : 'Your pantry is empty'}
               </Text>
               <Text style={commonStyles.emptyStateDescription}>
                 {searchQuery
@@ -321,12 +322,15 @@ export default function PantryScreen() {
               {!searchQuery && (
                 <TouchableOpacity
                   style={styles.emptyStateButton}
-                  onPress={() => router.push('/add-item')}
+                  onPress={() => {
+                    console.log('Navigating to add-item from empty state');
+                    router.push('/add-item');
+                  }}
                   activeOpacity={0.8}
                 >
                   <IconSymbol name="plus" size={20} color="#FFFFFF" />
                   <Text style={styles.emptyStateButtonText}>
-                    {t('pantry.addFirst') || 'Add your first item'}
+                    Add your first item
                   </Text>
                 </TouchableOpacity>
               )}

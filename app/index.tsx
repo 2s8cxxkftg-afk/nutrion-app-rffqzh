@@ -19,19 +19,23 @@ export default function Index() {
 
   const checkAppStatus = async () => {
     try {
+      console.log('=== Checking App Status ===');
+      
       // Check onboarding status
       const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
-      console.log('Onboarding status:', onboardingValue);
+      console.log('Onboarding value from AsyncStorage:', onboardingValue);
       const completedOnboarding = onboardingValue === 'true';
+      console.log('Has completed onboarding:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
 
       // Check authentication status
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Auth session:', session ? 'exists' : 'none');
+      console.log('Auth session exists:', !!session);
       setIsAuthenticated(!!session);
       
       // Show splash screen with logo for 1.5 seconds
       setTimeout(() => {
+        console.log('Splash screen complete, navigating...');
         setIsLoading(false);
       }, 1500);
     } catch (error) {
@@ -60,14 +64,21 @@ export default function Index() {
   // 1. If onboarding not completed -> go to onboarding
   // 2. If onboarding completed but not authenticated -> go to auth
   // 3. If both completed -> go to app
+  console.log('=== Navigation Decision ===');
+  console.log('Onboarding completed:', hasCompletedOnboarding);
+  console.log('Authenticated:', isAuthenticated);
+  
   if (!hasCompletedOnboarding) {
+    console.log('Redirecting to: /onboarding');
     return <Redirect href="/onboarding" />;
   }
 
   if (!isAuthenticated) {
+    console.log('Redirecting to: /auth');
     return <Redirect href="/auth" />;
   }
 
+  console.log('Redirecting to: /(tabs)/pantry');
   return <Redirect href="/(tabs)/pantry" />;
 }
 

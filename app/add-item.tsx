@@ -118,28 +118,33 @@ export default function AddItemScreen() {
   };
 
   const handleSave = async () => {
+    console.log('=== Save Button Pressed ===');
+    console.log('Name:', name);
+    console.log('Quantity:', quantity);
+    console.log('Expiration Date:', expirationDateText);
+    
     if (!name.trim()) {
-      Alert.alert(t('error'), 'Please enter an item name');
+      Alert.alert('Error', 'Please enter an item name');
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert(t('error'), 'Please enter a valid quantity');
+      Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
 
     // Validate expiration date
     if (!expirationDateText.trim()) {
       setDateError('Please enter an expiration date');
-      Alert.alert(t('error'), 'Please enter an expiration date in MM/DD/YYYY format');
+      Alert.alert('Error', 'Please enter an expiration date in MM/DD/YYYY format');
       return;
     }
 
     const parsedDate = validateAndParseDate(expirationDateText);
     if (!parsedDate) {
       setDateError('Invalid date format. Use MM/DD/YYYY');
-      Alert.alert(t('error'), 'Invalid date format. Please use MM/DD/YYYY (e.g., 10/25/2025)');
+      Alert.alert('Error', 'Invalid date format. Please use MM/DD/YYYY (e.g., 10/25/2025)');
       return;
     }
 
@@ -148,7 +153,7 @@ export default function AddItemScreen() {
     today.setHours(0, 0, 0, 0);
     if (parsedDate < today) {
       setDateError('Date cannot be in the past');
-      Alert.alert(t('error'), 'Expiration date cannot be in the past');
+      Alert.alert('Error', 'Expiration date cannot be in the past');
       return;
     }
 
@@ -167,21 +172,27 @@ export default function AddItemScreen() {
     };
 
     try {
+      console.log('Adding item to pantry:', newItem);
       await addPantryItem(newItem);
-      console.log('Item added successfully:', newItem);
+      console.log('Item added successfully');
       
-      Toast.show(t('itemAdded'), 'success', 1500);
+      Toast.show({
+        message: 'Item added to pantry!',
+        type: 'success',
+      });
       
       setTimeout(() => {
+        console.log('Navigating back to pantry');
         router.back();
-      }, 1500);
+      }, 1000);
     } catch (error) {
-      Alert.alert(t('error'), 'Failed to add item');
       console.error('Error adding item:', error);
+      Alert.alert('Error', 'Failed to add item');
     }
   };
 
   const handleScanBarcode = () => {
+    console.log('Scan barcode button pressed');
     Keyboard.dismiss();
     closeAllPickers();
     router.push('/scan-barcode');
@@ -228,10 +239,10 @@ export default function AddItemScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('addItem'),
+          title: 'Add Item',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-          presentation: 'modal',
+          presentation: 'card',
         }}
       />
       
@@ -246,7 +257,7 @@ export default function AddItemScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
+          keyboardDismissMode="on-drag"
           scrollEventThrottle={16}
         >
           <TouchableOpacity
@@ -255,12 +266,12 @@ export default function AddItemScreen() {
             activeOpacity={0.7}
           >
             <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
-            <Text style={styles.scanButtonText}>{t('scanBarcode')}</Text>
+            <Text style={styles.scanButtonText}>Scan Barcode</Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
-          <Text style={styles.label}>{t('itemName')} *</Text>
+          <Text style={styles.label}>Item Name *</Text>
           <TextInput
             ref={nameInputRef}
             style={commonStyles.input}
@@ -292,7 +303,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>{t('category')} *</Text>
+          <Text style={styles.label}>Category *</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openCategoryPicker}
@@ -347,7 +358,7 @@ export default function AddItemScreen() {
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t('quantity')} *</Text>
+              <Text style={styles.label}>Quantity *</Text>
               <View style={styles.quantityContainer}>
                 <TextInput
                   ref={quantityInputRef}
@@ -377,7 +388,7 @@ export default function AddItemScreen() {
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>{t('unit')} *</Text>
+              <Text style={styles.label}>Unit *</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
                 onPress={openUnitPicker}
@@ -452,7 +463,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>{t('expirationDate')} *</Text>
+          <Text style={styles.label}>Expiration Date *</Text>
           <View>
             <TextInput
               ref={dateInputRef}
@@ -486,7 +497,7 @@ export default function AddItemScreen() {
             )}
           </View>
 
-          <Text style={styles.label}>{t('notes')} (Optional)</Text>
+          <Text style={styles.label}>Notes (Optional)</Text>
           <TextInput
             ref={notesInputRef}
             style={[commonStyles.input, styles.notesInput]}
@@ -509,7 +520,7 @@ export default function AddItemScreen() {
             onPress={handleSave}
             activeOpacity={0.7}
           >
-            <Text style={buttonStyles.primaryText}>{t('addToPantry')}</Text>
+            <Text style={buttonStyles.primaryText}>Add to Pantry</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
