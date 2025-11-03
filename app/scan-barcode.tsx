@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ export default function ScanBarcodeScreen() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('=== Barcode Scanner Initialized ===');
@@ -199,7 +200,7 @@ export default function ScanBarcodeScreen() {
     }
   };
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = useCallback(({ type, data }: { type: string; data: string }) => {
     if (scanned || loading) {
       console.log('⚠️ Already processing a scan, ignoring...');
       return;
@@ -212,23 +213,59 @@ export default function ScanBarcodeScreen() {
     
     setScanned(true);
     fetchProductFromBarcode(data);
-  };
+  }, [scanned, loading, cameraReady]);
 
-  const handleCameraReady = () => {
+  const handleCameraReady = useCallback(() => {
     console.log('✅ Camera is ready');
     setCameraReady(true);
-  };
+    setCameraError(null);
+  }, []);
 
+  const handleCameraError = useCallback((error: { message: string }) => {
+    console.error('❌ Camera mount error:', error);
+    setCameraError(error.message || 'Failed to initialize camera');
+    Alert.alert(
+      'Camera Error',
+      'Failed to initialize the camera. Please try again or check your camera permissions.',
+      [
+        {
+          text: 'Go Back',
+          onPress: () => router.back(),
+        },
+        {
+          text: 'Retry',
+          onPress: () => {
+            setCameraError(null);
+            setCameraReady(false);
+          },
+        },
+      ]
+    );
+  }, [router]);
+
+  // Loading state while checking permissions
   if (!permission) {
     console.log('⏳ Waiting for permission status...');
     return (
-      <View style={[commonStyles.container, commonStyles.center]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[commonStyles.text, { marginTop: 16 }]}>{t('loading')}</Text>
-      </View>
+      <SafeAreaView style={commonStyles.safeArea}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: t('scanBarcodeTitle'),
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            presentation: 'modal',
+          }}
+        />
+        <View style={[commonStyles.container, commonStyles.center]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[commonStyles.text, { marginTop: 16 }]}>{t('loading')}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
+  // Permission not granted
   if (!permission.granted) {
     console.log('❌ Camera permission not granted');
     return (
@@ -265,6 +302,40 @@ export default function ScanBarcodeScreen() {
     );
   }
 
+  // Camera error state
+  if (cameraError) {
+    return (
+      <SafeAreaView style={[commonStyles.safeArea, { backgroundColor: '#000' }]} edges={['top', 'bottom']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: t('scanBarcodeTitle'),
+            headerStyle: { backgroundColor: '#000' },
+            headerTintColor: '#FFFFFF',
+            presentation: 'modal',
+          }}
+        />
+        <View style={[commonStyles.container, commonStyles.center]}>
+          <IconSymbol name="exclamationmark.triangle.fill" size={64} color={colors.error} />
+          <Text style={[commonStyles.title, { color: '#FFFFFF', textAlign: 'center', marginTop: 16 }]}>
+            Camera Error
+          </Text>
+          <Text style={[commonStyles.textSecondary, { color: '#CCCCCC', textAlign: 'center', marginTop: 8, paddingHorizontal: 40 }]}>
+            {cameraError}
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.permissionButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Main camera view
   console.log('✅ Rendering camera view');
   return (
     <SafeAreaView style={[commonStyles.safeArea, { backgroundColor: '#000' }]} edges={['top', 'bottom']}>
@@ -284,6 +355,7 @@ export default function ScanBarcodeScreen() {
           facing="back"
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           onCameraReady={handleCameraReady}
+          onMountError={handleCameraError}
           barcodeScannerSettings={{
             barcodeTypes: [
               'qr',
