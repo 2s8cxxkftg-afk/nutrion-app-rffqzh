@@ -62,7 +62,7 @@ export default function LanguageSettingsScreen() {
         // Update local state
         setCurrentLang(languageCode);
         
-        console.log('Language changed successfully to:', languageCode);
+        console.log('✅ Language changed successfully to:', languageCode);
         
         // Show success message
         Toast.show({
@@ -80,7 +80,7 @@ export default function LanguageSettingsScreen() {
       }
       
     } catch (error) {
-      console.error('Error changing language:', error);
+      console.error('❌ Error changing language:', error);
       Toast.show({
         message: 'Failed to change language. Please try again.',
         type: 'error',

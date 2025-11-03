@@ -29,6 +29,7 @@ export default function ScanBarcodeScreen() {
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   useEffect(() => {
     console.log('=== Barcode Scanner Initialized ===');
@@ -36,6 +37,70 @@ export default function ScanBarcodeScreen() {
     console.log('Permission granted:', permission?.granted);
     console.log('Can ask again:', permission?.canAskAgain);
   }, [permission]);
+
+  const handleRequestPermission = useCallback(async () => {
+    if (isRequestingPermission) {
+      console.log('⚠️ Permission request already in progress');
+      return;
+    }
+
+    try {
+      setIsRequestingPermission(true);
+      console.log('📸 Requesting camera permission...');
+      
+      const result = await requestPermission();
+      
+      console.log('Permission request result:', result);
+      console.log('Granted:', result.granted);
+      console.log('Can ask again:', result.canAskAgain);
+      
+      if (!result.granted) {
+        if (!result.canAskAgain) {
+          // User has permanently denied permission
+          Alert.alert(
+            'Camera Permission Required',
+            'Camera access has been denied. Please enable it in your device settings to scan barcodes.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Open Settings', 
+                onPress: () => {
+                  if (Platform.OS === 'ios') {
+                    // On iOS, we can't directly open settings, but we can show instructions
+                    Alert.alert(
+                      'Enable Camera Access',
+                      'Go to Settings > Nutrion > Camera and enable access.',
+                      [{ text: 'OK' }]
+                    );
+                  } else {
+                    // On Android, we could use Linking to open settings
+                    Alert.alert(
+                      'Enable Camera Access',
+                      'Go to Settings > Apps > Nutrion > Permissions > Camera and enable access.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          console.log('❌ Permission denied but can ask again');
+        }
+      } else {
+        console.log('✅ Camera permission granted');
+      }
+    } catch (error) {
+      console.error('❌ Error requesting permission:', error);
+      Alert.alert(
+        'Error',
+        'Failed to request camera permission. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  }, [requestPermission, isRequestingPermission]);
 
   const fetchProductFromBarcode = async (barcode: string) => {
     try {
@@ -288,14 +353,27 @@ export default function ScanBarcodeScreen() {
             {t('cameraPermissionText')}
           </Text>
           <TouchableOpacity
-            style={styles.permissionButton}
-            onPress={() => {
-              console.log('Requesting camera permission...');
-              requestPermission();
-            }}
+            style={[
+              styles.permissionButton,
+              isRequestingPermission && styles.permissionButtonDisabled
+            ]}
+            onPress={handleRequestPermission}
+            activeOpacity={0.7}
+            disabled={isRequestingPermission}
+          >
+            {isRequestingPermission ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.permissionButtonText}>{t('grantPermission')}</Text>
+            <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -441,11 +519,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     marginTop: 24,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  permissionButtonDisabled: {
+    opacity: 0.6,
   },
   permissionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  backButton: {
+    backgroundColor: colors.card,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    marginTop: 12,
+    minWidth: 200,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
   },
   camera: {
     flex: 1,
