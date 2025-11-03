@@ -42,9 +42,9 @@ export default function PlannerScreen() {
     if (error) {
       console.error('Recipe suggestion error:', error);
       Toast.show({
-        message: `Error: ${error}`,
+        message: error,
         type: 'error',
-        duration: 4000,
+        duration: 5000,
       });
     }
   }, [error]);
@@ -123,19 +123,7 @@ export default function PlannerScreen() {
     const pantryItemNames = pantryItems.map(item => item.name);
     console.log('Generating suggestions for items:', pantryItemNames);
     
-    try {
-      const result = await generateSuggestions(pantryItemNames);
-      if (!result) {
-        console.error('No result returned from generateSuggestions');
-      }
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      Toast.show({
-        message: 'Failed to generate suggestions. Please try again.',
-        type: 'error',
-        duration: 3000,
-      });
-    }
+    await generateSuggestions(pantryItemNames);
   };
 
   const renderRecipeCard = (recipe: Recipe) => {
@@ -388,7 +376,14 @@ export default function PlannerScreen() {
           {error && (
             <View style={styles.errorContainer}>
               <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
+              <View style={styles.errorTextContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                {error.includes('API') && (
+                  <Text style={styles.errorHint}>
+                    This may be a temporary issue. Please try again in a moment.
+                  </Text>
+                )}
+              </View>
             </View>
           )}
 
@@ -550,7 +545,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.error + '15',
     borderRadius: borderRadius.md,
     padding: spacing.md,
@@ -559,10 +554,19 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: colors.error,
   },
+  errorTextContainer: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   errorText: {
     ...typography.body,
     color: colors.error,
-    flex: 1,
+    fontWeight: '600',
+  },
+  errorHint: {
+    ...typography.bodySmall,
+    color: colors.error,
+    opacity: 0.8,
   },
   toggleContainer: {
     flexDirection: 'row',

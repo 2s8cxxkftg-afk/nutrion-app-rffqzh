@@ -1,138 +1,119 @@
 
-# OpenAI Integration Setup Guide for Nutrion
+# OpenAI API Setup for Recipe Suggestions
 
-This guide will help you set up OpenAI integration for AI-powered recipe suggestions in your Nutrion app.
+## Overview
+The AI Recipe Suggestions feature uses OpenAI's GPT-4o-mini model to generate diverse, culturally-rich recipe suggestions based on your pantry items.
 
-## Prerequisites
+## Setup Instructions
 
-- A Supabase project (already configured)
-- An OpenAI API account
-
-## Step 1: Get Your OpenAI API Key
-
+### 1. Get Your OpenAI API Key
 1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Sign up or log in to your account
+2. Sign in or create an account
 3. Navigate to **API Keys** section
 4. Click **Create new secret key**
-5. Copy the API key (it starts with `sk-...`)
-6. **Important**: Save this key securely - you won't be able to see it again!
+5. Copy the key (it starts with `sk-...`)
 
-## Step 2: Add OpenAI API Key to Supabase
+### 2. Add the API Key to Supabase
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project: **xivsfhdsmsxwtsidxfyj**
+3. Navigate to **Edge Functions** → **Manage secrets**
+4. Add a new secret:
+   - **Name**: `OPENAI_API_KEY`
+   - **Value**: Your OpenAI API key (starts with `sk-...`)
+5. Click **Save**
 
-1. Go to your Supabase project dashboard
-2. Navigate to **Project Settings** → **Edge Functions** → **Secrets**
-3. Add a new secret:
-   - Name: `OPENAI_API_KEY`
-   - Value: Your OpenAI API key (the one starting with `sk-...`)
-4. Click **Save**
-
-## Step 3: Test the Integration
-
-1. Open your Nutrion app
-2. Add some items to your pantry (e.g., chicken, rice, tomatoes, onions)
-3. Navigate to the **Planner** tab
-4. Tap the **"Get AI Recipe Suggestions"** button
-5. Wait a few seconds for the AI to generate suggestions
-6. You should see creative recipe ideas based on your pantry items!
-
-## Features
-
-### AI-Powered Recipe Suggestions
-
-The integration provides:
-
-- **Smart Recipe Generation**: AI analyzes your pantry items and suggests creative recipes
-- **Match Percentage**: Shows how many ingredients you already have
-- **Detailed Instructions**: Step-by-step cooking instructions
-- **Prep Time & Servings**: Practical information for meal planning
-- **Category Tags**: Breakfast, Lunch, Dinner, Snack, or Dessert
-
-### Toggle Between Views
-
-- **AI Suggestions**: Creative, personalized recipes from OpenAI
-- **Default Recipes**: Pre-loaded recipe database
-
-## Cost Considerations
-
-- OpenAI charges per API call based on tokens used
-- The app uses `gpt-4o-mini` model which is cost-effective
-- Typical cost per suggestion: ~$0.001-0.005 (less than a penny)
-- Monitor your usage at [OpenAI Usage Dashboard](https://platform.openai.com/usage)
+### 3. Verify the Setup
+After adding the API key:
+1. Open the Nutrion app
+2. Go to the **Planner** tab
+3. Make sure you have some items in your pantry
+4. Tap **Get AI Recipe Suggestions**
+5. Wait for the recipes to generate (usually 2-5 seconds)
 
 ## Troubleshooting
 
-### "OpenAI API key not configured" Error
+### Error: "OpenAI API key not configured"
+- **Solution**: The `OPENAI_API_KEY` environment variable is not set in Supabase
+- Follow step 2 above to add the API key
 
-- Make sure you added the `OPENAI_API_KEY` secret in Supabase
-- The secret name must be exactly `OPENAI_API_KEY` (case-sensitive)
-- Redeploy the edge function if you just added the secret
+### Error: "API quota exceeded"
+- **Solution**: Your OpenAI account has run out of credits
+- Add credits to your OpenAI account at [OpenAI Billing](https://platform.openai.com/account/billing)
 
-### "No pantry items provided" Error
+### Error: "Too many requests"
+- **Solution**: You've hit the rate limit
+- Wait a few seconds and try again
+- Consider upgrading your OpenAI plan for higher rate limits
 
-- Add at least one item to your pantry before requesting suggestions
-- Go to the Pantry tab and add some food items
+### Error: "Failed to connect to OpenAI API"
+- **Solution**: Network connectivity issue
+- Check your internet connection
+- Try again in a moment
 
-### Slow Response Times
+### Error: "Invalid API key"
+- **Solution**: The API key is incorrect or has been revoked
+- Generate a new API key from OpenAI
+- Update the `OPENAI_API_KEY` secret in Supabase
 
-- AI generation typically takes 3-10 seconds
-- This is normal for AI processing
-- Make sure you have a stable internet connection
+## Features
 
-### Empty or Invalid Suggestions
+The AI Recipe Suggestions feature provides:
 
-- Try adding more diverse items to your pantry
-- The AI works best with 5+ different ingredients
-- Check that your OpenAI account has available credits
+- **Diverse Cuisines**: Recipes from Chinese, Italian, Thai, Mexican, Indian, Japanese, and more
+- **Cultural Context**: Interesting facts about each dish and its origin
+- **Smart Matching**: Shows which ingredients you already have
+- **Detailed Instructions**: Step-by-step cooking instructions
+- **Nutritional Info**: Prep time, servings, and meal category
 
-## Advanced Customization
+## API Usage & Costs
 
-You can customize the AI suggestions by modifying the edge function:
+- **Model**: GPT-4o-mini (cost-effective and fast)
+- **Average Cost**: ~$0.01-0.02 per recipe generation
+- **Tokens Used**: ~1,500-2,500 tokens per request
+- **Response Time**: 2-5 seconds
 
-1. Go to Supabase Dashboard → **Edge Functions** → `generate-recipe-suggestions`
-2. Modify the prompt to include:
-   - Dietary restrictions (vegetarian, vegan, gluten-free)
-   - Cuisine preferences (Italian, Asian, Mexican)
-   - Difficulty levels (beginner, intermediate, advanced)
-   - Cooking methods (baking, grilling, slow-cooker)
+## Edge Function Details
 
-Example modification in the edge function:
-
-```typescript
-// Add to the prompt
-if (preferences?.dietary) {
-  prompt += `Dietary preference: ${preferences.dietary}. `;
-}
-if (preferences?.cuisine) {
-  prompt += `Cuisine preference: ${preferences.cuisine}. `;
-}
+The edge function is deployed at:
+```
+https://xivsfhdsmsxwtsidxfyj.supabase.co/functions/v1/generate-recipe-suggestions
 ```
 
-Then update the frontend to pass these preferences when calling the function.
+**Current Version**: 4
+**Status**: Active
+**Last Updated**: Recently deployed with enhanced error handling
 
-## Privacy & Security
+## Error Handling
 
-- Your pantry data is only sent to OpenAI when you explicitly request suggestions
-- No data is stored by OpenAI after processing
-- All API calls are authenticated through Supabase
-- Your OpenAI API key is securely stored in Supabase secrets
+The system now includes comprehensive error handling:
+
+1. **Configuration Errors**: Clear messages when API key is missing
+2. **API Errors**: User-friendly messages for rate limits, quota issues
+3. **Network Errors**: Guidance for connectivity problems
+4. **Parse Errors**: Fallback handling for malformed responses
+5. **CORS Support**: Proper headers for cross-origin requests
 
 ## Support
 
-If you encounter any issues:
+If you continue to experience issues:
 
-1. Check the Supabase Edge Function logs for errors
-2. Verify your OpenAI API key is valid and has credits
-3. Ensure your internet connection is stable
-4. Check the app console logs for detailed error messages
+1. Check the Supabase Edge Function logs:
+   - Go to **Edge Functions** → **generate-recipe-suggestions** → **Logs**
+   - Look for error messages with ❌ emoji
 
-## Next Steps
+2. Verify your OpenAI API key:
+   - Test it at [OpenAI Playground](https://platform.openai.com/playground)
 
-Consider adding:
+3. Check your OpenAI account status:
+   - Ensure you have available credits
+   - Check rate limits for your plan
 
-- **Preference Settings**: Let users set dietary restrictions and cuisine preferences
-- **Save Favorites**: Allow users to save AI-generated recipes
-- **Shopping List Integration**: Auto-add missing ingredients to shopping list
-- **Meal Planning**: Generate weekly meal plans based on pantry inventory
-- **Nutritional Information**: Add calorie and macro tracking
+## Recent Improvements
 
-Enjoy your AI-powered meal planning! 🍳✨
+**Version 4 (Latest)**:
+- ✅ Enhanced error handling with user-friendly messages
+- ✅ CORS headers for all responses
+- ✅ Better OpenAI error parsing
+- ✅ Detailed logging for debugging
+- ✅ Graceful fallbacks for missing data
+- ✅ Configuration validation on startup
