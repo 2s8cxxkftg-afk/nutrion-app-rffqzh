@@ -42,7 +42,13 @@ export const checkBiometricCapabilities = async (): Promise<BiometricCapabilitie
   }
 };
 
-export const getBiometricTypeName = (types: LocalAuthentication.AuthenticationType[]): string => {
+export const getBiometricTypeName = (types?: LocalAuthentication.AuthenticationType[]): string => {
+  // Handle undefined or null types
+  if (!types || !Array.isArray(types) || types.length === 0) {
+    console.log('⚠️ No biometric types provided, returning default');
+    return 'Biometric Authentication';
+  }
+
   if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
     return Platform.OS === 'ios' ? 'Face ID' : 'Face Recognition';
   }

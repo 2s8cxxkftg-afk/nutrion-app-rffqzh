@@ -85,12 +85,32 @@ export function useRecipeSuggestions() {
 
         if (error) {
           console.error('Edge function error:', error);
-          throw new Error(error.message || 'Failed to generate suggestions');
+          const errorMessage = error.message || 'Failed to generate suggestions';
+          setState({ status: 'error', data: null, error: errorMessage });
+          throw new Error(errorMessage);
+        }
+
+        // Handle error responses from the edge function
+        if (data?.error) {
+          console.error('Edge function returned error:', data.error);
+          const errorMessage = data.detail || data.error || 'Failed to generate suggestions';
+          setState({ status: 'error', data: null, error: errorMessage });
+          throw new Error(errorMessage);
         }
 
         if (!data || !data.recipes) {
           console.error('Invalid response from server:', data);
-          throw new Error('Invalid response from server');
+          const errorMessage = 'Invalid response from server';
+          setState({ status: 'error', data: null, error: errorMessage });
+          throw new Error(errorMessage);
+        }
+
+        // Validate that recipes is an array
+        if (!Array.isArray(data.recipes)) {
+          console.error('Recipes is not an array:', data.recipes);
+          const errorMessage = 'Invalid recipe data format';
+          setState({ status: 'error', data: null, error: errorMessage });
+          throw new Error(errorMessage);
         }
 
         console.log('✅ Successfully received', data.recipes.length, 'recipes');
@@ -102,6 +122,7 @@ export function useRecipeSuggestions() {
       } catch (e: any) {
         const errorMessage = e?.message ?? 'Unknown error occurred';
         console.error('❌ Error in generateSuggestions:', errorMessage);
+        console.error('Full error:', e);
         setState({ status: 'error', data: null, error: errorMessage });
         return null;
       }

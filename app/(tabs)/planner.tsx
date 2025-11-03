@@ -42,9 +42,9 @@ export default function PlannerScreen() {
     if (error) {
       console.error('Recipe suggestion error:', error);
       Toast.show({
-        message: error,
+        message: `Error: ${error}`,
         type: 'error',
-        duration: 3000,
+        duration: 4000,
       });
     }
   }, [error]);
@@ -64,6 +64,7 @@ export default function PlannerScreen() {
 
   const loadData = async () => {
     try {
+      console.log('Loading planner data...');
       const loadedRecipes = await loadRecipes();
       const loadedPantry = await loadPantryItems();
       setRecipes(loadedRecipes);
@@ -87,6 +88,11 @@ export default function PlannerScreen() {
       console.log('Loaded recipes:', loadedRecipes.length, 'Suggested:', suggested.length);
     } catch (error) {
       console.error('Error loading planner data:', error);
+      Toast.show({
+        message: 'Failed to load planner data',
+        type: 'error',
+        duration: 3000,
+      });
     }
   };
 
@@ -118,7 +124,10 @@ export default function PlannerScreen() {
     console.log('Generating suggestions for items:', pantryItemNames);
     
     try {
-      await generateSuggestions(pantryItemNames);
+      const result = await generateSuggestions(pantryItemNames);
+      if (!result) {
+        console.error('No result returned from generateSuggestions');
+      }
     } catch (error) {
       console.error('Error generating suggestions:', error);
       Toast.show({
@@ -375,6 +384,14 @@ export default function PlannerScreen() {
             )}
           </TouchableOpacity>
 
+          {/* Error Display */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           {/* Toggle Buttons */}
           {aiSuggestions.length > 0 && (
             <View style={styles.toggleContainer}>
@@ -530,6 +547,22 @@ const styles = StyleSheet.create({
   aiButtonText: {
     ...typography.h4,
     color: '#FFFFFF',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.error + '15',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.error,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.error,
+    flex: 1,
   },
   toggleContainer: {
     flexDirection: 'row',
