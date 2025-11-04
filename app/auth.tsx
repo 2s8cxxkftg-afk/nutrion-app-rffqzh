@@ -75,7 +75,7 @@ export default function AuthScreen() {
 
         console.log('Sign in successful:', data);
         Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
-        router.replace('/(tabs)/pantry');
+        router.replace('/subscription-intro');
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -102,7 +102,7 @@ export default function AuthScreen() {
           setIsLogin(true);
         } else {
           Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
-          router.replace('/(tabs)/pantry');
+          router.replace('/subscription-intro');
         }
       }
     } catch (error: any) {
