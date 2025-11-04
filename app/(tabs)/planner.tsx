@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
@@ -29,8 +30,11 @@ export default function PlannerScreen() {
   const [aiSuggestions, setAiSuggestions] = useState<RecipeSuggestion[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasLoadedAI, setHasLoadedAI] = useState(false);
 
   const { generateSuggestions, loading, error, data } = useRecipeSuggestions();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -46,6 +50,7 @@ export default function PlannerScreen() {
         type: 'error',
         duration: 5000,
       });
+      setIsLoadingMore(false);
     }
   }, [error]);
 
@@ -54,6 +59,8 @@ export default function PlannerScreen() {
       console.log('Received AI suggestions:', data.recipes.length);
       setAiSuggestions(data.recipes);
       setShowAiSuggestions(true);
+      setHasLoadedAI(true);
+      setIsLoadingMore(false);
       Toast.show({
         message: `Generated ${data.recipes.length} diverse recipe suggestions!`,
         type: 'success',
@@ -102,28 +109,50 @@ export default function PlannerScreen() {
     setRefreshing(false);
   };
 
-  const handleGetAiSuggestions = async () => {
-    console.log('=== Get AI Suggestions Clicked ===');
+  const handleLoadAiSuggestions = async () => {
+    console.log('=== Loading AI Suggestions ===');
     console.log('Pantry items count:', pantryItems.length);
     
     if (pantryItems.length === 0) {
-      Alert.alert(
-        'No Pantry Items',
-        'Please add items to your pantry first to get AI-powered recipe suggestions.'
-      );
+      Toast.show({
+        message: 'Please add items to your pantry first',
+        type: 'error',
+        duration: 3000,
+      });
+      setIsLoadingMore(false);
+      return;
+    }
+
+    if (loading || isLoadingMore) {
+      console.log('Already loading, skipping...');
       return;
     }
 
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       console.log('Haptics not available:', error);
     }
 
+    setIsLoadingMore(true);
     const pantryItemNames = pantryItems.map(item => item.name);
     console.log('Generating suggestions for items:', pantryItemNames);
     
     await generateSuggestions(pantryItemNames);
+  };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    
+    // Check if user has scrolled near the bottom (within 100px)
+    const paddingToBottom = 100;
+    const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    // Only trigger if near bottom, not already loading, and haven't loaded AI suggestions yet
+    if (isNearBottom && !loading && !isLoadingMore && !hasLoadedAI && pantryItems.length > 0) {
+      console.log('📜 User scrolled to bottom, loading AI suggestions...');
+      handleLoadAiSuggestions();
+    }
   };
 
   const renderRecipeCard = (recipe: Recipe) => {
@@ -324,6 +353,7 @@ export default function PlannerScreen() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
@@ -334,6 +364,8 @@ export default function PlannerScreen() {
               tintColor={colors.primary}
             />
           }
+          onScroll={handleScroll}
+          scrollEventThrottle={400}
         >
           {/* Stats Card */}
           <View style={styles.statsCard}>
@@ -352,25 +384,15 @@ export default function PlannerScreen() {
             </View>
           </View>
 
-          {/* AI Suggestions Button */}
-          <TouchableOpacity
-            style={[styles.aiButton, loading && styles.aiButtonLoading]}
-            onPress={handleGetAiSuggestions}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <>
-                <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.aiButtonText}>Generating diverse recipes...</Text>
-              </>
-            ) : (
-              <>
-                <IconSymbol name="sparkles" size={24} color="#FFFFFF" />
-                <Text style={styles.aiButtonText}>{t('planner.getAiSuggestions')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Scroll hint banner */}
+          {!hasLoadedAI && pantryItems.length > 0 && (
+            <View style={styles.scrollHintBanner}>
+              <IconSymbol name="arrow.down.circle.fill" size={24} color={colors.primary} />
+              <Text style={styles.scrollHintText}>
+                Scroll down to load AI recipe suggestions
+              </Text>
+            </View>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -447,7 +469,7 @@ export default function PlannerScreen() {
                 </View>
                 <Text style={commonStyles.emptyStateTitle}>No AI suggestions yet</Text>
                 <Text style={commonStyles.emptyStateDescription}>
-                  Tap the button above to get personalized recipe suggestions from cuisines around the world
+                  Scroll down to load personalized recipe suggestions from cuisines around the world
                 </Text>
               </View>
             ) : (
@@ -468,6 +490,19 @@ export default function PlannerScreen() {
               suggestedRecipes.map(renderRecipeCard)
             )
           )}
+
+          {/* Loading indicator at bottom */}
+          {isLoadingMore && (
+            <View style={styles.loadingMoreContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingMoreText}>
+                Generating diverse recipes from around the world...
+              </Text>
+            </View>
+          )}
+
+          {/* Bottom padding for scroll */}
+          <View style={{ height: 200 }} />
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -524,24 +559,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.divider,
     marginHorizontal: spacing.lg,
   },
-  aiButton: {
+  scrollHintBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primary + '15',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     gap: spacing.md,
-    boxShadow: `0px 4px 16px ${colors.primary}40`,
-    elevation: 6,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
   },
-  aiButtonLoading: {
-    opacity: 0.7,
-  },
-  aiButtonText: {
-    ...typography.h4,
-    color: '#FFFFFF',
+  scrollHintText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '600',
+    flex: 1,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -739,5 +772,15 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  loadingMoreContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    gap: spacing.md,
+  },
+  loadingMoreText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

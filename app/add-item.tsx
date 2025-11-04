@@ -214,13 +214,6 @@ export default function AddItemScreen() {
     }
   };
 
-  const handleScanBarcode = () => {
-    console.log('Scan barcode button pressed');
-    Keyboard.dismiss();
-    closeAllPickers();
-    router.push('/scan-barcode');
-  };
-
   const handleQuantityPresetSelect = (value: number) => {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
@@ -283,17 +276,6 @@ export default function AddItemScreen() {
           keyboardDismissMode="on-drag"
           scrollEventThrottle={16}
         >
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={handleScanBarcode}
-            activeOpacity={0.7}
-          >
-            <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
-            <Text style={styles.scanButtonText}>Scan Barcode</Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
           <Text style={styles.label}>Item Name *</Text>
           <TextInput
             ref={nameInputRef}
@@ -565,28 +547,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  scanButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  scanButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.textSecondary + '30',
-    marginVertical: 24,
   },
   label: {
     fontSize: 14,

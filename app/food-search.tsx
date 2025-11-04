@@ -144,12 +144,6 @@ export default function FoodSearchScreen() {
     }
   };
 
-  const handleBarcodeScan = () => {
-    console.log('Opening barcode scanner');
-    Keyboard.dismiss();
-    router.push('/scan-barcode');
-  };
-
   const renderFoodItem = (food: NutritionixFood, index: number) => (
     <TouchableOpacity
       key={`${food.food_name}-${index}`}
@@ -226,14 +220,6 @@ export default function FoodSearchScreen() {
                 </TouchableOpacity>
               )}
             </View>
-
-            <TouchableOpacity
-              style={styles.barcodeButton}
-              onPress={handleBarcodeScan}
-              activeOpacity={0.7}
-            >
-              <IconSymbol name="barcode.viewfinder" size={24} color={colors.text} />
-            </TouchableOpacity>
           </View>
 
           {searchQuery.length < 2 && (
@@ -306,15 +292,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: colors.text,
-  },
-  barcodeButton: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   hintContainer: {
     flexDirection: 'row',
