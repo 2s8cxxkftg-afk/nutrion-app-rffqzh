@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -19,13 +19,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
-import {
-  checkBiometricCapabilities,
-  authenticateWithBiometrics,
-  isBiometricEnabled,
-  getBiometricCredentials,
-  getBiometricTypeName,
-} from '@/utils/biometricAuth';
 import { useTranslation } from 'react-i18next';
 
 export default function AuthScreen() {
@@ -38,60 +31,6 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricType, setBiometricType] = useState('');
-
-  useEffect(() => {
-    checkBiometricAvailability();
-  }, []);
-
-  const checkBiometricAvailability = async () => {
-    const capabilities = await checkBiometricCapabilities();
-    setBiometricAvailable(capabilities.isAvailable);
-    
-    if (capabilities.isAvailable) {
-      const enabled = await isBiometricEnabled();
-      setBiometricEnabled(enabled);
-      setBiometricType(getBiometricTypeName(capabilities.supportedTypes));
-    }
-  };
-
-  const handleBiometricLogin = async () => {
-    try {
-      const result = await authenticateWithBiometrics(
-        `Sign in to Nutrion with ${biometricType}`
-      );
-
-      if (result.success) {
-        const credentials = await getBiometricCredentials();
-        
-        if (credentials) {
-          setLoading(true);
-          
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (session) {
-            Toast.show({ type: 'success', message: t('auth.welcomeBack') });
-            router.replace('/(tabs)/pantry');
-          } else {
-            Toast.show({ type: 'error', message: t('auth.biometricLoginFailed') });
-            setBiometricEnabled(false);
-          }
-        } else {
-          Toast.show({ type: 'error', message: t('auth.noCredentialsSaved') });
-          setBiometricEnabled(false);
-        }
-      } else {
-        Toast.show({ type: 'error', message: result.error || t('auth.biometricAuthFailed') });
-      }
-    } catch (error: any) {
-      console.error('Biometric login error:', error);
-      Toast.show({ type: 'error', message: t('auth.biometricAuthError') });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -100,22 +39,22 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
-      Toast.show({ type: 'error', message: t('auth.fillAllFields') });
+      Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show({ type: 'error', message: t('auth.invalidEmail') });
+      Toast.show({ type: 'error', message: t('auth.invalidEmail') || 'Invalid email address' });
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Toast.show({ type: 'error', message: t('auth.passwordsDoNotMatch') });
+      Toast.show({ type: 'error', message: t('auth.passwordsDoNotMatch') || 'Passwords do not match' });
       return;
     }
 
     if (password.length < 6) {
-      Toast.show({ type: 'error', message: t('auth.passwordTooShort') });
+      Toast.show({ type: 'error', message: t('auth.passwordTooShort') || 'Password must be at least 6 characters' });
       return;
     }
 
@@ -130,12 +69,12 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign in error:', error);
-          Toast.show({ type: 'error', message: error.message || t('auth.signInFailed') });
+          Toast.show({ type: 'error', message: error.message || t('auth.signInFailed') || 'Sign in failed' });
           return;
         }
 
         console.log('Sign in successful:', data);
-        Toast.show({ type: 'success', message: t('auth.welcomeBack') });
+        Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
         router.replace('/(tabs)/pantry');
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -148,7 +87,7 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign up error:', error);
-          Toast.show({ type: 'error', message: error.message || t('auth.signUpFailed') });
+          Toast.show({ type: 'error', message: error.message || t('auth.signUpFailed') || 'Sign up failed' });
           return;
         }
 
@@ -156,19 +95,19 @@ export default function AuthScreen() {
         
         if (data.user && !data.session) {
           Alert.alert(
-            t('auth.verifyEmail'),
-            t('auth.verifyEmailMessage'),
-            [{ text: t('ok') }]
+            t('auth.verifyEmail') || 'Verify Your Email',
+            t('auth.verifyEmailMessage') || 'Please check your email and click the verification link to complete your registration.',
+            [{ text: t('ok') || 'OK' }]
           );
           setIsLogin(true);
         } else {
-          Toast.show({ type: 'success', message: t('auth.accountCreated') });
+          Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
           router.replace('/(tabs)/pantry');
         }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      Toast.show({ type: 'error', message: t('auth.unexpectedError') });
+      Toast.show({ type: 'error', message: t('auth.unexpectedError') || 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -205,24 +144,6 @@ export default function AuthScreen() {
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </Text>
           </View>
-
-          {/* Biometric Login Button */}
-          {isLogin && biometricAvailable && biometricEnabled && (
-            <TouchableOpacity
-              style={styles.biometricButton}
-              onPress={handleBiometricLogin}
-              disabled={loading}
-            >
-              <IconSymbol
-                name={biometricType.includes('Face') ? 'faceid' : 'touchid'}
-                size={28}
-                color={colors.primary}
-              />
-              <Text style={styles.biometricButtonText}>
-                Sign in with {biometricType}
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {/* Form */}
           <View style={styles.form}>
@@ -401,24 +322,6 @@ const styles = StyleSheet.create({
     ...typography.bodyLarge,
     color: colors.textSecondary,
     fontWeight: '500',
-  },
-  biometricButton: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xxl,
-    gap: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    boxShadow: `0px 4px 12px ${colors.primary}20`,
-    elevation: 3,
-  },
-  biometricButtonText: {
-    ...typography.h4,
-    color: colors.primary,
   },
   form: {
     flex: 1,

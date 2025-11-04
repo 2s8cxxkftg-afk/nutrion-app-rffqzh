@@ -9,7 +9,6 @@ import {
   Platform,
   Alert,
   Image,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -21,15 +20,6 @@ import { getExpirationStatus } from '@/utils/expirationHelper';
 import { supabase } from '@/utils/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
-import {
-  checkBiometricCapabilities,
-  isBiometricEnabled,
-  setBiometricEnabled,
-  saveBiometricCredentials,
-  clearBiometricCredentials,
-  getBiometricTypeName,
-  authenticateWithBiometrics,
-} from '@/utils/biometricAuth';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
@@ -42,9 +32,6 @@ export default function ProfileScreen() {
   const [totalItems, setTotalItems] = useState(0);
   const [expiringSoon, setExpiringSoon] = useState(0);
   const [expired, setExpired] = useState(0);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState<string>('');
-  const [biometricEnabledState, setBiometricEnabledState] = useState(false);
   const [has2FA, setHas2FA] = useState(false);
 
   useFocusEffect(
@@ -52,7 +39,6 @@ export default function ProfileScreen() {
       console.log('Profile screen focused');
       loadStats();
       loadUserInfo();
-      checkBiometricStatus();
       check2FAStatus();
     }, [])
   );
@@ -88,24 +74,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const checkBiometricStatus = async () => {
-    try {
-      const available = await checkBiometricCapabilities();
-      setBiometricAvailable(available);
-      
-      if (available) {
-        const type = await getBiometricTypeName();
-        setBiometricType(type);
-        
-        const enabled = await isBiometricEnabled();
-        setBiometricEnabledState(enabled);
-        console.log('Biometric status:', { available, type, enabled });
-      }
-    } catch (error) {
-      console.error('Error checking biometric status:', error);
-    }
-  };
-
   const check2FAStatus = async () => {
     try {
       const twoFAEnabled = await AsyncStorage.getItem('@nutrion_2fa_enabled');
@@ -113,73 +81,6 @@ export default function ProfileScreen() {
       console.log('2FA status:', twoFAEnabled === 'true');
     } catch (error) {
       console.error('Error checking 2FA status:', error);
-    }
-  };
-
-  const handleToggleBiometric = async (value: boolean) => {
-    if (!user) {
-      Alert.alert(t('error'), t('profile.pleaseSignIn'));
-      return;
-    }
-
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      console.log('Haptics not available:', error);
-    }
-
-    try {
-      if (value) {
-        const authenticated = await authenticateWithBiometrics();
-        if (authenticated) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            await saveBiometricCredentials(session.user.email || '', '');
-            await setBiometricEnabled(true);
-            setBiometricEnabledState(true);
-            Toast.show({
-              type: 'success',
-              message: t('profile.biometricEnabled'),
-              duration: 2000,
-            });
-          }
-        } else {
-          Toast.show({
-            type: 'error',
-            message: t('profile.biometricAuthFailed'),
-            duration: 2000,
-          });
-        }
-      } else {
-        Alert.alert(
-          t('profile.disableBiometric'),
-          t('profile.disableBiometricConfirm'),
-          [
-            { text: t('cancel'), style: 'cancel' },
-            {
-              text: t('profile.disable'),
-              style: 'destructive',
-              onPress: async () => {
-                await clearBiometricCredentials();
-                await setBiometricEnabled(false);
-                setBiometricEnabledState(false);
-                Toast.show({
-                  type: 'success',
-                  message: t('profile.biometricDisabled'),
-                  duration: 2000,
-                });
-              },
-            },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error toggling biometric:', error);
-      Toast.show({
-        type: 'error',
-        message: value ? t('profile.biometricEnableError') : t('profile.biometricDisableError'),
-        duration: 2000,
-      });
     }
   };
 
@@ -360,28 +261,6 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
             <View style={styles.settingsList}>
-              {biometricAvailable && (
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <View style={styles.settingIcon}>
-                      <IconSymbol name="faceid" size={24} color={colors.primary} />
-                    </View>
-                    <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingTitle}>{biometricType}</Text>
-                      <Text style={styles.settingDescription}>
-                        {t('profile.biometricDesc')}
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={biometricEnabledState}
-                    onValueChange={handleToggleBiometric}
-                    trackColor={{ false: colors.border, true: colors.primary }}
-                    thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
-                  />
-                </View>
-              )}
-
               <TouchableOpacity
                 style={styles.settingItem}
                 onPress={has2FA ? handleDisable2FA : handleSetup2FA}

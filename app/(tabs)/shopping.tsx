@@ -20,8 +20,10 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { ShoppingItem } from '@/types/pantry';
 import { loadShoppingItems, saveShoppingItems } from '@/utils/storage';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 export default function ShoppingScreen() {
+  const { t } = useTranslation();
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
@@ -41,7 +43,7 @@ export default function ShoppingScreen() {
       console.log('Loaded shopping items:', items.length);
     } catch (error) {
       console.error('Error loading shopping items:', error);
-      Alert.alert('Error', 'Failed to load shopping items');
+      Alert.alert(t('error'), t('shopping.loadError'));
     }
   };
 
@@ -53,13 +55,13 @@ export default function ShoppingScreen() {
 
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
-      Alert.alert('Error', 'Please enter an item name');
+      Alert.alert(t('error'), t('shopping.enterItemName'));
       return;
     }
 
     const quantityNum = parseFloat(newItemQuantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+      Alert.alert(t('error'), t('shopping.enterValidQuantity'));
       return;
     }
 
@@ -88,7 +90,7 @@ export default function ShoppingScreen() {
       }
     } catch (error) {
       console.error('Error adding item:', error);
-      Alert.alert('Error', 'Failed to add item');
+      Alert.alert(t('error'), t('shopping.addItemError'));
     }
   };
 
@@ -107,7 +109,7 @@ export default function ShoppingScreen() {
       setShoppingItems(updatedItems);
     } catch (error) {
       console.error('Error toggling item:', error);
-      Alert.alert('Error', 'Failed to update item');
+      Alert.alert(t('error'), t('shopping.updateItemError'));
     }
   };
 
@@ -124,18 +126,18 @@ export default function ShoppingScreen() {
       }
     } catch (error) {
       console.error('Error deleting item:', error);
-      Alert.alert('Error', 'Failed to delete item');
+      Alert.alert(t('error'), t('shopping.deleteItemError'));
     }
   };
 
   const handleClearCompleted = async () => {
     Alert.alert(
-      'Clear Completed',
-      'Remove all checked items from the list?',
+      t('shopping.clearCompleted'),
+      t('shopping.clearCompletedConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Clear',
+          text: t('shopping.clear'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -144,7 +146,7 @@ export default function ShoppingScreen() {
               setShoppingItems(updatedItems);
             } catch (error) {
               console.error('Error clearing completed items:', error);
-              Alert.alert('Error', 'Failed to clear completed items');
+              Alert.alert(t('error'), t('shopping.clearCompletedError'));
             }
           },
         },
@@ -179,7 +181,7 @@ export default function ShoppingScreen() {
             {item.name}
           </Text>
           <Text style={styles.itemQuantity}>
-            Qty: {item.quantity} {item.unit}
+            {t('shopping.qty')}: {item.quantity} {item.unit}
           </Text>
         </View>
       </TouchableOpacity>
@@ -210,9 +212,9 @@ export default function ShoppingScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>Shopping List</Text>
+            <Text style={styles.headerTitle}>{t('shopping.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              {uncheckedItems.length} {uncheckedItems.length === 1 ? 'item' : 'items'} to buy
+              {uncheckedItems.length} {uncheckedItems.length === 1 ? t('shopping.item') : t('shopping.items')} {t('shopping.toBuy')}
             </Text>
           </View>
           {checkedItems.length > 0 && (
@@ -221,7 +223,7 @@ export default function ShoppingScreen() {
               activeOpacity={0.7}
               style={styles.clearButton}
             >
-              <Text style={styles.clearText}>Clear</Text>
+              <Text style={styles.clearText}>{t('shopping.clear')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -233,7 +235,7 @@ export default function ShoppingScreen() {
               <IconSymbol name="plus.circle.fill" size={24} color={colors.primary} />
               <TextInput
                 style={styles.addInput}
-                placeholder="Item name"
+                placeholder={t('shopping.itemName')}
                 placeholderTextColor={colors.textSecondary}
                 value={newItemName}
                 onChangeText={setNewItemName}
@@ -244,7 +246,7 @@ export default function ShoppingScreen() {
             </View>
             
             <View style={styles.quantityRow}>
-              <Text style={styles.quantityLabel}>Quantity:</Text>
+              <Text style={styles.quantityLabel}>{t('shopping.quantity')}:</Text>
               <View style={styles.quantityInputContainer}>
                 <TouchableOpacity
                   style={styles.quantityButton}
@@ -291,14 +293,14 @@ export default function ShoppingScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={handleAddItem}
                 activeOpacity={0.7}
               >
-                <Text style={styles.addButtonText}>Add Item</Text>
+                <Text style={styles.addButtonText}>{t('shopping.addItem')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -324,9 +326,9 @@ export default function ShoppingScreen() {
               <View style={commonStyles.emptyStateIcon}>
                 <IconSymbol name="cart" size={64} color={colors.textTertiary} />
               </View>
-              <Text style={commonStyles.emptyStateTitle}>Shopping list is empty</Text>
+              <Text style={commonStyles.emptyStateTitle}>{t('shopping.emptyTitle')}</Text>
               <Text style={commonStyles.emptyStateDescription}>
-                Add items you need to buy from the store
+                {t('shopping.emptyDescription')}
               </Text>
             </View>
           ) : (
@@ -334,7 +336,7 @@ export default function ShoppingScreen() {
               {/* Unchecked Items */}
               {uncheckedItems.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>To Buy</Text>
+                  <Text style={styles.sectionTitle}>{t('shopping.toBuySection')}</Text>
                   {uncheckedItems.map(renderShoppingItem)}
                 </View>
               )}
@@ -342,7 +344,7 @@ export default function ShoppingScreen() {
               {/* Checked Items */}
               {checkedItems.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Completed</Text>
+                  <Text style={styles.sectionTitle}>{t('shopping.completedSection')}</Text>
                   {checkedItems.map(renderShoppingItem)}
                 </View>
               )}
