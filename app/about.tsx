@@ -99,11 +99,11 @@ export default function AboutScreen() {
           <Text style={styles.sectionTitle}>Key Features</Text>
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <IconSymbol name="qrcode.viewfinder" size={24} color={colors.primary} />
+              <IconSymbol name="archivebox.fill" size={24} color={colors.primary} />
               <View style={styles.featureTextContainer}>
-                <Text style={styles.featureTitle}>Smart Barcode Scanning</Text>
+                <Text style={styles.featureTitle}>Smart Pantry Management</Text>
                 <Text style={styles.featureDescription}>
-                  Quickly add items by scanning barcodes
+                  Easily track all your food items in one place
                 </Text>
               </View>
             </View>
@@ -243,7 +243,7 @@ export default function AboutScreen() {
               Nutrion is built with care to help you live more sustainably and reduce food waste. 
               Thank you for being part of our mission!
             </Text>
-            <Text style={styles.copyright}>© 2024 Nutrion. All rights reserved.</Text>
+            <Text style={styles.copyright}>© 2025 Nutrion. All rights reserved.</Text>
           </View>
         </View>
 

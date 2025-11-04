@@ -45,17 +45,17 @@ const pages: OnboardingPage[] = [
   },
   {
     title: 'Smart Pantry Tracking',
-    description: 'Scan barcodes or add items manually. Keep track of everything in your kitchen with ease.',
-    icon: 'qrcode.viewfinder',
+    description: 'Add items manually or search our database. Keep track of everything in your kitchen with ease.',
+    icon: 'archivebox.fill',
     color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80', // Low-poly 3D geometric shapes in blue/green
+    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80', // Low-poly 3D colorful geometric composition
   },
   {
     title: 'AI Recipe Suggestions',
     description: 'Get personalized meal ideas based on what you have. Cook delicious meals without extra shopping.',
     icon: 'wand.and.stars',
     color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80', // Low-poly 3D colorful geometric composition
+    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80', // Low-poly 3D geometric shapes in blue/green
   },
   {
     title: 'Never Waste Food',

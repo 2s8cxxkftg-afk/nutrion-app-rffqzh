@@ -223,15 +223,6 @@ export default function PantryScreen() {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/scan-barcode')}
-            activeOpacity={0.7}
-          >
-            <IconSymbol name="qrcode.viewfinder" size={24} color={colors.secondary} />
-            <Text style={styles.actionButtonText}>{t('pantry.scanBarcode')}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
             onPress={() => router.push('/food-search')}
             activeOpacity={0.7}
           >
