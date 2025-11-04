@@ -54,6 +54,15 @@ export default function PantryScreen() {
     setRefreshing(false);
   };
 
+  const handleEditItem = async (itemId: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+    router.push(`/edit-item?id=${itemId}`);
+  };
+
   const handleDeleteItem = async (itemId: string) => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -109,13 +118,22 @@ export default function PantryScreen() {
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemCategory}>{item.category}</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDeleteItem(item.id)}
-            style={styles.deleteButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <IconSymbol name="trash" size={20} color={colors.error} />
-          </TouchableOpacity>
+          <View style={styles.itemActions}>
+            <TouchableOpacity
+              onPress={() => handleEditItem(item.id)}
+              style={styles.editButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol name="pencil" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteItem(item.id)}
+              style={styles.deleteButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol name="trash" size={20} color={colors.error} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.itemDetails}>
@@ -150,7 +168,7 @@ export default function PantryScreen() {
             { color: expirationColors[status] }
           ]}>
             {status === 'expired' ? t('pantry.expired') : 
-             status === 'expiring' ? t('pantry.expiresIn', { days: Math.ceil((new Date(item.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) }) :
+             status === 'nearExpiry' ? t('pantry.expiresIn', { days: Math.ceil((new Date(item.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) }) :
              t('pantry.fresh')}
           </Text>
         </View>
@@ -359,6 +377,13 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     textTransform: 'capitalize',
+  },
+  itemActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  editButton: {
+    padding: spacing.xs,
   },
   deleteButton: {
     padding: spacing.xs,
