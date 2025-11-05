@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
+import { getSubscription, Subscription } from '@/utils/subscription';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
   const [expiringSoon, setExpiringSoon] = useState(0);
   const [expired, setExpired] = useState(0);
   const [has2FA, setHas2FA] = useState(false);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -40,6 +42,7 @@ export default function ProfileScreen() {
       loadStats();
       loadUserInfo();
       check2FAStatus();
+      loadSubscriptionInfo();
     }, [])
   );
 
@@ -84,6 +87,16 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadSubscriptionInfo = async () => {
+    try {
+      const sub = await getSubscription();
+      setSubscription(sub);
+      console.log('Subscription loaded:', sub?.status);
+    } catch (error) {
+      console.error('Error loading subscription:', error);
+    }
+  };
+
   const handleSetup2FA = () => {
     if (!user) {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
@@ -123,6 +136,14 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleSubscriptionManagement = () => {
+    if (!user) {
+      Alert.alert(t('error'), t('profile.pleaseSignIn'));
+      return;
+    }
+    router.push('/subscription-management');
   };
 
   const handleNotificationSettings = () => {
@@ -183,6 +204,27 @@ export default function ProfileScreen() {
     );
   };
 
+  const getSubscriptionBadgeColor = () => {
+    if (!subscription) return colors.textSecondary;
+    switch (subscription.status) {
+      case 'active':
+        return colors.success;
+      case 'trial':
+        return colors.primary;
+      case 'cancelled':
+        return colors.error;
+      default:
+        return colors.textSecondary;
+    }
+  };
+
+  const getSubscriptionStatusText = () => {
+    if (!subscription) return t('subscription.free');
+    if (subscription.status === 'trial') return t('subscription.trial');
+    if (subscription.status === 'active') return t('subscription.premium');
+    return t('subscription.free');
+  };
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
@@ -222,6 +264,20 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user.email}</Text>
           )}
 
+          {/* Subscription Badge */}
+          {user && (
+            <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionBadgeColor() + '20' }]}>
+              <IconSymbol 
+                name={subscription?.plan_type === 'premium' ? 'crown.fill' : 'person.fill'} 
+                size={16} 
+                color={getSubscriptionBadgeColor()} 
+              />
+              <Text style={[styles.subscriptionBadgeText, { color: getSubscriptionBadgeColor() }]}>
+                {getSubscriptionStatusText()}
+              </Text>
+            </View>
+          )}
+
           {!user && (
             <TouchableOpacity
               style={styles.signInButton}
@@ -255,6 +311,33 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* Subscription Section */}
+        {user && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('profile.subscription')}</Text>
+            <View style={styles.settingsList}>
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={handleSubscriptionManagement}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingInfo}>
+                  <View style={styles.settingIcon}>
+                    <IconSymbol name="crown.fill" size={24} color={colors.primary} />
+                  </View>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingTitle}>{t('subscription.manageSub')}</Text>
+                    <Text style={styles.settingDescription}>
+                      {t('profile.subscriptionDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Security Section */}
         {user && (
@@ -429,6 +512,19 @@ const styles = StyleSheet.create({
   userEmail: {
     ...typography.body,
     color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  subscriptionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    gap: spacing.xs,
+  },
+  subscriptionBadgeText: {
+    ...typography.label,
+    fontWeight: '700',
   },
   signInButton: {
     flexDirection: 'row',
