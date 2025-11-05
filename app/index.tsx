@@ -6,11 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 
+const LANGUAGE_SELECTED_KEY = '@nutrion_language_selected';
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_completed';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [hasSeenSubscriptionIntro, setHasSeenSubscriptionIntro] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,11 +25,16 @@ export default function Index() {
     try {
       console.log('=== Checking App Status ===');
       
+      // Check language selection status
+      const languageValue = await AsyncStorage.getItem(LANGUAGE_SELECTED_KEY);
+      console.log('Language selected value from AsyncStorage:', languageValue);
+      const selectedLanguage = languageValue === 'true';
+      console.log('Has selected language:', selectedLanguage);
+      setHasSelectedLanguage(selectedLanguage);
+
       // Check onboarding status
       const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
       console.log('Onboarding value from AsyncStorage:', onboardingValue);
-      
-      // If null or undefined, user hasn't completed onboarding
       const completedOnboarding = onboardingValue === 'true';
       console.log('Has completed onboarding:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
@@ -51,7 +58,8 @@ export default function Index() {
       }, 1500);
     } catch (error) {
       console.error('Error checking app status:', error);
-      // On error, assume onboarding not completed
+      // On error, assume nothing completed
+      setHasSelectedLanguage(false);
       setHasCompletedOnboarding(false);
       setHasSeenSubscriptionIntro(false);
       setIsAuthenticated(false);
@@ -61,7 +69,7 @@ export default function Index() {
     }
   };
 
-  if (isLoading || hasCompletedOnboarding === null || hasSeenSubscriptionIntro === null) {
+  if (isLoading || hasSelectedLanguage === null || hasCompletedOnboarding === null || hasSeenSubscriptionIntro === null) {
     return (
       <View style={styles.loadingContainer}>
         <Image
@@ -74,15 +82,22 @@ export default function Index() {
   }
 
   // Navigation logic:
-  // 1. If onboarding not completed -> go to onboarding
-  // 2. If onboarding completed but not authenticated -> go to auth
-  // 3. If authenticated but hasn't seen subscription intro -> go to subscription intro
-  // 4. If all completed -> go to app
+  // 1. If language not selected -> go to language selection
+  // 2. If language selected but onboarding not completed -> go to onboarding
+  // 3. If onboarding completed but not authenticated -> go to auth
+  // 4. If authenticated but hasn't seen subscription intro -> go to subscription intro
+  // 5. If all completed -> go to app
   console.log('=== Navigation Decision ===');
+  console.log('Language selected:', hasSelectedLanguage);
   console.log('Onboarding completed:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
   console.log('Seen subscription intro:', hasSeenSubscriptionIntro);
   
+  if (!hasSelectedLanguage) {
+    console.log('Redirecting to: /language-selection');
+    return <Redirect href="/language-selection" />;
+  }
+
   if (!hasCompletedOnboarding) {
     console.log('Redirecting to: /onboarding');
     return <Redirect href="/onboarding" />;

@@ -22,13 +22,14 @@ import Animated, {
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 interface OnboardingPage {
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: string;
   color: string;
   imageUrl: string;
@@ -37,37 +38,38 @@ interface OnboardingPage {
 // Low-poly 3D art style illustrations similar to Foodpanda
 const pages: OnboardingPage[] = [
   {
-    title: 'Welcome to Nutrion',
-    description: 'Your smart kitchen companion that helps you manage food, reduce waste, and discover amazing recipes.',
+    titleKey: 'onboarding.welcome',
+    descriptionKey: 'onboarding.welcomeDesc',
     icon: 'sparkles',
     color: colors.primary,
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80', // Low-poly 3D abstract colorful shapes
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
   },
   {
-    title: 'Smart Pantry Tracking',
-    description: 'Add items manually or search our database. Keep track of everything in your kitchen with ease.',
+    titleKey: 'onboarding.pantryTitle',
+    descriptionKey: 'onboarding.pantryDesc',
     icon: 'archivebox.fill',
     color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80', // Low-poly 3D colorful geometric composition
+    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80',
   },
   {
-    title: 'AI Recipe Suggestions',
-    description: 'Get personalized meal ideas based on what you have. Cook delicious meals without extra shopping.',
+    titleKey: 'onboarding.aiTitle',
+    descriptionKey: 'onboarding.aiDesc',
     icon: 'wand.and.stars',
     color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80', // Low-poly 3D geometric shapes in blue/green
+    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80',
   },
   {
-    title: 'Never Waste Food',
-    description: 'Smart expiration alerts keep you informed. Save money and help the planet by reducing food waste.',
+    titleKey: 'onboarding.wasteTitle',
+    descriptionKey: 'onboarding.wasteDesc',
     icon: 'leaf.fill',
     color: colors.success,
-    imageUrl: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80', // Low-poly 3D green/nature themed shapes
+    imageUrl: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80',
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollX = useSharedValue(0);
@@ -124,7 +126,7 @@ export default function OnboardingScreen() {
         
         {currentPage < pages.length - 1 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
+            <Text style={styles.skipText}>{t('skip')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -165,8 +167,8 @@ export default function OnboardingScreen() {
 
               {/* Content */}
               <View style={styles.textContent}>
-                <Text style={styles.title}>{page.title}</Text>
-                <Text style={styles.description}>{page.description}</Text>
+                <Text style={styles.title}>{t(page.titleKey)}</Text>
+                <Text style={styles.description}>{t(page.descriptionKey)}</Text>
               </View>
             </View>
           </View>
@@ -185,7 +187,7 @@ export default function OnboardingScreen() {
         {/* Action Button */}
         <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
           <Text style={styles.actionButtonText}>
-            {currentPage === pages.length - 1 ? 'Get Started' : 'Continue'}
+            {currentPage === pages.length - 1 ? t('getStarted') : t('continue')}
           </Text>
           <View style={styles.actionButtonIcon}>
             <IconSymbol
