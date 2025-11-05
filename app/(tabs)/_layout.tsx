@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Stack } from 'expo-router';
+import { Slot } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
@@ -34,17 +34,7 @@ export default function TabLayout() {
 
   return (
     <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'none',
-        }}
-      >
-        <Stack.Screen name="pantry" />
-        <Stack.Screen name="planner" />
-        <Stack.Screen name="shopping" />
-        <Stack.Screen name="profile" />
-      </Stack>
+      <Slot />
       <FloatingTabBar tabs={tabs} />
     </>
   );
