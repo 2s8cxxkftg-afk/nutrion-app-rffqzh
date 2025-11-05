@@ -62,12 +62,12 @@ export default function PlannerScreen() {
       setHasLoadedAI(true);
       setIsLoadingMore(false);
       Toast.show({
-        message: `Generated ${data.recipes.length} diverse recipe suggestions!`,
+        message: t('planner.aiSuggestionsGenerated', { count: data.recipes.length }),
         type: 'success',
         duration: 2000,
       });
     }
-  }, [data]);
+  }, [data, t]);
 
   const loadData = async () => {
     try {
@@ -96,7 +96,7 @@ export default function PlannerScreen() {
     } catch (error) {
       console.error('Error loading planner data:', error);
       Toast.show({
-        message: 'Failed to load planner data',
+        message: t('planner.loadError'),
         type: 'error',
         duration: 3000,
       });
@@ -115,7 +115,7 @@ export default function PlannerScreen() {
     
     if (pantryItems.length === 0) {
       Toast.show({
-        message: 'Please add items to your pantry first',
+        message: t('planner.addPantryItemsFirst'),
         type: 'error',
         duration: 3000,
       });
@@ -186,17 +186,17 @@ export default function PlannerScreen() {
         <View style={styles.recipeInfo}>
           <View style={styles.infoChip}>
             <IconSymbol name="clock" size={16} color={colors.textSecondary} />
-            <Text style={styles.infoText}>{recipe.prepTime} min</Text>
+            <Text style={styles.infoText}>{recipe.prepTime} {t('planner.min')}</Text>
           </View>
           <View style={styles.infoChip}>
             <IconSymbol name="person.2" size={16} color={colors.textSecondary} />
-            <Text style={styles.infoText}>{recipe.servings} servings</Text>
+            <Text style={styles.infoText}>{recipe.servings} {t('planner.servings')}</Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        <Text style={styles.sectionLabel}>Ingredients</Text>
+        <Text style={styles.sectionLabel}>{t('planner.ingredients')}</Text>
         <View style={styles.ingredientsList}>
           {recipe.ingredients.slice(0, 5).map((ingredient, index) => {
             const isAvailable = matchingIngredients.includes(ingredient);
@@ -218,7 +218,7 @@ export default function PlannerScreen() {
           })}
           {recipe.ingredients.length > 5 && (
             <Text style={styles.moreText}>
-              +{recipe.ingredients.length - 5} more ingredients
+              {t('planner.moreIngredients', { count: recipe.ingredients.length - 5 })}
             </Text>
           )}
         </View>
@@ -239,7 +239,7 @@ export default function PlannerScreen() {
       <View key={`ai-${index}`} style={[styles.recipeCard, styles.aiRecipeCard]}>
         <View style={styles.aiRecipeBadge}>
           <IconSymbol name="sparkles" size={14} color="#FFFFFF" />
-          <Text style={styles.aiRecipeBadgeText}>AI Suggested</Text>
+          <Text style={styles.aiRecipeBadgeText}>{t('planner.aiSuggested')}</Text>
         </View>
 
         <View style={styles.recipeHeader}>
@@ -275,11 +275,11 @@ export default function PlannerScreen() {
         <View style={styles.recipeInfo}>
           <View style={styles.infoChip}>
             <IconSymbol name="clock" size={16} color={colors.textSecondary} />
-            <Text style={styles.infoText}>{recipe.prepTime} min</Text>
+            <Text style={styles.infoText}>{recipe.prepTime} {t('planner.min')}</Text>
           </View>
           <View style={styles.infoChip}>
             <IconSymbol name="person.2" size={16} color={colors.textSecondary} />
-            <Text style={styles.infoText}>{recipe.servings} servings</Text>
+            <Text style={styles.infoText}>{recipe.servings} {t('planner.servings')}</Text>
           </View>
           <View style={styles.infoChip}>
             <IconSymbol name="tag" size={16} color={colors.textSecondary} />
@@ -289,7 +289,7 @@ export default function PlannerScreen() {
 
         <View style={styles.divider} />
 
-        <Text style={styles.sectionLabel}>Ingredients</Text>
+        <Text style={styles.sectionLabel}>{t('planner.ingredients')}</Text>
         <View style={styles.ingredientsList}>
           {recipe.ingredients.slice(0, 5).map((ingredient, idx) => {
             const isAvailable = matchingIngredients.some(match => 
@@ -314,7 +314,7 @@ export default function PlannerScreen() {
           })}
           {recipe.ingredients.length > 5 && (
             <Text style={styles.moreText}>
-              +{recipe.ingredients.length - 5} more ingredients
+              {t('planner.moreIngredients', { count: recipe.ingredients.length - 5 })}
             </Text>
           )}
         </View>
@@ -323,7 +323,7 @@ export default function PlannerScreen() {
         {recipe.instructions && (
           <>
             <View style={styles.divider} />
-            <Text style={styles.sectionLabel}>Instructions</Text>
+            <Text style={styles.sectionLabel}>{t('planner.instructions')}</Text>
             <Text style={styles.instructionsPreview} numberOfLines={3}>
               {recipe.instructions}
             </Text>
@@ -372,7 +372,7 @@ export default function PlannerScreen() {
             <View style={styles.statItem}>
               <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
               <Text style={styles.statNumber}>{pantryItems.length}</Text>
-              <Text style={styles.statLabel}>Ingredients</Text>
+              <Text style={styles.statLabel}>{t('planner.ingredientsLabel')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -380,7 +380,7 @@ export default function PlannerScreen() {
               <Text style={styles.statNumber}>
                 {showAiSuggestions ? aiSuggestions.length : suggestedRecipes.length}
               </Text>
-              <Text style={styles.statLabel}>Recipes</Text>
+              <Text style={styles.statLabel}>{t('planner.recipesLabel')}</Text>
             </View>
           </View>
 
@@ -389,7 +389,7 @@ export default function PlannerScreen() {
             <View style={styles.scrollHintBanner}>
               <IconSymbol name="arrow.down.circle.fill" size={24} color={colors.primary} />
               <Text style={styles.scrollHintText}>
-                Scroll down to load AI recipe suggestions
+                {t('planner.scrollToLoadAI')}
               </Text>
             </View>
           )}
@@ -402,7 +402,7 @@ export default function PlannerScreen() {
                 <Text style={styles.errorText}>{error}</Text>
                 {error.includes('API') && (
                   <Text style={styles.errorHint}>
-                    This may be a temporary issue. Please try again in a moment.
+                    {t('planner.temporaryIssue')}
                   </Text>
                 )}
               </View>
@@ -429,7 +429,7 @@ export default function PlannerScreen() {
                   styles.toggleButtonText,
                   showAiSuggestions && styles.toggleButtonTextActive,
                 ]}>
-                  AI Suggestions
+                  {t('planner.aiSuggestions')}
                 </Text>
               </TouchableOpacity>
 
@@ -450,7 +450,7 @@ export default function PlannerScreen() {
                   styles.toggleButtonText,
                   !showAiSuggestions && styles.toggleButtonTextActive,
                 ]}>
-                  Default Recipes
+                  {t('planner.defaultRecipes')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -458,7 +458,7 @@ export default function PlannerScreen() {
 
           {/* Recipes List */}
           <Text style={styles.sectionHeader}>
-            {showAiSuggestions ? '🌍 World Cuisine Suggestions' : 'Suggested Recipes'}
+            {showAiSuggestions ? t('planner.worldCuisineSuggestions') : t('planner.suggestedRecipes')}
           </Text>
 
           {showAiSuggestions ? (
@@ -467,9 +467,9 @@ export default function PlannerScreen() {
                 <View style={commonStyles.emptyStateIcon}>
                   <IconSymbol name="sparkles" size={64} color={colors.textTertiary} />
                 </View>
-                <Text style={commonStyles.emptyStateTitle}>No AI suggestions yet</Text>
+                <Text style={commonStyles.emptyStateTitle}>{t('planner.noAiSuggestions')}</Text>
                 <Text style={commonStyles.emptyStateDescription}>
-                  Scroll down to load personalized recipe suggestions from cuisines around the world
+                  {t('planner.scrollToLoadAIDesc')}
                 </Text>
               </View>
             ) : (
@@ -481,9 +481,9 @@ export default function PlannerScreen() {
                 <View style={commonStyles.emptyStateIcon}>
                   <IconSymbol name="book.closed" size={64} color={colors.textTertiary} />
                 </View>
-                <Text style={commonStyles.emptyStateTitle}>No recipes available</Text>
+                <Text style={commonStyles.emptyStateTitle}>{t('planner.noRecipes')}</Text>
                 <Text style={commonStyles.emptyStateDescription}>
-                  Add items to your pantry to see recipe suggestions
+                  {t('planner.addRecipeHint')}
                 </Text>
               </View>
             ) : (
@@ -496,7 +496,7 @@ export default function PlannerScreen() {
             <View style={styles.loadingMoreContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.loadingMoreText}>
-                Generating diverse recipes from around the world...
+                {t('planner.generatingRecipes')}
               </Text>
             </View>
           )}

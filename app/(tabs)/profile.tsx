@@ -225,6 +225,8 @@ export default function ProfileScreen() {
     return t('subscription.free');
   };
 
+  const isPremiumUser = subscription?.plan_type === 'premium' && subscription?.status === 'active';
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
@@ -289,6 +291,32 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Premium Subscription Card - Prominent placement */}
+        {user && !isPremiumUser && (
+          <TouchableOpacity
+            style={styles.premiumCard}
+            onPress={handleSubscriptionManagement}
+            activeOpacity={0.8}
+          >
+            <View style={styles.premiumCardContent}>
+              <View style={styles.premiumIconContainer}>
+                <IconSymbol name="crown.fill" size={40} color="#FFD700" />
+              </View>
+              <View style={styles.premiumTextContainer}>
+                <Text style={styles.premiumTitle}>{t('subscription.upgradeToPremium')}</Text>
+                <Text style={styles.premiumDescription}>
+                  {t('profile.premiumCardDesc')}
+                </Text>
+                <View style={styles.premiumPriceContainer}>
+                  <Text style={styles.premiumPrice}>$1.99</Text>
+                  <Text style={styles.premiumPriceLabel}>/{t('subscription.month')}</Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={24} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Statistics */}
         <View style={styles.section}>
@@ -542,6 +570,58 @@ const styles = StyleSheet.create({
   signInButtonText: {
     ...typography.h4,
     color: '#FFFFFF',
+  },
+  premiumCard: {
+    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xxl,
+    boxShadow: `0px 8px 24px ${colors.primary}60`,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  premiumCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  premiumIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumTextContainer: {
+    flex: 1,
+  },
+  premiumTitle: {
+    ...typography.h2,
+    color: '#FFFFFF',
+    marginBottom: spacing.xs,
+    fontWeight: '700',
+  },
+  premiumDescription: {
+    ...typography.bodySmall,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: spacing.sm,
+    lineHeight: 18,
+  },
+  premiumPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  premiumPrice: {
+    ...typography.h1,
+    color: '#FFD700',
+    fontWeight: '800',
+  },
+  premiumPriceLabel: {
+    ...typography.body,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginLeft: spacing.xs,
   },
   section: {
     marginBottom: spacing.xxxl,
