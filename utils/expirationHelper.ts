@@ -1,5 +1,6 @@
 
 import { ExpirationStatus } from '@/types/pantry';
+import i18n from './i18n';
 
 // AI-powered expiration prediction for fresh foods without labeled expiry dates
 // Based on food type, storage conditions, and typical shelf life data
@@ -495,16 +496,24 @@ export const getExpirationEstimation = (
         const minWeeks = Math.floor(minDays / 7);
         const maxWeeks = Math.ceil(maxDays / 7);
         
+        const weekText = minWeeks === 1 && maxWeeks === 1 
+          ? i18n.t('expiration.week')
+          : i18n.t('expiration.weeks');
+        
         if (minWeeks === maxWeeks) {
-          return `Expires within ${minWeeks} week${minWeeks !== 1 ? 's' : ''}`;
+          return i18n.t('expiration.expiresWithin', { range: `${minWeeks} ${weekText}` });
         } else {
-          return `Expires within ${minWeeks}-${maxWeeks} weeks`;
+          return i18n.t('expiration.expiresWithin', { range: `${minWeeks}-${maxWeeks} ${weekText}` });
         }
       } else {
+        const dayText = minDays === 1 && maxDays === 1 
+          ? i18n.t('expiration.day')
+          : i18n.t('expiration.days');
+        
         if (minDays === maxDays) {
-          return `Expires within ${minDays} day${minDays !== 1 ? 's' : ''}`;
+          return i18n.t('expiration.expiresWithin', { range: `${minDays} ${dayText}` });
         } else {
-          return `Expires within ${minDays}-${maxDays} days`;
+          return i18n.t('expiration.expiresWithin', { range: `${minDays}-${maxDays} ${dayText}` });
         }
       }
     }
@@ -670,13 +679,17 @@ export const formatExpirationText = (expirationDate: string): string => {
   const days = getDaysUntilExpiration(expirationDate);
   
   if (days < 0) {
-    return `Expired ${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} ago`;
+    const absDays = Math.abs(days);
+    if (absDays === 1) {
+      return i18n.t('expiration.expiredDayAgo', { days: absDays });
+    }
+    return i18n.t('expiration.expiredDaysAgo', { days: absDays });
   } else if (days === 0) {
-    return 'Expires today';
+    return i18n.t('expiration.expiresToday');
   } else if (days === 1) {
-    return 'Expires tomorrow';
+    return i18n.t('expiration.expiresTomorrow');
   } else if (days <= 7) {
-    return `Expires in ${days} days`;
+    return i18n.t('expiration.expiresIn', { days });
   } else {
     return new Date(expirationDate).toLocaleDateString();
   }

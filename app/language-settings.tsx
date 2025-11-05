@@ -66,7 +66,7 @@ export default function LanguageSettingsScreen() {
         
         // Show success message
         Toast.show({
-          message: 'Language changed successfully',
+          message: t('language.changeSuccess'),
           type: 'success',
           duration: 2000,
         });
@@ -82,7 +82,7 @@ export default function LanguageSettingsScreen() {
     } catch (error) {
       console.error('❌ Error changing language:', error);
       Toast.show({
-        message: 'Failed to change language. Please try again.',
+        message: t('language.changeError'),
         type: 'error',
       });
     } finally {
@@ -95,7 +95,7 @@ export default function LanguageSettingsScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('profile.language') || 'Language',
+          title: t('language.title'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'modal',
@@ -107,9 +107,9 @@ export default function LanguageSettingsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Select Language</Text>
+        <Text style={styles.sectionTitle}>{t('language.selectLanguage')}</Text>
         <Text style={styles.sectionDescription}>
-          Choose your preferred language. The entire app will update immediately.
+          {t('language.description')}
         </Text>
 
         <View style={styles.languageList}>
@@ -143,7 +143,7 @@ export default function LanguageSettingsScreen() {
         <View style={styles.infoBox}>
           <IconSymbol name="info.circle" size={20} color={colors.textSecondary} />
           <Text style={styles.infoText}>
-            The app will update immediately when you select a new language. All screens, buttons, and text will be translated.
+            {t('language.infoText')}
           </Text>
         </View>
       </ScrollView>

@@ -20,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, spacing, borderRadius } from '@/styles/commonStyles';
+import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
 export interface TabBarItem {
@@ -43,6 +44,7 @@ export default function FloatingTabBar({
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const activeIndex = tabs.findIndex(tab => pathname.includes(tab.name));
   const indicatorPosition = useSharedValue(activeIndex >= 0 ? activeIndex : 0);
@@ -81,6 +83,11 @@ export default function FloatingTabBar({
     };
   });
 
+  // Get translated label for each tab
+  const getTranslatedLabel = (tabName: string): string => {
+    return t(tabName.toLowerCase());
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={[styles.container, { marginBottom: bottomMargin }]}>
@@ -108,6 +115,8 @@ export default function FloatingTabBar({
           {/* Tab Buttons */}
           {tabs.map((tab, index) => {
             const isActive = pathname.includes(tab.name);
+            const translatedLabel = getTranslatedLabel(tab.name);
+            
             return (
               <TouchableOpacity
                 key={tab.name}
@@ -131,7 +140,7 @@ export default function FloatingTabBar({
                     },
                   ]}
                 >
-                  {tab.label}
+                  {translatedLabel}
                 </Text>
               </TouchableOpacity>
             );
