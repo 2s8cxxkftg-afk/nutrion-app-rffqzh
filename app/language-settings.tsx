@@ -126,7 +126,6 @@ export default function LanguageSettingsScreen() {
                 activeOpacity={0.7}
                 disabled={isChanging || isSelected}
               >
-                <Text style={styles.languageFlag}>{language.flag}</Text>
                 <View style={styles.languageInfo}>
                   <Text style={styles.languageName}>{language.name}</Text>
                   <Text style={styles.languageNative}>{language.nativeName}</Text>
@@ -186,10 +185,6 @@ const styles = StyleSheet.create({
   languageItemSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary + '10',
-  },
-  languageFlag: {
-    fontSize: 28,
-    marginRight: 12,
   },
   languageInfo: {
     flex: 1,
