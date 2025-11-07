@@ -57,7 +57,7 @@ export default function SubscriptionIntroScreen() {
         <View style={styles.content}>
           {/* Premium Badge */}
           <View style={styles.premiumBadge}>
-            <IconSymbol name="crown.fill" size={32} color={colors.primary} />
+            <IconSymbol name="crown.fill" size={40} color={colors.primary} />
           </View>
 
           {/* Title */}
@@ -74,7 +74,7 @@ export default function SubscriptionIntroScreen() {
             
             <View style={styles.trialBadge}>
               <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
-              <Text style={styles.trialText}>{t('subscription.freeTrial')}</Text>
+              <Text style={styles.trialText}>1 {t('subscription.month')} {t('subscription.freeTrial')}</Text>
             </View>
           </View>
 
@@ -126,7 +126,9 @@ export default function SubscriptionIntroScreen() {
           {/* Trial Info */}
           <View style={styles.trialInfo}>
             <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
-            <Text style={styles.trialInfoText}>{t('subscription.trialInfo')}</Text>
+            <Text style={styles.trialInfoText}>
+              Try free for 1 month, then just $1.99 USD per month. Cancel anytime.
+            </Text>
           </View>
         </View>
       </ScrollView>

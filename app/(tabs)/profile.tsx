@@ -143,6 +143,7 @@ export default function ProfileScreen() {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/subscription-management');
   };
 
@@ -225,7 +226,7 @@ export default function ProfileScreen() {
     return t('subscription.free');
   };
 
-  const isPremiumUser = subscription?.plan_type === 'premium' && subscription?.status === 'active';
+  const isPremiumUser = subscription?.plan_type === 'premium' && (subscription?.status === 'active' || subscription?.status === 'trial');
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
@@ -270,7 +271,7 @@ export default function ProfileScreen() {
           {user && (
             <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionBadgeColor() + '20' }]}>
               <IconSymbol 
-                name={subscription?.plan_type === 'premium' ? 'crown.fill' : 'person.fill'} 
+                name={isPremiumUser ? 'crown.fill' : 'person.fill'} 
                 size={16} 
                 color={getSubscriptionBadgeColor()} 
               />
@@ -292,28 +293,44 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Premium Subscription Card - Prominent placement */}
+        {/* Premium Subscription Card - Prominent placement for non-premium users */}
         {user && !isPremiumUser && (
           <TouchableOpacity
             style={styles.premiumCard}
             onPress={handleSubscriptionManagement}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <View style={styles.premiumCardContent}>
-              <View style={styles.premiumIconContainer}>
-                <IconSymbol name="crown.fill" size={40} color="#FFD700" />
-              </View>
-              <View style={styles.premiumTextContainer}>
-                <Text style={styles.premiumTitle}>{t('subscription.upgradeToPremium')}</Text>
-                <Text style={styles.premiumDescription}>
-                  {t('profile.premiumCardDesc')}
-                </Text>
-                <View style={styles.premiumPriceContainer}>
-                  <Text style={styles.premiumPrice}>$1.99</Text>
-                  <Text style={styles.premiumPriceLabel}>/{t('subscription.month')}</Text>
+            <View style={styles.premiumGradient}>
+              <View style={styles.premiumCardContent}>
+                <View style={styles.premiumIconContainer}>
+                  <IconSymbol name="crown.fill" size={48} color="#FFD700" />
+                  <View style={styles.sparkle1}>
+                    <IconSymbol name="sparkles" size={16} color="#FFD700" />
+                  </View>
+                  <View style={styles.sparkle2}>
+                    <IconSymbol name="sparkles" size={12} color="#FFD700" />
+                  </View>
+                </View>
+                <View style={styles.premiumTextContainer}>
+                  <Text style={styles.premiumTitle}>{t('subscription.upgradeToPremium')}</Text>
+                  <Text style={styles.premiumDescription}>
+                    {t('profile.premiumCardDesc')}
+                  </Text>
+                  <View style={styles.premiumPriceRow}>
+                    <View style={styles.premiumPriceContainer}>
+                      <Text style={styles.premiumPrice}>$1.99</Text>
+                      <Text style={styles.premiumPriceLabel}>/{t('subscription.month')}</Text>
+                    </View>
+                    <View style={styles.trialBadge}>
+                      <IconSymbol name="gift.fill" size={14} color="#FFFFFF" />
+                      <Text style={styles.trialBadgeText}>{t('subscription.freeTrial')}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.premiumArrow}>
+                  <IconSymbol name="chevron.right" size={28} color="#FFFFFF" />
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={24} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
         )}
@@ -572,14 +589,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   premiumCard: {
-    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
     marginBottom: spacing.xxl,
-    boxShadow: `0px 8px 24px ${colors.primary}60`,
-    elevation: 8,
-    borderWidth: 2,
+    overflow: 'hidden',
+    boxShadow: `0px 12px 32px rgba(102, 126, 234, 0.5)`,
+    elevation: 12,
+  },
+  premiumGradient: {
+    backgroundColor: '#667eea',
+    backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    padding: spacing.xl,
+    borderWidth: 3,
     borderColor: '#FFD700',
+    borderRadius: borderRadius.xl,
   },
   premiumCardContent: {
     flexDirection: 'row',
@@ -587,12 +609,25 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   premiumIconContainer: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    boxShadow: '0px 4px 16px rgba(255, 215, 0, 0.4)',
+    elevation: 6,
+  },
+  sparkle1: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  sparkle2: {
+    position: 'absolute',
+    bottom: 4,
+    left: -4,
   },
   premiumTextContainer: {
     flex: 1,
@@ -601,13 +636,19 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: '#FFFFFF',
     marginBottom: spacing.xs,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 20,
   },
   premiumDescription: {
     ...typography.bodySmall,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: spacing.sm,
-    lineHeight: 18,
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  premiumPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   premiumPriceContainer: {
     flexDirection: 'row',
@@ -616,12 +657,37 @@ const styles = StyleSheet.create({
   premiumPrice: {
     ...typography.h1,
     color: '#FFD700',
-    fontWeight: '800',
+    fontWeight: '900',
+    fontSize: 28,
   },
   premiumPriceLabel: {
     ...typography.body,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginLeft: spacing.xs,
+    fontWeight: '600',
+  },
+  trialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: spacing.xs,
+  },
+  trialBadgeText: {
+    ...typography.labelSmall,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 11,
+  },
+  premiumArrow: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   section: {
     marginBottom: spacing.xxxl,

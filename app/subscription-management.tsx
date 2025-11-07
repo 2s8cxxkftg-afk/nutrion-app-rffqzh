@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { useTranslation } from 'react-i18next';
 import {
   getSubscription,
   startFreeTrial,
@@ -23,14 +22,15 @@ import {
   Subscription,
 } from '@/utils/subscription';
 import Toast from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionManagementScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
 
   useEffect(() => {
     loadSubscription();
@@ -42,15 +42,18 @@ export default function SubscriptionManagementScreen() {
       const sub = await getSubscription();
       setSubscription(sub);
       
-      if (sub && sub.status === 'trial') {
+      if (sub?.status === 'trial') {
         const daysRemaining = await getTrialDaysRemaining();
         setTrialDaysRemaining(daysRemaining);
       }
+      
+      console.log('Subscription loaded:', sub);
     } catch (error) {
       console.error('Error loading subscription:', error);
       Toast.show({
-        message: 'Failed to load subscription',
         type: 'error',
+        message: 'Failed to load subscription',
+        duration: 2000,
       });
     } finally {
       setLoading(false);
@@ -64,18 +67,24 @@ export default function SubscriptionManagementScreen() {
       
       if (success) {
         Toast.show({
-          message: t('subscription.subscriptionActivated'),
           type: 'success',
+          message: 'Free trial started successfully!',
+          duration: 2000,
         });
         await loadSubscription();
       } else {
-        throw new Error('Failed to start trial');
+        Toast.show({
+          type: 'error',
+          message: 'Failed to start trial',
+          duration: 2000,
+        });
       }
     } catch (error) {
       console.error('Error starting trial:', error);
       Toast.show({
-        message: 'Failed to start trial',
         type: 'error',
+        message: 'An error occurred',
+        duration: 2000,
       });
     } finally {
       setActionLoading(false);
@@ -83,28 +92,46 @@ export default function SubscriptionManagementScreen() {
   };
 
   const handleSubscribe = async () => {
-    try {
-      setActionLoading(true);
-      const success = await activatePremiumSubscription();
-      
-      if (success) {
-        Toast.show({
-          message: t('subscription.subscriptionActivated'),
-          type: 'success',
-        });
-        await loadSubscription();
-      } else {
-        throw new Error('Failed to subscribe');
-      }
-    } catch (error) {
-      console.error('Error subscribing:', error);
-      Toast.show({
-        message: 'Failed to activate subscription',
-        type: 'error',
-      });
-    } finally {
-      setActionLoading(false);
-    }
+    Alert.alert(
+      'Subscribe to Premium',
+      'Subscribe for $1.99 USD per month to unlock all premium features?',
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('subscription.subscribe'),
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              const success = await activatePremiumSubscription();
+              
+              if (success) {
+                Toast.show({
+                  type: 'success',
+                  message: t('subscription.subscriptionActivated'),
+                  duration: 2000,
+                });
+                await loadSubscription();
+              } else {
+                Toast.show({
+                  type: 'error',
+                  message: 'Failed to activate subscription',
+                  duration: 2000,
+                });
+              }
+            } catch (error) {
+              console.error('Error subscribing:', error);
+              Toast.show({
+                type: 'error',
+                message: 'An error occurred',
+                duration: 2000,
+              });
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCancelSubscription = () => {
@@ -123,18 +150,24 @@ export default function SubscriptionManagementScreen() {
               
               if (success) {
                 Toast.show({
-                  message: t('subscription.subscriptionCancelled'),
                   type: 'success',
+                  message: t('subscription.subscriptionCancelled'),
+                  duration: 2000,
                 });
                 await loadSubscription();
               } else {
-                throw new Error('Failed to cancel');
+                Toast.show({
+                  type: 'error',
+                  message: 'Failed to cancel subscription',
+                  duration: 2000,
+                });
               }
             } catch (error) {
               console.error('Error cancelling subscription:', error);
               Toast.show({
-                message: 'Failed to cancel subscription',
                 type: 'error',
+                message: 'An error occurred',
+                duration: 2000,
               });
             } finally {
               setActionLoading(false);
@@ -159,38 +192,45 @@ export default function SubscriptionManagementScreen() {
   };
 
   const getStatusText = (status: string) => {
-    return t(`subscription.${status}`);
+    switch (status) {
+      case 'active':
+        return t('subscription.active');
+      case 'trial':
+        return t('subscription.trial');
+      case 'cancelled':
+        return t('subscription.cancelled');
+      default:
+        return t('subscription.inactive');
+    }
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+      <SafeAreaView style={commonStyles.safeArea}>
         <Stack.Screen
           options={{
-            headerShown: true,
             title: t('subscription.manageSub'),
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
+            headerShown: true,
           }}
         />
-        <View style={[commonStyles.container, styles.loadingContainer]}>
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
+  const isPremium = subscription?.plan_type === 'premium' && (subscription?.status === 'active' || subscription?.status === 'trial');
+
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+    <SafeAreaView style={commonStyles.safeArea}>
       <Stack.Screen
         options={{
-          headerShown: true,
           title: t('subscription.manageSub'),
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
+          headerShown: true,
         }}
       />
-      
+
       <ScrollView
         style={commonStyles.container}
         contentContainerStyle={styles.content}
@@ -200,9 +240,9 @@ export default function SubscriptionManagementScreen() {
         <View style={styles.planCard}>
           <View style={styles.planHeader}>
             <IconSymbol 
-              name={subscription?.plan_type === 'premium' ? 'crown.fill' : 'person.fill'} 
-              size={48} 
-              color={subscription?.plan_type === 'premium' ? colors.primary : colors.textSecondary} 
+              name={isPremium ? 'crown.fill' : 'person.fill'} 
+              size={40} 
+              color={isPremium ? '#FFD700' : colors.textSecondary} 
             />
             <View style={styles.planInfo}>
               <Text style={styles.planLabel}>{t('subscription.currentPlan')}</Text>
@@ -213,107 +253,70 @@ export default function SubscriptionManagementScreen() {
           </View>
 
           {subscription && (
-            <View style={styles.statusContainer}>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription.status) + '20' }]}>
-                <View style={[styles.statusDot, { backgroundColor: getStatusColor(subscription.status) }]} />
-                <Text style={[styles.statusText, { color: getStatusColor(subscription.status) }]}>
-                  {getStatusText(subscription.status)}
-                </Text>
-              </View>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription.status) + '20' }]}>
+              <Text style={[styles.statusText, { color: getStatusColor(subscription.status) }]}>
+                {getStatusText(subscription.status)}
+              </Text>
+            </View>
+          )}
 
-              {subscription.status === 'trial' && trialDaysRemaining > 0 && (
-                <Text style={styles.trialInfo}>
-                  {t('subscription.trialEndsIn', { days: trialDaysRemaining })}
-                </Text>
-              )}
+          {subscription?.status === 'trial' && (
+            <View style={styles.trialInfo}>
+              <IconSymbol name="clock.fill" size={20} color={colors.primary} />
+              <Text style={styles.trialInfoText}>
+                {trialDaysRemaining} days remaining in your free trial
+              </Text>
+            </View>
+          )}
 
-              {subscription.status === 'active' && subscription.next_payment_date && (
-                <Text style={styles.renewalInfo}>
-                  {t('subscription.renewsOn', { 
-                    date: new Date(subscription.next_payment_date).toLocaleDateString() 
-                  })}
-                </Text>
-              )}
-
-              {subscription.status === 'cancelled' && subscription.cancelled_at && (
-                <Text style={styles.cancelledInfo}>
-                  {t('subscription.cancelledOn', { 
-                    date: new Date(subscription.cancelled_at).toLocaleDateString() 
-                  })}
-                </Text>
-              )}
+          {subscription?.status === 'active' && (
+            <View style={styles.priceInfo}>
+              <Text style={styles.priceLabel}>Monthly Price</Text>
+              <Text style={styles.priceValue}>$1.99 USD</Text>
             </View>
           )}
         </View>
 
-        {/* Pricing Card */}
-        <View style={styles.pricingCard}>
-          <View style={styles.priceContainer}>
-            <Text style={styles.currency}>$</Text>
-            <Text style={styles.price}>1.99</Text>
-            <Text style={styles.period}>/{t('subscription.month')}</Text>
-          </View>
+        {/* Premium Features */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Premium Features</Text>
           
-          <View style={styles.trialBadge}>
-            <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
-            <Text style={styles.trialText}>{t('subscription.freeTrial')}</Text>
-          </View>
-        </View>
-
-        {/* Features */}
-        <View style={styles.featuresContainer}>
-          <Text style={styles.featuresTitle}>{t('subscription.whatYouGet')}</Text>
-          
-          <View style={styles.feature}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Expiration Date Tracking</Text>
-              <Text style={styles.featureDescription}>
-                Track expiration dates and get alerts before food spoils
-              </Text>
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <Text style={styles.featureText}>Smart Pantry Management</Text>
             </View>
-          </View>
-
-          <View style={styles.feature}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>AI Meal Planner</Text>
-              <Text style={styles.featureDescription}>
-                Get personalized recipe suggestions based on your pantry
-              </Text>
+            
+            <View style={styles.featureItem}>
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <Text style={styles.featureText}>AI Recipe Suggestions</Text>
             </View>
-          </View>
-
-          <View style={styles.feature}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Unlimited Items</Text>
-              <Text style={styles.featureDescription}>
-                Add unlimited items to your pantry and shopping list
-              </Text>
+            
+            <View style={styles.featureItem}>
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <Text style={styles.featureText}>Expiration Date Tracking</Text>
             </View>
-          </View>
-
-          <View style={styles.feature}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Priority Support</Text>
-              <Text style={styles.featureDescription}>
-                Get priority customer support and faster response times
-              </Text>
+            
+            <View style={styles.featureItem}>
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <Text style={styles.featureText}>Shopping List Sync</Text>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <Text style={styles.featureText}>Reduce Food Waste</Text>
             </View>
           </View>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          {!subscription || subscription.status === 'inactive' || subscription.status === 'cancelled' ? (
+          {!subscription || subscription.status === 'inactive' ? (
             <>
               <TouchableOpacity
-                style={[styles.actionButton, styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleStartTrial}
                 disabled={actionLoading}
-                activeOpacity={0.8}
               >
                 {actionLoading ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -326,30 +329,49 @@ export default function SubscriptionManagementScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.actionButton, styles.secondaryButton, actionLoading && styles.buttonDisabled]}
+                style={[styles.secondaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleSubscribe}
                 disabled={actionLoading}
-                activeOpacity={0.8}
               >
-                <Text style={styles.secondaryButtonText}>{t('subscription.subscribe')}</Text>
+                <Text style={styles.secondaryButtonText}>Subscribe for $1.99 USD/month</Text>
               </TouchableOpacity>
             </>
-          ) : (
-            subscription.status === 'active' || subscription.status === 'trial' ? (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton, actionLoading && styles.buttonDisabled]}
-                onPress={handleCancelSubscription}
-                disabled={actionLoading}
-                activeOpacity={0.8}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator color={colors.error} />
-                ) : (
-                  <Text style={styles.cancelButtonText}>{t('subscription.cancelSubscription')}</Text>
-                )}
-              </TouchableOpacity>
-            ) : null
-          )}
+          ) : subscription.status === 'trial' ? (
+            <TouchableOpacity
+              style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+              onPress={handleSubscribe}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <IconSymbol name="crown.fill" size={20} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Subscribe for $1.99 USD/month</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : subscription.status === 'active' ? (
+            <TouchableOpacity
+              style={[styles.cancelButton, actionLoading && styles.buttonDisabled]}
+              onPress={handleCancelSubscription}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color={colors.error} />
+              ) : (
+                <Text style={styles.cancelButtonText}>{t('subscription.cancelSubscription')}</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Info Box */}
+        <View style={styles.infoBox}>
+          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+          <Text style={styles.infoText}>
+            Try free for 1 month, then just $1.99 USD per month. Cancel anytime with no penalties.
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -358,27 +380,27 @@ export default function SubscriptionManagementScreen() {
 
 const styles = StyleSheet.create({
   loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   content: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    padding: spacing.xl,
     paddingBottom: spacing.huge,
   },
   planCard: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.lg,
     padding: spacing.xl,
-    marginBottom: spacing.xl,
-    boxShadow: `0px 4px 16px ${colors.shadow}`,
+    marginBottom: spacing.xxl,
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
     elevation: 4,
   },
   planHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
     marginBottom: spacing.lg,
+    gap: spacing.lg,
   },
   planInfo: {
     flex: 1,
@@ -386,136 +408,90 @@ const styles = StyleSheet.create({
   planLabel: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   planName: {
     ...typography.h1,
     color: colors.text,
   },
-  statusContainer: {
-    gap: spacing.sm,
-  },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
-    gap: spacing.xs,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    marginBottom: spacing.md,
   },
   statusText: {
-    ...typography.labelSmall,
+    ...typography.label,
     fontWeight: '700',
   },
   trialInfo: {
-    ...typography.body,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  renewalInfo: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  cancelledInfo: {
-    ...typography.body,
-    color: colors.error,
-  },
-  pricingCard: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xxxl,
-    marginBottom: spacing.xl,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    boxShadow: `0px 12px 32px ${colors.primary}20`,
-    elevation: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
-  },
-  currency: {
-    ...typography.h2,
-    color: colors.primary,
-    fontSize: 32,
-    marginTop: 8,
-  },
-  price: {
-    ...typography.displayLarge,
-    fontSize: 72,
-    fontWeight: '900',
-    color: colors.primary,
-    lineHeight: 72,
-  },
-  period: {
-    ...typography.h3,
-    color: colors.textSecondary,
-    fontSize: 20,
-    marginTop: 40,
-  },
-  trialBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary + '10',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
     gap: spacing.sm,
   },
-  trialText: {
-    ...typography.label,
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 16,
-  },
-  featuresContainer: {
-    marginBottom: spacing.xxxl,
-  },
-  featuresTitle: {
-    ...typography.h2,
+  trialInfoText: {
+    ...typography.body,
     color: colors.text,
-    marginBottom: spacing.xl,
-  },
-  feature: {
-    flexDirection: 'row',
-    marginBottom: spacing.xl,
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  featureContent: {
     flex: 1,
   },
-  featureTitle: {
-    ...typography.h3,
-    color: colors.text,
+  priceInfo: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  priceLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  featureDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
+  priceValue: {
+    ...typography.h1,
+    color: colors.primary,
+    fontWeight: '800',
   },
-  actionsContainer: {
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  },
+  featuresList: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    gap: spacing.lg,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 2,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
   },
-  actionButton: {
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  featureText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  actionsContainer: {
+    marginBottom: spacing.xxl,
+    gap: spacing.md,
   },
   primaryButton: {
-    flexDirection: 'row',
     backgroundColor: colors.primary,
-    gap: spacing.sm,
+    borderRadius: borderRadius.lg,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
     boxShadow: `0px 8px 24px ${colors.primary}40`,
     elevation: 6,
   },
@@ -525,23 +501,43 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.primary,
   },
   secondaryButtonText: {
-    ...typography.h3,
+    ...typography.h4,
     color: colors.primary,
   },
   cancelButton: {
     backgroundColor: colors.error + '15',
-    borderWidth: 1,
-    borderColor: colors.error,
+    borderRadius: borderRadius.lg,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelButtonText: {
-    ...typography.h3,
+    ...typography.h4,
     color: colors.error,
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '10',
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    gap: spacing.md,
+  },
+  infoText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+    lineHeight: 20,
   },
 });
