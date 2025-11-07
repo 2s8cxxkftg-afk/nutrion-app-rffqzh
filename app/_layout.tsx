@@ -32,6 +32,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="language-selection" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
@@ -40,6 +41,13 @@ export default function RootLayout() {
         <Stack.Screen name="food-search" options={{ headerShown: false }} />
         <Stack.Screen name="scan-barcode" options={{ headerShown: false }} />
         <Stack.Screen name="language-settings" options={{ headerShown: false }} />
+        <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
+        <Stack.Screen name="subscription-management" options={{ headerShown: false }} />
+        <Stack.Screen name="subscription-intro" options={{ headerShown: false }} />
+        <Stack.Screen name="setup-2fa" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-item" options={{ headerShown: false }} />
+        <Stack.Screen name="about" options={{ headerShown: false }} />
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />
         <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
