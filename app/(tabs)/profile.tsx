@@ -91,7 +91,7 @@ export default function ProfileScreen() {
     try {
       const sub = await getSubscription();
       setSubscription(sub);
-      console.log('Subscription loaded:', sub?.status);
+      console.log('Subscription loaded:', sub?.status, 'Plan:', sub?.plan_type);
     } catch (error) {
       console.error('Error loading subscription:', error);
     }
@@ -323,7 +323,7 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.trialBadge}>
                       <IconSymbol name="gift.fill" size={14} color="#FFFFFF" />
-                      <Text style={styles.trialBadgeText}>{t('subscription.freeTrial')}</Text>
+                      <Text style={styles.trialBadgeText}>15 Days Free</Text>
                     </View>
                   </View>
                 </View>
