@@ -117,10 +117,6 @@ export default function AuthScreen() {
     router.push('/forgot-password');
   };
 
-  const handleSkip = () => {
-    router.replace('/(tabs)/pantry');
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -141,7 +137,7 @@ export default function AuthScreen() {
             />
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
-              {isLogin ? 'Welcome back!' : 'Create your account'}
+              {isLogin ? (t('auth.welcomeBack') || 'Welcome back!') : (t('auth.accountCreated') || 'Create your account')}
             </Text>
           </View>
 
@@ -149,7 +145,7 @@ export default function AuthScreen() {
           <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>{t('auth.emailAddress') || 'Email Address'}</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
                   <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
@@ -170,14 +166,14 @@ export default function AuthScreen() {
 
             {/* Password Input */}
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel}>{t('auth.password') || 'Password'}</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
                   <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.password') || 'Enter your password'}
                   placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
@@ -202,14 +198,14 @@ export default function AuthScreen() {
             {/* Confirm Password Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Confirm Password</Text>
+                <Text style={styles.inputLabel}>{t('auth.password') || 'Confirm Password'}</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder="Confirm your password"
+                    placeholder={t('auth.password') || 'Confirm your password'}
                     placeholderTextColor={colors.textSecondary}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -240,7 +236,7 @@ export default function AuthScreen() {
                 disabled={loading}
               >
                 <Text style={styles.forgotPasswordText}>
-                  Forgot your password?
+                  {t('auth.forgotPassword') || 'Forgot your password?'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -256,7 +252,7 @@ export default function AuthScreen() {
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    {isLogin ? 'Sign In' : 'Create Account'}
+                    {isLogin ? (t('auth.signIn') || 'Sign In') : (t('auth.signUp') || 'Create Account')}
                   </Text>
                   <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
                 </>
@@ -270,19 +266,10 @@ export default function AuthScreen() {
               </Text>
               <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}>
                 <Text style={styles.toggleLink}>
-                  {isLogin ? 'Sign Up' : 'Sign In'}
+                  {isLogin ? (t('auth.signUp') || 'Sign Up') : (t('auth.signIn') || 'Sign In')}
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Skip Button */}
-            <TouchableOpacity
-              style={styles.skipButton}
-              onPress={handleSkip}
-              disabled={loading}
-            >
-              <Text style={styles.skipButtonText}>Skip for now</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -388,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginTop: spacing.lg,
     gap: spacing.xs,
   },
   toggleText: {
@@ -399,14 +386,5 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '700',
-  },
-  skipButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  skipButtonText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontWeight: '600',
   },
 });
