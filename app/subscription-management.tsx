@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -21,6 +22,7 @@ import {
   getTrialDaysRemaining,
   Subscription,
 } from '@/utils/subscription';
+import { createStripeCheckoutSession } from '@/utils/stripe';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -94,27 +96,41 @@ export default function SubscriptionManagementScreen() {
   const handleSubscribe = async () => {
     Alert.alert(
       'Subscribe to Premium',
-      'Subscribe for $1.99 USD per month to unlock all premium features?',
+      'You will be redirected to Stripe to complete your payment of $1.99 USD per month.',
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('subscription.subscribe'),
+          text: t('continue'),
           onPress: async () => {
             try {
               setActionLoading(true);
-              const success = await activatePremiumSubscription();
+              Toast.show({
+                type: 'info',
+                message: t('subscription.paymentProcessing') || 'Opening payment page...',
+                duration: 2000,
+              });
+
+              // Create Stripe checkout session
+              const { url, error } = await createStripeCheckoutSession();
               
-              if (success) {
+              if (error || !url) {
+                console.error('Error creating checkout session:', error);
                 Toast.show({
-                  type: 'success',
-                  message: t('subscription.subscriptionActivated'),
+                  type: 'error',
+                  message: error || 'Failed to create payment session',
                   duration: 2000,
                 });
-                await loadSubscription();
+                return;
+              }
+
+              // Open Stripe checkout in browser
+              const supported = await Linking.canOpenURL(url);
+              if (supported) {
+                await Linking.openURL(url);
               } else {
                 Toast.show({
                   type: 'error',
-                  message: 'Failed to activate subscription',
+                  message: 'Unable to open payment page',
                   duration: 2000,
                 });
               }
@@ -370,7 +386,7 @@ export default function SubscriptionManagementScreen() {
         <View style={styles.infoBox}>
           <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
-            Try free for 15 days, then just $1.99 USD per month. Cancel anytime with no penalties.
+            Try free for 15 days, then just $1.99 USD per month. Cancel anytime with no penalties. Payments are securely processed through Stripe.
           </Text>
         </View>
       </ScrollView>
@@ -528,7 +544,7 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.primary + '10',
     padding: spacing.lg,
     borderRadius: borderRadius.md,

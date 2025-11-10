@@ -84,6 +84,7 @@ export default function AuthScreen() {
         Toast.show({ type: 'success', message: 'Welcome!' });
         router.replace('/subscription-intro');
       } else {
+        // Sign up with OTP verification
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -127,19 +128,19 @@ export default function AuthScreen() {
           }
         }
         
+        // Check if email confirmation is required
         if (data.user && !data.session) {
-          Alert.alert(
-            t('auth.verifyEmail') || 'Verify Your Email',
-            t('auth.verifyEmailMessage') || 'Please check your email and click the verification link to complete your registration.',
-            [{ text: t('ok') || 'OK' }]
-          );
-          setIsLogin(true);
-          // Clear form fields
-          setFirstName('');
-          setLastName('');
-          setPassword('');
-          setConfirmPassword('');
+          // Email confirmation required - navigate to OTP verification
+          Toast.show({ 
+            type: 'success', 
+            message: t('auth.verificationCodeSent') || 'Verification code sent to your email!' 
+          });
+          router.push({
+            pathname: '/confirm-email',
+            params: { email }
+          });
         } else {
+          // Auto-confirmed, proceed to subscription intro
           Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
           router.replace('/subscription-intro');
         }
