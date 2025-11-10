@@ -74,7 +74,7 @@ export default function AuthScreen() {
         }
 
         console.log('Sign in successful:', data);
-        Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
+        Toast.show({ type: 'success', message: 'Welcome!' });
         router.replace('/subscription-intro');
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -137,7 +137,7 @@ export default function AuthScreen() {
             />
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
-              {isLogin ? (t('auth.welcome') || 'Welcome!') : (t('auth.createAccount') || 'Create your account')}
+              {isLogin ? 'Welcome!' : 'Create your account'}
             </Text>
           </View>
 
