@@ -143,7 +143,7 @@ export const getSubscription = async (): Promise<Subscription | null> => {
   }
 };
 
-// Start free trial
+// Start free trial (15 days)
 export const startFreeTrial = async (): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -154,7 +154,7 @@ export const startFreeTrial = async (): Promise<boolean> => {
 
     const trialStartDate = new Date();
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 days trial
+    trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
     const { error } = await supabase
       .from('subscriptions')
@@ -173,7 +173,7 @@ export const startFreeTrial = async (): Promise<boolean> => {
     }
 
     await clearSubscriptionCache();
-    console.log('Free trial started successfully');
+    console.log('Free trial started successfully (15 days)');
     return true;
   } catch (error) {
     console.error('Error starting free trial:', error);

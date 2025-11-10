@@ -68,7 +68,7 @@ export default function SubscriptionManagementScreen() {
       if (success) {
         Toast.show({
           type: 'success',
-          message: 'Free trial started successfully!',
+          message: 'Free trial started successfully! (15 days)',
           duration: 2000,
         });
         await loadSubscription();
@@ -323,7 +323,7 @@ export default function SubscriptionManagementScreen() {
                 ) : (
                   <>
                     <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
-                    <Text style={styles.primaryButtonText}>{t('subscription.startTrial')}</Text>
+                    <Text style={styles.primaryButtonText}>Start 15-Day Free Trial</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -370,7 +370,7 @@ export default function SubscriptionManagementScreen() {
         <View style={styles.infoBox}>
           <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
-            Try free for 1 month, then just $1.99 USD per month. Cancel anytime with no penalties.
+            Try free for 15 days, then just $1.99 USD per month. Cancel anytime with no penalties.
           </Text>
         </View>
       </ScrollView>

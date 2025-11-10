@@ -74,7 +74,7 @@ export default function SubscriptionIntroScreen() {
             
             <View style={styles.trialBadge}>
               <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
-              <Text style={styles.trialText}>1 {t('subscription.month')} {t('subscription.freeTrial')}</Text>
+              <Text style={styles.trialText}>15 Days Free Trial</Text>
             </View>
           </View>
 
@@ -127,7 +127,7 @@ export default function SubscriptionIntroScreen() {
           <View style={styles.trialInfo}>
             <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
             <Text style={styles.trialInfoText}>
-              Try free for 1 month, then just $1.99 USD per month. Cancel anytime.
+              Try free for 15 days, then just $1.99 USD per month. Cancel anytime.
             </Text>
           </View>
         </View>
