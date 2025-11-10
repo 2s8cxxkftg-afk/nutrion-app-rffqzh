@@ -22,6 +22,40 @@ export interface Subscription {
 
 const SUBSCRIPTION_CACHE_KEY = '@nutrion_subscription_cache';
 
+// Helper function for retry logic
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on authentication errors
+      if (error.message?.includes('not authenticated') || error.message?.includes('JWT')) {
+        throw error;
+      }
+      
+      // Don't retry on the last attempt
+      if (i === maxRetries - 1) {
+        break;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = baseDelay * Math.pow(2, i);
+      console.log(`Subscription retry attempt ${i + 1}/${maxRetries} after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+}
+
 // Check if user has premium access
 export const hasPremiumAccess = async (): Promise<boolean> => {
   try {
@@ -45,17 +79,20 @@ export const hasPremiumAccess = async (): Promise<boolean> => {
       }
     }
 
-    // Fetch from database
-    const { data: subscription, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    // Fetch from database with retry logic
+    const subscription = await retryWithBackoff(async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-    if (error) {
-      console.error('Error fetching subscription:', error);
-      return false;
-    }
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+      }
+
+      return data;
+    });
 
     if (!subscription) {
       console.log('No subscription found');
@@ -125,16 +162,19 @@ export const getSubscription = async (): Promise<Subscription | null> => {
       return null;
     }
 
-    const { data: subscription, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    const subscription = await retryWithBackoff(async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-    if (error) {
-      console.error('Error fetching subscription:', error);
-      return null;
-    }
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+      }
+
+      return data;
+    });
 
     return subscription;
   } catch (error) {
@@ -156,21 +196,22 @@ export const startFreeTrial = async (): Promise<boolean> => {
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: user.id,
-        status: 'trial',
-        plan_type: 'premium',
-        trial_start_date: trialStartDate.toISOString(),
-        trial_end_date: trialEndDate.toISOString(),
-        price_usd: 1.99,
-      });
+    await retryWithBackoff(async () => {
+      const { error } = await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id: user.id,
+          status: 'trial',
+          plan_type: 'premium',
+          trial_start_date: trialStartDate.toISOString(),
+          trial_end_date: trialEndDate.toISOString(),
+          price_usd: 1.99,
+        });
 
-    if (error) {
-      console.error('Error starting trial:', error);
-      return false;
-    }
+      if (error) {
+        throw error;
+      }
+    });
 
     await clearSubscriptionCache();
     console.log('Free trial started successfully (15 days)');
@@ -194,22 +235,23 @@ export const activatePremiumSubscription = async (): Promise<boolean> => {
     const nextPaymentDate = new Date();
     nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1); // Monthly subscription
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: user.id,
-        status: 'active',
-        plan_type: 'premium',
-        subscription_start_date: subscriptionStartDate.toISOString(),
-        next_payment_date: nextPaymentDate.toISOString(),
-        last_payment_date: subscriptionStartDate.toISOString(),
-        price_usd: 1.99,
-      });
+    await retryWithBackoff(async () => {
+      const { error } = await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id: user.id,
+          status: 'active',
+          plan_type: 'premium',
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          next_payment_date: nextPaymentDate.toISOString(),
+          last_payment_date: subscriptionStartDate.toISOString(),
+          price_usd: 1.99,
+        });
 
-    if (error) {
-      console.error('Error activating subscription:', error);
-      return false;
-    }
+      if (error) {
+        throw error;
+      }
+    });
 
     await clearSubscriptionCache();
     console.log('Premium subscription activated successfully');
@@ -229,18 +271,19 @@ export const cancelSubscription = async (): Promise<boolean> => {
       throw new Error('User not authenticated');
     }
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
+    await retryWithBackoff(async () => {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Error cancelling subscription:', error);
-      return false;
-    }
+      if (error) {
+        throw error;
+      }
+    });
 
     await clearSubscriptionCache();
     console.log('Subscription cancelled successfully');

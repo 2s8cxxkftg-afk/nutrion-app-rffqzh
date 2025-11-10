@@ -53,25 +53,58 @@ export default function FoodSearchScreen() {
       setLoading(true);
       console.log('Searching for foods:', query);
 
-      const { data, error } = await supabase.functions.invoke('search-foods', {
-        body: { query },
-      });
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.error('Food search timed out after 20 seconds');
+      }, 20000); // 20 second timeout
 
-      if (error) {
-        console.error('Error searching foods:', error);
-        throw error;
-      }
+      try {
+        const { data, error } = await supabase.functions.invoke('search-foods', {
+          body: { query },
+        });
 
-      if (data && data.foods) {
-        console.log('Found foods:', data.foods.length);
-        setSearchResults(data.foods);
-        updateFoodsCache(data.foods[0]);
-      } else {
-        setSearchResults([]);
+        clearTimeout(timeoutId);
+
+        if (error) {
+          console.error('Error searching foods:', error);
+          
+          if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+            Alert.alert('Timeout', 'The search took too long. Please try again with a simpler query.');
+          } else {
+            Alert.alert('Error', 'Failed to search for foods. Please try again.');
+          }
+          return;
+        }
+
+        if (data && data.foods) {
+          console.log('Found foods:', data.foods.length);
+          setSearchResults(data.foods);
+          if (data.foods.length > 0) {
+            updateFoodsCache(data.foods[0]);
+          }
+        } else {
+          setSearchResults([]);
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          Alert.alert('Timeout', 'The search took too long. Please try again.');
+        } else {
+          throw fetchError;
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching foods:', error);
-      Alert.alert('Error', 'Failed to search for foods. Please try again.');
+      
+      let errorMessage = 'Failed to search for foods. Please try again.';
+      if (error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

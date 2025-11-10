@@ -29,10 +29,12 @@ export default function Setup2FAScreen() {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [step, setStep] = useState<'setup' | 'verify' | 'backup'>('setup');
   const [verifying, setVerifying] = useState(false);
+  const [qrError, setQrError] = useState(false);
 
   const generateSecret = useCallback(async () => {
     try {
       setLoading(true);
+      setQrError(false);
       
       // Generate a random secret (32 characters base32)
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -47,12 +49,33 @@ export default function Setup2FAScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       const email = user?.email || 'user@nutrion.app';
       
-      // Generate QR code URL using Google Charts API
+      // Generate QR code URL using Google Charts API with timeout
       const issuer = 'Nutrion';
       const otpauthUrl = `otpauth://totp/${issuer}:${email}?secret=${secret}&issuer=${issuer}`;
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(otpauthUrl)}`;
       
-      setQrCodeUrl(qrUrl);
+      // Pre-load the QR code image with timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(qrUrl, { 
+          signal: controller.signal,
+          method: 'HEAD' // Just check if the URL is accessible
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          setQrCodeUrl(qrUrl);
+        } else {
+          console.warn('QR code service returned error:', response.status);
+          setQrError(true);
+        }
+      } catch (fetchError: any) {
+        console.warn('Failed to load QR code:', fetchError.message);
+        setQrError(true);
+      }
       
       // Generate backup codes
       const codes = [];
@@ -92,25 +115,40 @@ export default function Setup2FAScreen() {
         return;
       }
 
-      // Save 2FA settings to database
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          two_factor_enabled: true,
-          two_factor_secret: secret,
-          backup_codes: backupCodes,
-          updated_at: new Date().toISOString(),
-        });
+      // Save 2FA settings to database with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      if (error) {
-        console.error('Error saving 2FA settings:', error);
-        Toast.show({ type: 'error', message: t('auth.2faSaveError') });
-        return;
+      try {
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            two_factor_enabled: true,
+            two_factor_secret: secret,
+            backup_codes: backupCodes,
+            updated_at: new Date().toISOString(),
+          });
+
+        clearTimeout(timeoutId);
+
+        if (error) {
+          console.error('Error saving 2FA settings:', error);
+          Toast.show({ type: 'error', message: t('auth.2faSaveError') });
+          return;
+        }
+
+        Toast.show({ type: 'success', message: t('auth.2faEnabled') });
+        setStep('backup');
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          Toast.show({ type: 'error', message: 'Request timed out. Please try again.' });
+        } else {
+          throw fetchError;
+        }
       }
-
-      Toast.show({ type: 'success', message: t('auth.2faEnabled') });
-      setStep('backup');
     } catch (error) {
       console.error('Error verifying 2FA:', error);
       Toast.show({ type: 'error', message: t('auth.2faVerifyError') });
@@ -168,12 +206,23 @@ export default function Setup2FAScreen() {
 
             {/* QR Code */}
             <View style={styles.qrContainer}>
-              {qrCodeUrl ? (
+              {qrCodeUrl && !qrError ? (
                 <Image
                   source={{ uri: qrCodeUrl }}
                   style={styles.qrCode}
                   resizeMode="contain"
+                  onError={() => {
+                    console.warn('QR code image failed to load');
+                    setQrError(true);
+                  }}
                 />
+              ) : qrError ? (
+                <View style={styles.qrErrorContainer}>
+                  <IconSymbol name="exclamationmark.triangle" size={48} color={colors.warning} />
+                  <Text style={styles.qrErrorText}>
+                    QR code unavailable. Please use manual entry below.
+                  </Text>
+                </View>
               ) : (
                 <ActivityIndicator size="large" color={colors.primary} />
               )}
@@ -187,6 +236,9 @@ export default function Setup2FAScreen() {
               <View style={styles.secretContainer}>
                 <Text style={styles.secretText}>{secret}</Text>
               </View>
+              <Text style={styles.manualEntryHint}>
+                Enter this code manually in your authenticator app
+              </Text>
             </View>
 
             <TouchableOpacity
@@ -373,13 +425,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
+    minHeight: 300,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 2,
   },
   qrCode: {
     width: 250,
     height: 250,
+  },
+  qrErrorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  qrErrorText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   manualEntry: {
     backgroundColor: colors.card,
@@ -398,6 +463,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
+    marginBottom: 8,
   },
   secretText: {
     fontSize: 16,
@@ -405,6 +471,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
     letterSpacing: 2,
+  },
+  manualEntryHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
   },
   codeInputContainer: {
     marginBottom: 32,

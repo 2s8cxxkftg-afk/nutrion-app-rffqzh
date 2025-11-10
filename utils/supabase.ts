@@ -12,6 +12,29 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+  global: {
+    headers: {
+      'x-client-info': 'nutrion-app',
+    },
+    fetch: (url, options = {}) => {
+      // Add timeout to all fetch requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      return fetch(url, {
+        ...options,
+        signal: controller.signal,
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    timeout: 30000,
+  },
 });
 
 export const supabaseConfigured = true;
@@ -19,19 +42,35 @@ export const supabaseConfigured = true;
 console.log('✅ Supabase configured successfully for Nutrion app');
 console.log('📍 Project URL:', SUPABASE_URL);
 
-// Test Supabase connection
-supabase.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    console.error('❌ Supabase connection error:', error.message);
-  } else {
-    console.log('✅ Supabase connection successful');
-    if (data.session) {
-      console.log('👤 User session active:', data.session.user.email);
+// Test Supabase connection with timeout
+const testConnection = async () => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for initial connection
+
+    const { data, error } = await supabase.auth.getSession();
+    clearTimeout(timeoutId);
+
+    if (error) {
+      console.error('❌ Supabase connection error:', error.message);
     } else {
-      console.log('👤 No active user session');
+      console.log('✅ Supabase connection successful');
+      if (data.session) {
+        console.log('👤 User session active:', data.session.user.email);
+      } else {
+        console.log('👤 No active user session');
+      }
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('❌ Supabase connection timeout');
+    } else {
+      console.error('❌ Supabase connection error:', error);
     }
   }
-});
+};
+
+testConnection();
 
 // Database table schemas for Nutrion:
 // 
@@ -120,106 +159,148 @@ supabase.auth.getSession().then(({ data, error }) => {
 // - last_searched_at: timestamp
 // - created_at: timestamp
 
+// Helper function for retry logic with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on authentication errors
+      if (error.message?.includes('not authenticated') || error.message?.includes('JWT')) {
+        throw error;
+      }
+      
+      // Don't retry on the last attempt
+      if (i === maxRetries - 1) {
+        break;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = baseDelay * Math.pow(2, i);
+      console.log(`Retry attempt ${i + 1}/${maxRetries} after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+}
+
 // Helper functions for Supabase integration:
 
 export async function syncPantryToSupabase(items: any[]) {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('❌ Not authenticated - cannot sync pantry');
-      throw new Error('Not authenticated');
-    }
+  return retryWithBackoff(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('❌ Not authenticated - cannot sync pantry');
+        throw new Error('Not authenticated');
+      }
 
-    const { data, error } = await supabase
-      .from('pantry_items')
-      .upsert(items.map(item => ({
-        ...item,
-        user_id: user.id,
-      })));
+      const { data, error } = await supabase
+        .from('pantry_items')
+        .upsert(items.map(item => ({
+          ...item,
+          user_id: user.id,
+        })));
 
-    if (error) {
-      console.error('❌ Error syncing pantry to Supabase:', error);
+      if (error) {
+        console.error('❌ Error syncing pantry to Supabase:', error);
+        throw error;
+      }
+      
+      console.log('✅ Pantry synced to Supabase successfully');
+      return data;
+    } catch (error) {
+      console.error('❌ Sync pantry error:', error);
       throw error;
     }
-    
-    console.log('✅ Pantry synced to Supabase successfully');
-    return data;
-  } catch (error) {
-    console.error('❌ Sync pantry error:', error);
-    throw error;
-  }
+  });
 }
 
 export async function loadPantryFromSupabase() {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('❌ Not authenticated - cannot load pantry');
-      throw new Error('Not authenticated');
-    }
+  return retryWithBackoff(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('❌ Not authenticated - cannot load pantry');
+        throw new Error('Not authenticated');
+      }
 
-    const { data, error } = await supabase
-      .from('pantry_items')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('pantry_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('❌ Error loading pantry from Supabase:', error);
+      if (error) {
+        console.error('❌ Error loading pantry from Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Pantry loaded from Supabase:', data?.length || 0, 'items');
+      return data;
+    } catch (error) {
+      console.error('❌ Load pantry error:', error);
       throw error;
     }
-
-    console.log('✅ Pantry loaded from Supabase:', data?.length || 0, 'items');
-    return data;
-  } catch (error) {
-    console.error('❌ Load pantry error:', error);
-    throw error;
-  }
+  });
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  try {
-    console.log('🔐 Attempting sign in with email:', email);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  return retryWithBackoff(async () => {
+    try {
+      console.log('🔐 Attempting sign in with email:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      console.error('❌ Sign in error:', error.message);
+      if (error) {
+        console.error('❌ Sign in error:', error.message);
+        throw error;
+      }
+
+      console.log('✅ Sign in successful:', data.user?.email);
+      return data;
+    } catch (error) {
+      console.error('❌ Sign in failed:', error);
       throw error;
     }
-
-    console.log('✅ Sign in successful:', data.user?.email);
-    return data;
-  } catch (error) {
-    console.error('❌ Sign in failed:', error);
-    throw error;
-  }
+  });
 }
 
 export async function signUpWithEmail(email: string, password: string) {
-  try {
-    console.log('📝 Attempting sign up with email:', email);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: 'https://natively.dev/email-confirmed'
-      }
-    });
+  return retryWithBackoff(async () => {
+    try {
+      console.log('📝 Attempting sign up with email:', email);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed'
+        }
+      });
 
-    if (error) {
-      console.error('❌ Sign up error:', error.message);
+      if (error) {
+        console.error('❌ Sign up error:', error.message);
+        throw error;
+      }
+
+      console.log('✅ Sign up successful:', data.user?.email);
+      return data;
+    } catch (error) {
+      console.error('❌ Sign up failed:', error);
       throw error;
     }
-
-    console.log('✅ Sign up successful:', data.user?.email);
-    return data;
-  } catch (error) {
-    console.error('❌ Sign up failed:', error);
-    throw error;
-  }
+  });
 }
 
 export async function signOut() {
