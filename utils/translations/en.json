@@ -34,6 +34,8 @@
   "auth.notLoggedIn": "Not Logged In",
   "auth.email": "Email",
   "auth.password": "Password",
+  "auth.confirmPassword": "Confirm Password",
+  "auth.confirmPasswordPlaceholder": "Confirm your password",
   "auth.emailAddress": "Email Address",
   "auth.enterEmail": "Please enter your email",
   "auth.fillAllFields": "Please fill all fields",
