@@ -30,6 +30,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [expiringSoon, setExpiringSoon] = useState(0);
   const [expired, setExpired] = useState(0);
@@ -72,6 +73,26 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       console.log('User loaded:', user?.email);
+
+      // Load profile data if user exists
+      if (user) {
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error loading profile:', profileError);
+          } else {
+            setProfile(profileData);
+            console.log('Profile loaded:', profileData);
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading user:', error);
     }
@@ -191,6 +212,8 @@ export default function ProfileScreen() {
                 message: t('profile.signedOut'),
                 duration: 2000,
               });
+              // Redirect to auth page after sign out
+              router.replace('/auth');
             } catch (error) {
               console.error('Error signing out:', error);
               Toast.show({
@@ -261,7 +284,9 @@ export default function ProfileScreen() {
             )}
           </View>
           <Text style={styles.userName}>
-            {user?.user_metadata?.full_name || user?.email || t('auth.notLoggedIn')}
+            {profile?.first_name && profile?.last_name
+              ? `${profile.first_name} ${profile.last_name}`
+              : profile?.full_name || user?.user_metadata?.full_name || user?.email || t('auth.notLoggedIn')}
           </Text>
           {user?.email && (
             <Text style={styles.userEmail}>{user.email}</Text>

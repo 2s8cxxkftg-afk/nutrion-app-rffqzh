@@ -28,6 +28,8 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -39,6 +41,11 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
+      Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
+      return;
+    }
+
+    if (!isLogin && (!firstName.trim() || !lastName.trim())) {
       Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
       return;
     }
@@ -82,6 +89,11 @@ export default function AuthScreen() {
           password,
           options: {
             emailRedirectTo: 'https://natively.dev/email-confirmed',
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+            },
           },
         });
 
@@ -92,6 +104,28 @@ export default function AuthScreen() {
         }
 
         console.log('Sign up successful:', data);
+
+        // Create profile entry with first and last name
+        if (data.user) {
+          try {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                user_id: data.user.id,
+                first_name: firstName.trim(),
+                last_name: lastName.trim(),
+                full_name: `${firstName.trim()} ${lastName.trim()}`,
+              });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            } else {
+              console.log('Profile created successfully');
+            }
+          } catch (profileError) {
+            console.error('Error creating profile:', profileError);
+          }
+        }
         
         if (data.user && !data.session) {
           Alert.alert(
@@ -100,6 +134,11 @@ export default function AuthScreen() {
             [{ text: t('ok') || 'OK' }]
           );
           setIsLogin(true);
+          // Clear form fields
+          setFirstName('');
+          setLastName('');
+          setPassword('');
+          setConfirmPassword('');
         } else {
           Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
           router.replace('/subscription-intro');
@@ -143,6 +182,50 @@ export default function AuthScreen() {
 
           {/* Form */}
           <View style={styles.form}>
+            {/* First Name Input (Sign Up only) */}
+            {!isLogin && (
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>{t('auth.firstName') || 'First Name'}</Text>
+                <View style={styles.inputContainer}>
+                  <View style={styles.inputIconContainer}>
+                    <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t('auth.firstNamePlaceholder') || 'Enter your first name'}
+                    placeholderTextColor={colors.textSecondary}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    autoCapitalize="words"
+                    autoComplete="name-given"
+                    editable={!loading}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Last Name Input (Sign Up only) */}
+            {!isLogin && (
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>{t('auth.lastName') || 'Last Name'}</Text>
+                <View style={styles.inputContainer}>
+                  <View style={styles.inputIconContainer}>
+                    <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t('auth.lastNamePlaceholder') || 'Enter your last name'}
+                    placeholderTextColor={colors.textSecondary}
+                    value={lastName}
+                    onChangeText={setLastName}
+                    autoCapitalize="words"
+                    autoComplete="name-family"
+                    editable={!loading}
+                  />
+                </View>
+              </View>
+            )}
+
             {/* Email Input */}
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>{t('auth.emailAddress') || 'Email Address'}</Text>
