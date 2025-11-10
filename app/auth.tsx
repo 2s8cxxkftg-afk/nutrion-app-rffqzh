@@ -137,7 +137,7 @@ export default function AuthScreen() {
             />
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
-              {isLogin ? (t('auth.welcomeBack') || 'Welcome back!') : (t('auth.accountCreated') || 'Create your account')}
+              {isLogin ? (t('auth.welcome') || 'Welcome!') : (t('auth.createAccount') || 'Create your account')}
             </Text>
           </View>
 
@@ -198,14 +198,14 @@ export default function AuthScreen() {
             {/* Confirm Password Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>{t('auth.password') || 'Confirm Password'}</Text>
+                <Text style={styles.inputLabel}>{t('auth.confirmPassword') || 'Confirm Password'}</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder={t('auth.password') || 'Confirm your password'}
+                    placeholder={t('auth.confirmPasswordPlaceholder') || 'Confirm your password'}
                     placeholderTextColor={colors.textSecondary}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
