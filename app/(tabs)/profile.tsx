@@ -9,6 +9,8 @@ import {
   Platform,
   Alert,
   Image,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -34,15 +36,16 @@ export default function ProfileScreen() {
   const [totalItems, setTotalItems] = useState(0);
   const [expiringSoon, setExpiringSoon] = useState(0);
   const [expired, setExpired] = useState(0);
-  const [has2FA, setHas2FA] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
       console.log('Profile screen focused');
       loadStats();
       loadUserInfo();
-      check2FAStatus();
       loadSubscriptionInfo();
     }, [])
   );
@@ -98,16 +101,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const check2FAStatus = async () => {
-    try {
-      const twoFAEnabled = await AsyncStorage.getItem('@nutrion_2fa_enabled');
-      setHas2FA(twoFAEnabled === 'true');
-      console.log('2FA status:', twoFAEnabled === 'true');
-    } catch (error) {
-      console.error('Error checking 2FA status:', error);
-    }
-  };
-
   const loadSubscriptionInfo = async () => {
     try {
       const sub = await getSubscription();
@@ -118,45 +111,92 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSetup2FA = () => {
+  const handleDeleteAccount = () => {
     if (!user) {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
-    router.push('/setup-2fa');
-  };
 
-  const handleDisable2FA = () => {
     Alert.alert(
-      t('profile.disableTwoFa'),
-      t('profile.disableTwoFaConfirm'),
+      t('profile.deleteAccount'),
+      t('profile.deleteAccountWarning'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('profile.disable'),
+          text: t('profile.deleteAccount'),
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('@nutrion_2fa_enabled');
-              await AsyncStorage.removeItem('@nutrion_2fa_secret');
-              setHas2FA(false);
-              Toast.show({
-                type: 'success',
-                message: t('profile.twoFaDisabled'),
-                duration: 2000,
-              });
-            } catch (error) {
-              console.error('Error disabling 2FA:', error);
-              Toast.show({
-                type: 'error',
-                message: t('profile.twoFaDisableError'),
-                duration: 2000,
-              });
-            }
-          },
+          onPress: () => setShowDeleteModal(true),
         },
       ]
     );
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!deletePassword.trim()) {
+      Toast.show({
+        type: 'error',
+        message: t('profile.enterPasswordToDelete'),
+        duration: 2000,
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // First, verify the password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword,
+      });
+
+      if (signInError) {
+        Toast.show({
+          type: 'error',
+          message: t('profile.incorrectPassword'),
+          duration: 2000,
+        });
+        setIsDeleting(false);
+        return;
+      }
+
+      console.log('Password verified, proceeding with account deletion...');
+
+      // Use the RPC function to delete the user and all associated data
+      // This will automatically cascade and delete all related records
+      const { error: deleteError } = await supabase.rpc('delete_user');
+
+      if (deleteError) {
+        console.error('Error deleting user account:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('✅ User account and all data deleted successfully');
+
+      // Clear local storage
+      await AsyncStorage.clear();
+
+      Toast.show({
+        type: 'success',
+        message: t('profile.accountDeleted'),
+        duration: 3000,
+      });
+
+      // Sign out and redirect to auth page
+      await supabase.auth.signOut();
+      setShowDeleteModal(false);
+      setDeletePassword('');
+      router.replace('/auth');
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      Toast.show({
+        type: 'error',
+        message: t('profile.deleteAccountError'),
+        duration: 3000,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSubscriptionManagement = () => {
@@ -409,34 +449,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Security Section */}
-        {user && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
-            <View style={styles.settingsList}>
-              <TouchableOpacity
-                style={styles.settingItem}
-                onPress={has2FA ? handleDisable2FA : handleSetup2FA}
-                activeOpacity={0.7}
-              >
-                <View style={styles.settingInfo}>
-                  <View style={styles.settingIcon}>
-                    <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
-                  </View>
-                  <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>{t('profile.twoFactor')}</Text>
-                    <Text style={styles.settingDescription}>
-                      {t('profile.twoFactorDesc')}
-                      {has2FA && ` • ${t('profile.twoFactorEnabled')}`}
-                    </Text>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
@@ -519,6 +531,35 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Account Management Section */}
+        {user && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('profile.accountManagement')}</Text>
+            <View style={styles.settingsList}>
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingInfo}>
+                  <View style={[styles.settingIcon, { backgroundColor: colors.error + '15' }]}>
+                    <IconSymbol name="trash.fill" size={24} color={colors.error} />
+                  </View>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={[styles.settingTitle, { color: colors.error }]}>
+                      {t('profile.deleteAccount')}
+                    </Text>
+                    <Text style={styles.settingDescription}>
+                      {t('profile.deleteAccountDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Sign Out */}
         {user && (
           <TouchableOpacity
@@ -533,6 +574,59 @@ export default function ProfileScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={48} color={colors.error} />
+              <Text style={styles.modalTitle}>{t('profile.deleteAccount')}</Text>
+              <Text style={styles.modalDescription}>
+                {t('profile.deleteAccountConfirm')}
+              </Text>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>{t('auth.password')}</Text>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder={t('profile.enterPassword')}
+                placeholderTextColor={colors.textSecondary}
+                value={deletePassword}
+                onChangeText={setDeletePassword}
+                secureTextEntry
+                autoFocus
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                }}
+                disabled={isDeleting}
+              >
+                <Text style={styles.modalCancelButtonText}>{t('cancel')}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalDeleteButton, isDeleting && styles.modalDeleteButtonDisabled]}
+                onPress={confirmDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalDeleteButtonText}>{t('profile.deleteAccount')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -797,5 +891,90 @@ const styles = StyleSheet.create({
   signOutText: {
     ...typography.h4,
     color: colors.error,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0px 20px 60px rgba(0, 0, 0, 0.3)',
+    elevation: 10,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  modalTitle: {
+    ...typography.h1,
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalBody: {
+    marginBottom: spacing.xl,
+  },
+  inputLabel: {
+    ...typography.label,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  passwordInput: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalCancelButtonText: {
+    ...typography.h4,
+    color: colors.text,
+  },
+  modalDeleteButton: {
+    flex: 1,
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  modalDeleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalDeleteButtonText: {
+    ...typography.h4,
+    color: '#FFFFFF',
   },
 });
