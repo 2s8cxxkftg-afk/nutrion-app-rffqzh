@@ -196,10 +196,35 @@ export const startFreeTrial = async (): Promise<boolean> => {
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
-    await retryWithBackoff(async () => {
+    console.log('Starting free trial for user:', user.id);
+
+    // Check if subscription already exists
+    const existingSub = await getSubscription();
+    
+    if (existingSub) {
+      console.log('Existing subscription found, updating...');
+      // Update existing subscription
       const { error } = await supabase
         .from('subscriptions')
-        .upsert({
+        .update({
+          status: 'trial',
+          plan_type: 'premium',
+          trial_start_date: trialStartDate.toISOString(),
+          trial_end_date: trialEndDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating subscription:', error);
+        throw error;
+      }
+    } else {
+      console.log('No existing subscription, creating new one...');
+      // Create new subscription
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({
           user_id: user.id,
           status: 'trial',
           plan_type: 'premium',
@@ -209,9 +234,10 @@ export const startFreeTrial = async (): Promise<boolean> => {
         });
 
       if (error) {
+        console.error('Error creating subscription:', error);
         throw error;
       }
-    });
+    }
 
     await clearSubscriptionCache();
     console.log('Free trial started successfully (15 days)');
@@ -235,10 +261,37 @@ export const activatePremiumSubscription = async (): Promise<boolean> => {
     const nextPaymentDate = new Date();
     nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1); // Monthly subscription
 
-    await retryWithBackoff(async () => {
+    console.log('Activating premium subscription for user:', user.id);
+
+    // Check if subscription already exists
+    const existingSub = await getSubscription();
+    
+    if (existingSub) {
+      console.log('Existing subscription found, updating...');
+      // Update existing subscription
       const { error } = await supabase
         .from('subscriptions')
-        .upsert({
+        .update({
+          status: 'active',
+          plan_type: 'premium',
+          subscription_start_date: subscriptionStartDate.toISOString(),
+          next_payment_date: nextPaymentDate.toISOString(),
+          last_payment_date: subscriptionStartDate.toISOString(),
+          price_usd: 1.99,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating subscription:', error);
+        throw error;
+      }
+    } else {
+      console.log('No existing subscription, creating new one...');
+      // Create new subscription
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({
           user_id: user.id,
           status: 'active',
           plan_type: 'premium',
@@ -249,9 +302,10 @@ export const activatePremiumSubscription = async (): Promise<boolean> => {
         });
 
       if (error) {
+        console.error('Error creating subscription:', error);
         throw error;
       }
-    });
+    }
 
     await clearSubscriptionCache();
     console.log('Premium subscription activated successfully');

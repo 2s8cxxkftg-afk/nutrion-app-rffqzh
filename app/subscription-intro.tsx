@@ -15,7 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
-import { startFreeTrial } from '@/utils/subscription';
+import { startFreeTrial, getSubscription } from '@/utils/subscription';
 import Toast from '@/components/Toast';
 
 const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_completed';
@@ -29,6 +29,24 @@ export default function SubscriptionIntroScreen() {
     try {
       setLoading(true);
       console.log('Starting 15-day free trial...');
+      
+      // Check if user already has a subscription
+      const existingSub = await getSubscription();
+      
+      if (existingSub && (existingSub.status === 'trial' || existingSub.status === 'active')) {
+        console.log('User already has an active subscription');
+        Toast.show({ 
+          type: 'info', 
+          message: 'You already have an active subscription!' 
+        });
+        
+        // Mark subscription intro as completed
+        await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
+        
+        // Navigate to the main app
+        router.replace('/(tabs)/pantry');
+        return;
+      }
       
       // Start the free trial in the database
       const success = await startFreeTrial();
@@ -49,14 +67,24 @@ export default function SubscriptionIntroScreen() {
         console.error('Failed to start free trial');
         Toast.show({ 
           type: 'error', 
-          message: 'Failed to start free trial. Please try again.' 
+          message: 'Failed to start free trial. Please try again or contact support.' 
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting free trial:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'An error occurred. Please try again.';
+      
+      if (error.message?.includes('not authenticated')) {
+        errorMessage = 'Please sign in to start your free trial.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
       Toast.show({ 
         type: 'error', 
-        message: 'An error occurred. Please try again.' 
+        message: errorMessage 
       });
     } finally {
       setLoading(false);

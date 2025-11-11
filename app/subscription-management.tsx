@@ -65,27 +65,44 @@ export default function SubscriptionManagementScreen() {
   const handleStartTrial = async () => {
     try {
       setActionLoading(true);
+      
+      // Check if user already has an active subscription
+      if (subscription && (subscription.status === 'trial' || subscription.status === 'active')) {
+        Toast.show({
+          type: 'info',
+          message: 'You already have an active subscription!',
+          duration: 2000,
+        });
+        return;
+      }
+      
       const success = await startFreeTrial();
       
       if (success) {
         Toast.show({
           type: 'success',
-          message: 'Free trial started successfully! (15 days)',
+          message: '🎉 Free trial started successfully! (15 days)',
           duration: 2000,
         });
         await loadSubscription();
       } else {
         Toast.show({
           type: 'error',
-          message: 'Failed to start trial',
+          message: 'Failed to start trial. Please try again or contact support.',
           duration: 2000,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting trial:', error);
+      
+      let errorMessage = 'An error occurred';
+      if (error.message?.includes('not authenticated')) {
+        errorMessage = 'Please sign in to start your free trial';
+      }
+      
       Toast.show({
         type: 'error',
-        message: 'An error occurred',
+        message: errorMessage,
         duration: 2000,
       });
     } finally {
@@ -117,7 +134,7 @@ export default function SubscriptionManagementScreen() {
                 console.error('Error creating checkout session:', error);
                 Toast.show({
                   type: 'error',
-                  message: error || 'Failed to create payment session',
+                  message: error || 'Failed to create payment session. Please try again.',
                   duration: 2000,
                 });
                 return;
@@ -138,7 +155,7 @@ export default function SubscriptionManagementScreen() {
               console.error('Error subscribing:', error);
               Toast.show({
                 type: 'error',
-                message: 'An error occurred',
+                message: 'An error occurred. Please try again.',
                 duration: 2000,
               });
             } finally {
@@ -327,7 +344,7 @@ export default function SubscriptionManagementScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionsContainer}>
-          {!subscription || subscription.status === 'inactive' ? (
+          {!subscription || subscription.status === 'inactive' || subscription.status === 'cancelled' ? (
             <>
               <TouchableOpacity
                 style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
