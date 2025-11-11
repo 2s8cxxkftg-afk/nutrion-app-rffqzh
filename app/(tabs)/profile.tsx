@@ -249,44 +249,52 @@ export default function ProfileScreen() {
             try {
               console.log('🔓 Starting sign out process...');
               
-              // Sign out from Supabase (this clears the session)
-              const { error } = await supabase.auth.signOut();
+              // Step 1: Sign out from Supabase (this clears the session on the server)
+              const { error: signOutError } = await supabase.auth.signOut();
               
-              if (error) {
-                console.error('❌ Sign out error:', error.message);
-                throw error;
+              if (signOutError) {
+                console.error('❌ Supabase sign out error:', signOutError.message);
+                throw signOutError;
               }
 
-              console.log('✅ Supabase sign out successful');
+              console.log('✅ Supabase session cleared successfully');
 
-              // Clear local state
+              // Step 2: Clear local state immediately
               setUser(null);
               setProfile(null);
               setSubscription(null);
+              setTotalItems(0);
+              setExpiringSoon(0);
+              setExpired(0);
 
-              // Clear AsyncStorage (optional - keeps app settings but clears user data)
-              // If you want to keep language settings, don't clear everything
-              const keysToKeep = ['@nutrion_language', '@nutrion_notification_settings'];
+              // Step 3: Clear AsyncStorage selectively (keep language and notification settings)
+              const keysToKeep = ['@nutrion_language', '@nutrion_language_selected', '@nutrion_notification_settings'];
               const allKeys = await AsyncStorage.getAllKeys();
               const keysToRemove = allKeys.filter(key => !keysToKeep.includes(key));
-              await AsyncStorage.multiRemove(keysToRemove);
+              
+              if (keysToRemove.length > 0) {
+                await AsyncStorage.multiRemove(keysToRemove);
+                console.log('✅ Local storage cleared (kept language and notification settings)');
+              }
 
-              console.log('✅ Local storage cleared');
-
+              // Step 4: Show success message
               Toast.show({
                 type: 'success',
                 message: t('profile.signedOut'),
                 duration: 2000,
               });
 
-              // Small delay to ensure toast is visible before navigation
+              console.log('✅ Sign out completed successfully');
+
+              // Step 5: Navigate to index which will redirect to auth
+              // Using a small delay to ensure state is cleared and toast is visible
               setTimeout(() => {
-                // Redirect to auth page after sign out
-                router.replace('/auth');
+                console.log('🔄 Navigating to index for redirect...');
+                router.replace('/');
               }, 500);
 
             } catch (error: any) {
-              console.error('❌ Error signing out:', error);
+              console.error('❌ Error during sign out:', error);
               Toast.show({
                 type: 'error',
                 message: error.message || t('profile.signOutError'),
