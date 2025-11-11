@@ -112,6 +112,15 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleEditProfile = () => {
+    if (!user) {
+      Alert.alert(t('error'), t('profile.pleaseSignIn'));
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/edit-profile');
+  };
+
   const handleDeleteAccount = () => {
     if (!user) {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
@@ -353,7 +362,12 @@ export default function ProfileScreen() {
         {/* User Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            {user?.user_metadata?.avatar_url ? (
+            {profile?.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={styles.avatar}
+              />
+            ) : user?.user_metadata?.avatar_url ? (
               <Image
                 source={{ uri: user.user_metadata.avatar_url }}
                 style={styles.avatar}
@@ -385,6 +399,18 @@ export default function ProfileScreen() {
                 {getSubscriptionStatusText()}
               </Text>
             </View>
+          )}
+
+          {/* Edit Profile Button */}
+          {user && (
+            <TouchableOpacity
+              style={styles.editProfileButton}
+              onPress={handleEditProfile}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="pencil" size={18} color={colors.primary} />
+              <Text style={styles.editProfileButtonText}>{t('profile.editProfile') || 'Edit Profile'}</Text>
+            </TouchableOpacity>
           )}
 
           {!user && (
@@ -736,10 +762,26 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
     gap: spacing.xs,
+    marginBottom: spacing.md,
   },
   subscriptionBadgeText: {
     ...typography.label,
     fontWeight: '700',
+  },
+  editProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.sm,
+  },
+  editProfileButtonText: {
+    ...typography.h4,
+    color: colors.primary,
   },
   signInButton: {
     flexDirection: 'row',
