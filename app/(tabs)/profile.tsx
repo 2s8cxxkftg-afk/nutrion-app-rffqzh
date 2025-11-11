@@ -40,6 +40,7 @@ export default function ProfileScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -244,23 +245,55 @@ export default function ProfileScreen() {
           text: t('profile.signOut'),
           style: 'destructive',
           onPress: async () => {
+            setIsSigningOut(true);
             try {
-              await supabase.auth.signOut();
+              console.log('🔓 Starting sign out process...');
+              
+              // Sign out from Supabase (this clears the session)
+              const { error } = await supabase.auth.signOut();
+              
+              if (error) {
+                console.error('❌ Sign out error:', error.message);
+                throw error;
+              }
+
+              console.log('✅ Supabase sign out successful');
+
+              // Clear local state
               setUser(null);
+              setProfile(null);
+              setSubscription(null);
+
+              // Clear AsyncStorage (optional - keeps app settings but clears user data)
+              // If you want to keep language settings, don't clear everything
+              const keysToKeep = ['@nutrion_language', '@nutrion_notification_settings'];
+              const allKeys = await AsyncStorage.getAllKeys();
+              const keysToRemove = allKeys.filter(key => !keysToKeep.includes(key));
+              await AsyncStorage.multiRemove(keysToRemove);
+
+              console.log('✅ Local storage cleared');
+
               Toast.show({
                 type: 'success',
                 message: t('profile.signedOut'),
                 duration: 2000,
               });
-              // Redirect to auth page after sign out
-              router.replace('/auth');
-            } catch (error) {
-              console.error('Error signing out:', error);
+
+              // Small delay to ensure toast is visible before navigation
+              setTimeout(() => {
+                // Redirect to auth page after sign out
+                router.replace('/auth');
+              }, 500);
+
+            } catch (error: any) {
+              console.error('❌ Error signing out:', error);
               Toast.show({
                 type: 'error',
-                message: t('profile.signOutError'),
-                duration: 2000,
+                message: error.message || t('profile.signOutError'),
+                duration: 3000,
               });
+            } finally {
+              setIsSigningOut(false);
             }
           },
         },
@@ -563,12 +596,22 @@ export default function ProfileScreen() {
         {/* Sign Out */}
         {user && (
           <TouchableOpacity
-            style={styles.signOutButton}
+            style={[styles.signOutButton, isSigningOut && styles.signOutButtonDisabled]}
             onPress={handleSignOut}
             activeOpacity={0.7}
+            disabled={isSigningOut}
           >
-            <IconSymbol name="arrow.right.square.fill" size={24} color={colors.error} />
-            <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
+            {isSigningOut ? (
+              <>
+                <ActivityIndicator color={colors.error} size="small" />
+                <Text style={styles.signOutText}>{t('profile.signingOut') || 'Signing out...'}</Text>
+              </>
+            ) : (
+              <>
+                <IconSymbol name="arrow.right.square.fill" size={24} color={colors.error} />
+                <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -887,6 +930,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginTop: spacing.md,
+  },
+  signOutButtonDisabled: {
+    opacity: 0.6,
   },
   signOutText: {
     ...typography.h4,
