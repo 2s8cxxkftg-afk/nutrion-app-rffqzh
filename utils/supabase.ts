@@ -15,14 +15,25 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   global: {
     headers: {
       'x-client-info': 'nutrion-app',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
     },
     fetch: (url, options = {}) => {
       // Add timeout to all fetch requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+      // Ensure headers are properly set
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+
       return fetch(url, {
         ...options,
+        headers,
         signal: controller.signal,
       }).finally(() => {
         clearTimeout(timeoutId);
@@ -209,7 +220,9 @@ export async function syncPantryToSupabase(items: any[]) {
         .upsert(items.map(item => ({
           ...item,
           user_id: user.id,
-        })));
+        })), {
+          onConflict: 'id',
+        });
 
       if (error) {
         console.error('❌ Error syncing pantry to Supabase:', error);

@@ -1,6 +1,8 @@
 
-import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
+
+const SUBSCRIPTION_KEY = '@nutrion_subscription';
 
 export interface Subscription {
   id: string;
@@ -18,173 +20,60 @@ export interface Subscription {
   cancelled_at?: string;
   created_at: string;
   updated_at: string;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  stripe_payment_intent_id?: string;
 }
 
-const SUBSCRIPTION_CACHE_KEY = '@nutrion_subscription_cache';
-
-// Helper function for retry logic
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: any;
-  
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      lastError = error;
-      
-      // Don't retry on authentication errors
-      if (error.message?.includes('not authenticated') || error.message?.includes('JWT')) {
-        throw error;
-      }
-      
-      // Don't retry on the last attempt
-      if (i === maxRetries - 1) {
-        break;
-      }
-      
-      // Calculate delay with exponential backoff
-      const delay = baseDelay * Math.pow(2, i);
-      console.log(`Subscription retry attempt ${i + 1}/${maxRetries} after ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw lastError;
-}
-
-// Check if user has premium access
-export const hasPremiumAccess = async (): Promise<boolean> => {
+// Get subscription from Supabase or local storage
+export async function getSubscription(): Promise<Subscription | null> {
   try {
+    // Check if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.log('No user logged in, no premium access');
-      return false;
-    }
-
-    // Check cache first
-    const cachedData = await AsyncStorage.getItem(SUBSCRIPTION_CACHE_KEY);
-    if (cachedData) {
-      const cached = JSON.parse(cachedData);
-      const cacheAge = Date.now() - cached.timestamp;
-      
-      // Use cache if less than 5 minutes old
-      if (cacheAge < 5 * 60 * 1000) {
-        console.log('Using cached subscription status:', cached.hasPremium);
-        return cached.hasPremium;
-      }
-    }
-
-    // Fetch from database with retry logic
-    const subscription = await retryWithBackoff(async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw error;
-      }
-
-      return data;
-    });
-
-    if (!subscription) {
-      console.log('No subscription found');
-      await cacheSubscriptionStatus(false);
-      return false;
-    }
-
-    // Check if subscription is active or in trial
-    const hasPremium = subscription.status === 'active' || subscription.status === 'trial';
-    
-    // Check trial expiration
-    if (subscription.status === 'trial' && subscription.trial_end_date) {
-      const trialEnd = new Date(subscription.trial_end_date);
-      const now = new Date();
-      
-      if (now > trialEnd) {
-        // Trial expired, update status
-        await supabase
-          .from('subscriptions')
-          .update({ status: 'inactive' })
-          .eq('id', subscription.id);
-        
-        await cacheSubscriptionStatus(false);
-        return false;
-      }
-    }
-
-    console.log('Premium access:', hasPremium);
-    await cacheSubscriptionStatus(hasPremium);
-    return hasPremium;
-  } catch (error) {
-    console.error('Error checking premium access:', error);
-    return false;
-  }
-};
-
-// Cache subscription status
-const cacheSubscriptionStatus = async (hasPremium: boolean) => {
-  try {
-    await AsyncStorage.setItem(
-      SUBSCRIPTION_CACHE_KEY,
-      JSON.stringify({
-        hasPremium,
-        timestamp: Date.now(),
-      })
-    );
-  } catch (error) {
-    console.error('Error caching subscription status:', error);
-  }
-};
-
-// Clear subscription cache
-export const clearSubscriptionCache = async () => {
-  try {
-    await AsyncStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
-  } catch (error) {
-    console.error('Error clearing subscription cache:', error);
-  }
-};
-
-// Get subscription details
-export const getSubscription = async (): Promise<Subscription | null> => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+      console.log('No authenticated user, returning null subscription');
       return null;
     }
 
-    const subscription = await retryWithBackoff(async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    // Try to get from Supabase first
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw error;
-      }
+    if (error) {
+      console.error('Error fetching subscription from Supabase:', error);
+      // Fall back to local storage
+      const localData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
+      return localData ? JSON.parse(localData) : null;
+    }
 
+    if (data) {
+      // Save to local storage for offline access
+      await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(data));
+      console.log('✅ Subscription loaded from Supabase:', data.status, data.plan_type);
       return data;
-    });
+    }
 
-    return subscription;
+    console.log('No subscription found for user');
+    return null;
   } catch (error) {
     console.error('Error getting subscription:', error);
-    return null;
+    // Fall back to local storage
+    try {
+      const localData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
+      return localData ? JSON.parse(localData) : null;
+    } catch (localError) {
+      console.error('Error reading local subscription:', localError);
+      return null;
+    }
   }
-};
+}
 
-// Start free trial (15 days)
-export const startFreeTrial = async (): Promise<boolean> => {
+// Start free trial
+export async function startFreeTrial(): Promise<Subscription> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -196,15 +85,18 @@ export const startFreeTrial = async (): Promise<boolean> => {
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
-    console.log('Starting free trial for user:', user.id);
-
     // Check if subscription already exists
-    const existingSub = await getSubscription();
-    
-    if (existingSub) {
-      console.log('Existing subscription found, updating...');
+    const { data: existingSubscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    let subscription: Subscription;
+
+    if (existingSubscription) {
       // Update existing subscription
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('subscriptions')
         .update({
           status: 'trial',
@@ -213,16 +105,20 @@ export const startFreeTrial = async (): Promise<boolean> => {
           trial_end_date: trialEndDate.toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error updating subscription:', error);
+        console.error('Error updating subscription for trial:', error);
         throw error;
       }
+
+      subscription = data;
+      console.log('✅ Trial started (updated existing subscription)');
     } else {
-      console.log('No existing subscription, creating new one...');
       // Create new subscription
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
@@ -231,25 +127,35 @@ export const startFreeTrial = async (): Promise<boolean> => {
           trial_start_date: trialStartDate.toISOString(),
           trial_end_date: trialEndDate.toISOString(),
           price_usd: 1.99,
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error creating subscription:', error);
+        console.error('Error creating subscription for trial:', error);
         throw error;
       }
+
+      subscription = data;
+      console.log('✅ Trial started (created new subscription)');
     }
 
-    await clearSubscriptionCache();
-    console.log('Free trial started successfully (15 days)');
-    return true;
+    // Save to local storage
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+
+    return subscription;
   } catch (error) {
     console.error('Error starting free trial:', error);
-    return false;
+    throw error;
   }
-};
+}
 
 // Activate premium subscription
-export const activatePremiumSubscription = async (): Promise<boolean> => {
+export async function activatePremiumSubscription(
+  stripeCustomerId: string,
+  stripeSubscriptionId: string,
+  paymentMethod: string
+): Promise<Subscription> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -259,65 +165,83 @@ export const activatePremiumSubscription = async (): Promise<boolean> => {
 
     const subscriptionStartDate = new Date();
     const nextPaymentDate = new Date();
-    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1); // Monthly subscription
-
-    console.log('Activating premium subscription for user:', user.id);
+    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
 
     // Check if subscription already exists
-    const existingSub = await getSubscription();
-    
-    if (existingSub) {
-      console.log('Existing subscription found, updating...');
+    const { data: existingSubscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    let subscription: Subscription;
+
+    if (existingSubscription) {
       // Update existing subscription
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('subscriptions')
         .update({
           status: 'active',
           plan_type: 'premium',
           subscription_start_date: subscriptionStartDate.toISOString(),
-          next_payment_date: nextPaymentDate.toISOString(),
+          payment_method: paymentMethod,
           last_payment_date: subscriptionStartDate.toISOString(),
-          price_usd: 1.99,
+          next_payment_date: nextPaymentDate.toISOString(),
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating subscription:', error);
         throw error;
       }
+
+      subscription = data;
+      console.log('✅ Premium subscription activated (updated existing)');
     } else {
-      console.log('No existing subscription, creating new one...');
       // Create new subscription
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
           status: 'active',
           plan_type: 'premium',
           subscription_start_date: subscriptionStartDate.toISOString(),
-          next_payment_date: nextPaymentDate.toISOString(),
+          payment_method: paymentMethod,
           last_payment_date: subscriptionStartDate.toISOString(),
+          next_payment_date: nextPaymentDate.toISOString(),
           price_usd: 1.99,
-        });
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId,
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating subscription:', error);
         throw error;
       }
+
+      subscription = data;
+      console.log('✅ Premium subscription activated (created new)');
     }
 
-    await clearSubscriptionCache();
-    console.log('Premium subscription activated successfully');
-    return true;
+    // Save to local storage
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+
+    return subscription;
   } catch (error) {
     console.error('Error activating premium subscription:', error);
-    return false;
+    throw error;
   }
-};
+}
 
 // Cancel subscription
-export const cancelSubscription = async (): Promise<boolean> => {
+export async function cancelSubscription(): Promise<void> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -325,46 +249,57 @@ export const cancelSubscription = async (): Promise<boolean> => {
       throw new Error('User not authenticated');
     }
 
-    await retryWithBackoff(async () => {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', user.id);
 
-      if (error) {
-        throw error;
-      }
-    });
-
-    await clearSubscriptionCache();
-    console.log('Subscription cancelled successfully');
-    return true;
-  } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    return false;
-  }
-};
-
-// Get trial days remaining
-export const getTrialDaysRemaining = async (): Promise<number> => {
-  try {
-    const subscription = await getSubscription();
-    
-    if (!subscription || subscription.status !== 'trial' || !subscription.trial_end_date) {
-      return 0;
+    if (error) {
+      console.error('Error cancelling subscription:', error);
+      throw error;
     }
 
-    const trialEnd = new Date(subscription.trial_end_date);
-    const now = new Date();
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Update local storage
+    const subscription = await getSubscription();
+    if (subscription) {
+      subscription.status = 'cancelled';
+      subscription.cancelled_at = new Date().toISOString();
+      await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    }
 
-    return Math.max(0, diffDays);
+    console.log('✅ Subscription cancelled');
   } catch (error) {
-    console.error('Error getting trial days remaining:', error);
+    console.error('Error cancelling subscription:', error);
+    throw error;
+  }
+}
+
+// Get trial days remaining
+export function getTrialDaysRemaining(subscription: Subscription | null): number {
+  if (!subscription || subscription.status !== 'trial' || !subscription.trial_end_date) {
     return 0;
   }
-};
+
+  const now = new Date();
+  const endDate = new Date(subscription.trial_end_date);
+  const diffTime = endDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffDays);
+}
+
+// Check if user has active premium access
+export function hasPremiumAccess(subscription: Subscription | null): boolean {
+  if (!subscription) {
+    return false;
+  }
+
+  return (
+    (subscription.status === 'active' || subscription.status === 'trial') &&
+    subscription.plan_type === 'premium'
+  );
+}

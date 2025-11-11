@@ -85,16 +85,26 @@ export default function ProfileScreen() {
             .from('profiles')
             .select('*')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
           if (profileError) {
-            console.error('Error loading profile:', profileError);
-          } else {
+            // Only log error if it's not a 406 (Not Acceptable) error
+            if (profileError.code !== 'PGRST116' && !profileError.message?.includes('406')) {
+              console.error('Error loading profile:', profileError);
+            } else {
+              console.log('Profile not found or not acceptable, will create on edit');
+            }
+          } else if (profileData) {
             setProfile(profileData);
             console.log('Profile loaded:', profileData);
+          } else {
+            console.log('No profile found for user');
           }
-        } catch (error) {
-          console.error('Error fetching profile:', error);
+        } catch (error: any) {
+          // Silently handle 406 errors
+          if (!error.message?.includes('406')) {
+            console.error('Error fetching profile:', error);
+          }
         }
       }
     } catch (error) {
