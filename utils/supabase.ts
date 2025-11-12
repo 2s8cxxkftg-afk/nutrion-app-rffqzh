@@ -17,7 +17,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       'x-client-info': 'nutrion-app',
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
     },
     fetch: (url, options = {}) => {
       // Add timeout to all fetch requests

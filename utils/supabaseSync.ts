@@ -5,7 +5,11 @@ import { PantryItem, Recipe, ShoppingItem } from '@/types/pantry';
 // Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
     return !!session;
   } catch (error) {
     console.error('Error checking authentication:', error);
@@ -17,22 +21,28 @@ export async function isAuthenticated(): Promise<boolean> {
 
 export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }
 
-    // Ensure all required fields are present
+    // Ensure all required fields are present and properly formatted
     const itemData = {
       id: item.id,
       user_id: user.id,
       name: item.name || item.food_name || 'Unnamed Item',
       food_name: item.food_name || item.name || 'Unnamed Item',
       brand_name: item.brand_name || null,
-      calories: item.calories || null,
+      calories: item.calories ? Number(item.calories) : null,
       photo: item.photo || null,
       category: item.category || 'Other',
-      quantity: item.quantity || 1,
+      quantity: item.quantity ? Number(item.quantity) : 1,
       unit: item.unit || 'pcs',
       expiration_date: item.expirationDate || null,
       notes: item.notes || null,
@@ -40,7 +50,7 @@ export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> 
       updated_at: new Date().toISOString(),
     };
 
-    console.log('Syncing pantry item to Supabase:', itemData);
+    console.log('Syncing pantry item to Supabase:', itemData.name);
 
     const { data, error } = await supabase
       .from('pantry_items')
@@ -52,19 +62,27 @@ export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> 
 
     if (error) {
       console.error('Error syncing pantry item:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
 
-    console.log('✅ Pantry item synced successfully:', data);
-  } catch (error) {
+    console.log('✅ Pantry item synced successfully');
+  } catch (error: any) {
     console.error('Error in syncPantryItemToSupabase:', error);
+    console.error('Error message:', error.message);
     throw error;
   }
 }
 
 export async function deletePantryItemFromSupabase(itemId: string): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }
@@ -91,7 +109,13 @@ export async function deletePantryItemFromSupabase(itemId: string): Promise<void
 
 export async function syncRecipeToSupabase(recipe: Recipe): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }
@@ -130,7 +154,13 @@ export async function syncRecipeToSupabase(recipe: Recipe): Promise<void> {
 
 export async function deleteRecipeFromSupabase(recipeId: string): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }
@@ -157,7 +187,13 @@ export async function deleteRecipeFromSupabase(recipeId: string): Promise<void> 
 
 export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }
@@ -166,7 +202,7 @@ export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<vo
       id: item.id,
       user_id: user.id,
       name: item.name,
-      quantity: item.quantity || 1,
+      quantity: item.quantity ? Number(item.quantity) : 1,
       unit: item.unit || 'pcs',
       category: item.category || 'Other',
       checked: item.checked || false,
@@ -194,7 +230,13 @@ export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<vo
 
 export async function deleteShoppingItemFromSupabase(itemId: string): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
+    
     if (!user) {
       throw new Error('Not authenticated');
     }

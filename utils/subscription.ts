@@ -29,7 +29,12 @@ export interface Subscription {
 export async function getSubscription(): Promise<Subscription | null> {
   try {
     // Check if user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      return null;
+    }
     
     if (!user) {
       console.log('No authenticated user, returning null subscription');
@@ -75,26 +80,48 @@ export async function getSubscription(): Promise<Subscription | null> {
 // Start free trial - returns boolean for success
 export async function startFreeTrial(): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('🎁 Starting free trial...');
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('❌ Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
     
     if (!user) {
+      console.error('❌ User not authenticated');
       throw new Error('User not authenticated');
     }
+
+    console.log('✅ User authenticated:', user.email);
 
     const trialStartDate = new Date();
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
+    console.log('📅 Trial dates:', {
+      start: trialStartDate.toISOString(),
+      end: trialEndDate.toISOString(),
+    });
+
     // Check if subscription already exists
-    const { data: existingSubscription } = await supabase
+    const { data: existingSubscription, error: checkError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (checkError) {
+      console.error('❌ Error checking existing subscription:', checkError);
+      throw checkError;
+    }
+
     let subscription: Subscription;
 
     if (existingSubscription) {
+      console.log('📝 Updating existing subscription to trial...');
+      
       // Update existing subscription
       const { data, error } = await supabase
         .from('subscriptions')
@@ -110,13 +137,15 @@ export async function startFreeTrial(): Promise<boolean> {
         .single();
 
       if (error) {
-        console.error('Error updating subscription for trial:', error);
+        console.error('❌ Error updating subscription for trial:', error);
         throw error;
       }
 
       subscription = data;
       console.log('✅ Trial started (updated existing subscription)');
     } else {
+      console.log('📝 Creating new subscription with trial...');
+      
       // Create new subscription
       const { data, error } = await supabase
         .from('subscriptions')
@@ -132,7 +161,8 @@ export async function startFreeTrial(): Promise<boolean> {
         .single();
 
       if (error) {
-        console.error('Error creating subscription for trial:', error);
+        console.error('❌ Error creating subscription for trial:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
@@ -142,10 +172,13 @@ export async function startFreeTrial(): Promise<boolean> {
 
     // Save to local storage
     await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    console.log('✅ Subscription saved to local storage');
 
     return true;
-  } catch (error) {
-    console.error('Error starting free trial:', error);
+  } catch (error: any) {
+    console.error('❌ Error starting free trial:', error);
+    console.error('Error message:', error.message);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return false;
   }
 }
@@ -157,7 +190,12 @@ export async function activatePremiumSubscription(
   paymentMethod: string
 ): Promise<Subscription> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
     
     if (!user) {
       throw new Error('User not authenticated');
@@ -243,7 +281,12 @@ export async function activatePremiumSubscription(
 // Cancel subscription
 export async function cancelSubscription(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error('User authentication error');
+    }
     
     if (!user) {
       throw new Error('User not authenticated');
