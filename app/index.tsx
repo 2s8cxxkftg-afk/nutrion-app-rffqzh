@@ -5,6 +5,7 @@ import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
+import { getSubscription, hasPremiumAccess } from '@/utils/subscription';
 
 const LANGUAGE_SELECTED_KEY = '@nutrion_language_selected';
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
@@ -16,6 +17,7 @@ export default function Index() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [hasSeenSubscriptionIntro, setHasSeenSubscriptionIntro] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasPremium, setHasPremium] = useState(false);
 
   useEffect(() => {
     checkAppStatus();
@@ -39,17 +41,30 @@ export default function Index() {
       console.log('Has completed onboarding:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
 
+      // Check authentication status
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth session exists:', !!session);
+      setIsAuthenticated(!!session);
+
+      // Check subscription status if authenticated
+      let premiumAccess = false;
+      if (session) {
+        try {
+          const subscription = await getSubscription();
+          premiumAccess = hasPremiumAccess(subscription);
+          console.log('Has premium access:', premiumAccess);
+          setHasPremium(premiumAccess);
+        } catch (error) {
+          console.error('Error checking subscription:', error);
+        }
+      }
+
       // Check subscription intro status
       const subscriptionIntroValue = await AsyncStorage.getItem(SUBSCRIPTION_INTRO_KEY);
       console.log('Subscription intro value from AsyncStorage:', subscriptionIntroValue);
       const seenSubscriptionIntro = subscriptionIntroValue === 'true';
       console.log('Has seen subscription intro:', seenSubscriptionIntro);
       setHasSeenSubscriptionIntro(seenSubscriptionIntro);
-
-      // Check authentication status
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Auth session exists:', !!session);
-      setIsAuthenticated(!!session);
       
       // Show splash screen with logo for 1.5 seconds
       setTimeout(() => {
@@ -63,6 +78,7 @@ export default function Index() {
       setHasCompletedOnboarding(false);
       setHasSeenSubscriptionIntro(false);
       setIsAuthenticated(false);
+      setHasPremium(false);
       setTimeout(() => {
         setIsLoading(false);
       }, 1500);
@@ -85,12 +101,13 @@ export default function Index() {
   // 1. If language not selected -> go to language selection
   // 2. If language selected but onboarding not completed -> go to onboarding
   // 3. If onboarding completed but not authenticated -> go to auth
-  // 4. If authenticated but hasn't seen subscription intro -> go to subscription intro
-  // 5. If all completed -> go to app
+  // 4. If authenticated but hasn't seen subscription intro AND doesn't have premium -> go to subscription intro
+  // 5. If all completed OR has premium -> go to app
   console.log('=== Navigation Decision ===');
   console.log('Language selected:', hasSelectedLanguage);
   console.log('Onboarding completed:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
+  console.log('Has premium:', hasPremium);
   console.log('Seen subscription intro:', hasSeenSubscriptionIntro);
   
   if (!hasSelectedLanguage) {
@@ -108,8 +125,9 @@ export default function Index() {
     return <Redirect href="/auth" />;
   }
 
-  if (!hasSeenSubscriptionIntro) {
-    console.log('Redirecting to: /subscription-intro');
+  // Only show subscription intro if user doesn't have premium and hasn't seen it
+  if (!hasSeenSubscriptionIntro && !hasPremium) {
+    console.log('Redirecting to: /subscription-intro (user needs to see subscription offer)');
     return <Redirect href="/subscription-intro" />;
   }
 

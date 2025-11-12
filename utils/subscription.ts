@@ -72,8 +72,8 @@ export async function getSubscription(): Promise<Subscription | null> {
   }
 }
 
-// Start free trial
-export async function startFreeTrial(): Promise<Subscription> {
+// Start free trial - returns boolean for success
+export async function startFreeTrial(): Promise<boolean> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -143,10 +143,10 @@ export async function startFreeTrial(): Promise<Subscription> {
     // Save to local storage
     await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
 
-    return subscription;
+    return true;
   } catch (error) {
     console.error('Error starting free trial:', error);
-    throw error;
+    return false;
   }
 }
 

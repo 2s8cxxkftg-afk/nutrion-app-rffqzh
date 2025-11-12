@@ -36,6 +36,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="confirm-email" options={{ headerShown: false }} />
         <Stack.Screen name="email-confirmed" options={{ headerShown: false }} />
         <Stack.Screen name="add-item" options={{ headerShown: false }} />
         <Stack.Screen name="food-search" options={{ headerShown: false }} />
@@ -44,7 +45,8 @@ export default function RootLayout() {
         <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
         <Stack.Screen name="subscription-management" options={{ headerShown: false }} />
         <Stack.Screen name="subscription-intro" options={{ headerShown: false }} />
-        <Stack.Screen name="setup-2fa" options={{ headerShown: false }} />
+        <Stack.Screen name="subscription-success" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="edit-item" options={{ headerShown: false }} />
         <Stack.Screen name="about" options={{ headerShown: false }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
