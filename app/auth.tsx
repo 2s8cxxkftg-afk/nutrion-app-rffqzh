@@ -334,12 +334,12 @@ export default function AuthScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <>
+                <React.Fragment>
                   <Text style={styles.submitButtonText}>
                     {isLogin ? (t('auth.signIn') || 'Sign In') : (t('auth.signUp') || 'Create Account')}
                   </Text>
                   <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
-                </>
+                </React.Fragment>
               )}
             </TouchableOpacity>
 
@@ -445,8 +445,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.xxl,
     gap: spacing.md,
-    boxShadow: `0px 8px 24px ${colors.primary}40`,
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: `0px 8px 24px ${colors.primary}40`,
+      },
+    }),
   },
   submitButtonDisabled: {
     opacity: 0.6,

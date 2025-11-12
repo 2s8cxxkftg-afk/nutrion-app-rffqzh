@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -197,12 +198,12 @@ export default function SubscriptionIntroScreen() {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <>
+            <React.Fragment>
               <Text style={styles.continueButtonText}>
                 {t('subscription.startTrial') || 'Start 15-Day Free Trial'}
               </Text>
               <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
-            </>
+            </React.Fragment>
           )}
         </TouchableOpacity>
         
@@ -275,8 +276,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.primary,
-    boxShadow: `0px 12px 32px ${colors.primary}20`,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: `0px 12px 32px ${colors.primary}20`,
+      },
+    }),
   },
   priceContainer: {
     flexDirection: 'row',
@@ -380,8 +393,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
     gap: spacing.md,
-    boxShadow: `0px 8px 24px ${colors.primary}40`,
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: `0px 8px 24px ${colors.primary}40`,
+      },
+    }),
   },
   continueButtonDisabled: {
     opacity: 0.6,

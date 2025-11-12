@@ -172,8 +172,20 @@ const styles = StyleSheet.create({
     height: 72,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 24,
-    boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.12)',
-    elevation: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 32,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.12)',
+      },
+    }),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.8)',
@@ -186,8 +198,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     left: 8,
     top: 8,
-    boxShadow: `0px 4px 16px ${colors.primary}60`,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: `0px 4px 16px ${colors.primary}60`,
+      },
+    }),
   },
   tab: {
     flex: 1,

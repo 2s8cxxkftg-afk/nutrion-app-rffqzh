@@ -275,8 +275,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: colors.card,
     borderRadius: 24,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+    }),
   },
   skipText: {
     fontSize: 15,
@@ -309,8 +321,20 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     overflow: 'hidden',
     position: 'relative',
-    boxShadow: '0px 16px 40px rgba(0, 0, 0, 0.15)',
-    elevation: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.15,
+        shadowRadius: 40,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0px 16px 40px rgba(0, 0, 0, 0.15)',
+      },
+    }),
   },
   featureImage: {
     width: '100%',
@@ -322,7 +346,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    background: 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)',
+    ...Platform.select({
+      web: {
+        background: 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)',
+      },
+      default: {
+        backgroundColor: 'transparent',
+      },
+    }),
   },
   iconBadge: {
     position: 'absolute',
@@ -333,8 +364,20 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
-    elevation: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+      },
+    }),
     borderWidth: 5,
     borderColor: '#FFFFFF',
   },
@@ -386,8 +429,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
+      },
+    }),
     gap: 12,
   },
   actionButtonText: {
