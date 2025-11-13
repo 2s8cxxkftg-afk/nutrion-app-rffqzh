@@ -301,7 +301,8 @@ export default function AddItemScreen() {
             <View style={styles.aiEstimationBanner}>
               <View style={styles.aiEstimationIcon}>
                 <IconSymbol 
-                  name="sparkles" 
+                  ios_icon_name="sparkles" 
+                  android_material_icon_name="auto_awesome"
                   size={16} 
                   color={colors.primary} 
                 />
@@ -333,7 +334,8 @@ export default function AddItemScreen() {
           >
             <Text style={{ color: colors.text }}>{category}</Text>
             <IconSymbol 
-              name={showCategoryPicker ? "chevron.up" : "chevron.down"}
+              ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
+              android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
               size={20} 
               color={colors.textSecondary} 
             />
@@ -365,7 +367,8 @@ export default function AddItemScreen() {
                     </Text>
                     {category === cat && (
                       <IconSymbol 
-                        name="checkmark" 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
                         size={20} 
                         color={colors.primary} 
                       />
@@ -403,7 +406,8 @@ export default function AddItemScreen() {
                   activeOpacity={0.7}
                 >
                   <IconSymbol 
-                    name="list.bullet" 
+                    ios_icon_name="list.bullet" 
+                    android_material_icon_name="format_list_bulleted"
                     size={20} 
                     color={colors.text} 
                   />
@@ -420,7 +424,8 @@ export default function AddItemScreen() {
               >
                 <Text style={{ color: colors.text }}>{unit}</Text>
                 <IconSymbol 
-                  name={showUnitPicker ? "chevron.up" : "chevron.down"}
+                  ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
+                  android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -447,7 +452,8 @@ export default function AddItemScreen() {
                     </Text>
                     {parseFloat(quantity) === preset.value && (
                       <IconSymbol 
-                        name="checkmark" 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
                         size={20} 
                         color={colors.primary} 
                       />
@@ -484,7 +490,8 @@ export default function AddItemScreen() {
                     </Text>
                     {unit === u && (
                       <IconSymbol 
-                        name="checkmark" 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
                         size={20} 
                         color={colors.primary} 
                       />

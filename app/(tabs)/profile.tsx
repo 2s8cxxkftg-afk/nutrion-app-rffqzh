@@ -573,7 +573,7 @@ export default function ProfileScreen() {
                         size={14} 
                         color="#FFFFFF" 
                       />
-                      <Text style={styles.trialBadgeText}>15 Days Free</Text>
+                      <Text style={styles.trialBadgeText}>7 Days Free</Text>
                     </View>
                   </View>
                 </View>

@@ -58,10 +58,10 @@ export default function SubscriptionIntroScreen() {
 
       const result = await startFreeTrial();
       
-      if (result.success) {
+      if (result) {
         Toast.show({
           type: 'success',
-          message: 'Free trial started! Enjoy 15 days of premium features.',
+          message: 'Free trial started! Enjoy 7 days of premium features.',
           duration: 3000,
         });
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
@@ -69,7 +69,7 @@ export default function SubscriptionIntroScreen() {
       } else {
         Toast.show({
           type: 'error',
-          message: result.error || 'Failed to start trial',
+          message: 'Failed to start trial',
           duration: 3000,
         });
       }
@@ -100,7 +100,12 @@ export default function SubscriptionIntroScreen() {
             resizeMode="cover"
           />
           <View style={styles.heroOverlay}>
-            <IconSymbol name="leaf.fill" size={64} color="#FFFFFF" />
+            <IconSymbol 
+              ios_icon_name="leaf.fill" 
+              android_material_icon_name="eco"
+              size={64} 
+              color="#FFFFFF" 
+            />
           </View>
         </View>
 
@@ -116,8 +121,13 @@ export default function SubscriptionIntroScreen() {
             <Text style={styles.period}>/{t('subscription.month')}</Text>
           </View>
           <View style={styles.trialBadge}>
-            <IconSymbol name="gift.fill" size={20} color={colors.primary} />
-            <Text style={styles.trialBadgeText}>{t('subscription.freeTrial')}</Text>
+            <IconSymbol 
+              ios_icon_name="gift.fill" 
+              android_material_icon_name="card_giftcard"
+              size={20} 
+              color={colors.primary} 
+            />
+            <Text style={styles.trialBadgeText}>7 Days Free Trial</Text>
           </View>
         </View>
 
@@ -128,7 +138,12 @@ export default function SubscriptionIntroScreen() {
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
               <View style={[styles.featureIcon, { backgroundColor: '#4CAF50' + '20' }]}>
-                <IconSymbol name="archivebox.fill" size={24} color="#4CAF50" />
+                <IconSymbol 
+                  ios_icon_name="archivebox.fill" 
+                  android_material_icon_name="inventory_2"
+                  size={24} 
+                  color="#4CAF50" 
+                />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature1Title')}</Text>
@@ -138,7 +153,12 @@ export default function SubscriptionIntroScreen() {
 
             <View style={styles.featureItem}>
               <View style={[styles.featureIcon, { backgroundColor: '#2196F3' + '20' }]}>
-                <IconSymbol name="cart.fill" size={24} color="#2196F3" />
+                <IconSymbol 
+                  ios_icon_name="cart.fill" 
+                  android_material_icon_name="shopping_cart"
+                  size={24} 
+                  color="#2196F3" 
+                />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature3Title')}</Text>
@@ -148,7 +168,12 @@ export default function SubscriptionIntroScreen() {
 
             <View style={styles.featureItem}>
               <View style={[styles.featureIcon, { backgroundColor: '#FF9800' + '20' }]}>
-                <IconSymbol name="clock.badge.checkmark.fill" size={24} color="#FF9800" />
+                <IconSymbol 
+                  ios_icon_name="clock.badge.checkmark.fill" 
+                  android_material_icon_name="schedule"
+                  size={24} 
+                  color="#FF9800" 
+                />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature4Title')}</Text>
@@ -160,8 +185,13 @@ export default function SubscriptionIntroScreen() {
 
         {/* Trial Info */}
         <View style={styles.infoBox}>
-          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
-          <Text style={styles.infoText}>{t('subscription.trialInfo')}</Text>
+          <IconSymbol 
+            ios_icon_name="info.circle.fill" 
+            android_material_icon_name="info"
+            size={20} 
+            color={colors.primary} 
+          />
+          <Text style={styles.infoText}>Start your 7-day free trial today. Cancel anytime before the trial ends to avoid charges.</Text>
         </View>
 
         {/* CTA Button */}
@@ -176,7 +206,12 @@ export default function SubscriptionIntroScreen() {
           ) : (
             <>
               <Text style={styles.ctaButtonText}>{t('subscription.continue')}</Text>
-              <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+              <IconSymbol 
+                ios_icon_name="arrow.right" 
+                android_material_icon_name="arrow_forward"
+                size={20} 
+                color="#FFFFFF" 
+              />
             </>
           )}
         </TouchableOpacity>
