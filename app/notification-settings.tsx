@@ -29,7 +29,6 @@ interface NotificationSettings {
   dailyReminder: boolean;
   dailyReminderTime: string;
   shoppingListReminders: boolean;
-  recipesSuggestions: boolean;
 }
 
 const DEFAULT_SETTINGS: NotificationSettings = {
@@ -39,7 +38,6 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   dailyReminder: false,
   dailyReminderTime: '09:00',
   shoppingListReminders: true,
-  recipesSuggestions: true,
 };
 
 export default function NotificationSettingsScreen() {
@@ -149,11 +147,6 @@ export default function NotificationSettingsScreen() {
 
   const handleToggleShoppingListReminders = async (value: boolean) => {
     const newSettings = { ...settings, shoppingListReminders: value };
-    await saveSettings(newSettings);
-  };
-
-  const handleToggleRecipesSuggestions = async (value: boolean) => {
-    const newSettings = { ...settings, recipesSuggestions: value };
     await saveSettings(newSettings);
   };
 
@@ -310,31 +303,6 @@ export default function NotificationSettingsScreen() {
               <Switch
                 value={settings.shoppingListReminders}
                 onValueChange={handleToggleShoppingListReminders}
-                disabled={!settings.enabled}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Recipe Suggestions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Content</Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol name="sparkles" size={24} color={colors.primary} />
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>Recipe Suggestions</Text>
-                  <Text style={styles.settingDescription}>
-                    Get AI-powered recipe ideas based on your pantry
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.recipesSuggestions}
-                onValueChange={handleToggleRecipesSuggestions}
                 disabled={!settings.enabled}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}

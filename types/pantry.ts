@@ -14,16 +14,6 @@ export interface PantryItem {
   photo?: string;
 }
 
-export interface Recipe {
-  id: string;
-  name: string;
-  ingredients: string[];
-  instructions: string;
-  prepTime: number;
-  servings: number;
-  category: string;
-}
-
 export interface ShoppingItem {
   id: string;
   name: string;

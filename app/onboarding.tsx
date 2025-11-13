@@ -10,8 +10,12 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,13 +23,9 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ONBOARDING_KEY = '@nutrion_onboarding_completed';
+const ONBOARDING_KEY = '@nutrion_onboarding_complete';
 
 interface OnboardingPage {
   titleKey: string;
@@ -35,44 +35,36 @@ interface OnboardingPage {
   imageUrl: string;
 }
 
-// Low-poly 3D art style illustrations similar to Foodpanda
 const pages: OnboardingPage[] = [
   {
     titleKey: 'onboarding.welcome',
     descriptionKey: 'onboarding.welcomeDesc',
-    icon: 'sparkles',
-    color: colors.primary,
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
+    icon: 'leaf.fill',
+    color: '#4CAF50',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80',
   },
   {
     titleKey: 'onboarding.pantryTitle',
     descriptionKey: 'onboarding.pantryDesc',
     icon: 'archivebox.fill',
-    color: colors.accent,
-    imageUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80',
-  },
-  {
-    titleKey: 'onboarding.aiTitle',
-    descriptionKey: 'onboarding.aiDesc',
-    icon: 'wand.and.stars',
-    color: colors.secondary,
-    imageUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&q=80',
+    color: '#2196F3',
+    imageUrl: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=800&q=80',
   },
   {
     titleKey: 'onboarding.wasteTitle',
     descriptionKey: 'onboarding.wasteDesc',
-    icon: 'leaf.fill',
-    color: colors.success,
-    imageUrl: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80',
+    icon: 'clock.badge.checkmark.fill',
+    color: '#FF9800',
+    imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80',
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const scrollViewRef = useRef<ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollX = useSharedValue(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -103,35 +95,23 @@ export default function OnboardingScreen() {
   const handleGetStarted = async () => {
     try {
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      console.log('Onboarding completed, navigating to auth');
-      router.replace('/auth');
+      router.replace('/language-selection');
     } catch (error) {
       console.error('Error saving onboarding status:', error);
-      router.replace('/auth');
+      router.replace('/language-selection');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Logo and Skip */}
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoText}>Nutrion</Text>
-        </View>
-        
-        {currentPage < pages.length - 1 && (
-          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-            <Text style={styles.skipText}>{t('skip')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Skip Button */}
+      {currentPage < pages.length - 1 && (
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Text style={styles.skipButtonText}>{t('skip')}</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* Pages ScrollView */}
+      {/* Pages */}
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -143,68 +123,50 @@ export default function OnboardingScreen() {
       >
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
-            <View style={styles.pageContent}>
-              {/* Low-Poly 3D Art Container - Foodpanda inspired */}
-              <View style={styles.imageWrapper}>
-                <View style={[styles.imageBackground, { backgroundColor: page.color + '15' }]}>
-                  <Image
-                    source={{ uri: page.imageUrl }}
-                    style={styles.featureImage}
-                    resizeMode="cover"
-                  />
-                  {/* Floating Icon Badge - Foodpanda style accent */}
-                  <View style={[styles.iconBadge, { backgroundColor: page.color }]}>
-                    <IconSymbol
-                      name={page.icon as any}
-                      size={40}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  {/* Decorative gradient overlay for depth */}
-                  <View style={styles.gradientOverlay} />
-                </View>
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: page.imageUrl }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <View style={[styles.iconOverlay, { backgroundColor: page.color }]}>
+                <IconSymbol name={page.icon} size={48} color="#FFFFFF" />
               </View>
+            </View>
 
-              {/* Content */}
-              <View style={styles.textContent}>
-                <Text style={styles.title}>{t(page.titleKey)}</Text>
-                <Text style={styles.description}>{t(page.descriptionKey)}</Text>
-              </View>
+            <View style={styles.content}>
+              <Text style={styles.title}>{t(page.titleKey)}</Text>
+              <Text style={styles.description}>{t(page.descriptionKey)}</Text>
             </View>
           </View>
         ))}
       </ScrollView>
 
-      {/* Bottom Section */}
-      <View style={styles.bottomSection}>
-        {/* Pagination Dots */}
-        <View style={styles.pagination}>
-          {pages.map((_, index) => (
-            <PaginationDot key={index} index={index} scrollX={scrollX} currentPage={currentPage} />
-          ))}
-        </View>
-
-        {/* Action Button */}
-        <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
-          <Text style={styles.actionButtonText}>
-            {currentPage === pages.length - 1 ? t('getStarted') : t('continue')}
-          </Text>
-          <View style={styles.actionButtonIcon}>
-            <IconSymbol
-              name={currentPage === pages.length - 1 ? 'checkmark' : 'arrow_forward'}
-              size={20}
-              color="#FFFFFF"
-            />
-          </View>
-        </TouchableOpacity>
+      {/* Pagination Dots */}
+      <View style={styles.pagination}>
+        {pages.map((_, index) => (
+          <PaginationDot
+            key={index}
+            index={index}
+            scrollX={scrollX}
+            currentPage={currentPage}
+          />
+        ))}
       </View>
+
+      {/* Next/Get Started Button */}
+      <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
+        <Text style={styles.nextButtonText}>
+          {currentPage === pages.length - 1 ? t('getStarted') : t('next')}
+        </Text>
+        <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-// Pagination Dot Component
 function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX: any; currentPage: number }) {
-  const dotStyle = useAnimatedStyle(() => {
+  const animatedStyle = useAnimatedStyle(() => {
     const inputRange = [
       (index - 1) * SCREEN_WIDTH,
       index * SCREEN_WIDTH,
@@ -214,7 +176,7 @@ function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX
     const width = interpolate(
       scrollX.value,
       inputRange,
-      [8, 32, 8],
+      [8, 24, 8],
       Extrapolate.CLAMP
     );
 
@@ -226,8 +188,8 @@ function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX
     );
 
     return {
-      width,
-      opacity,
+      width: withSpring(width),
+      opacity: withSpring(opacity),
     };
   });
 
@@ -235,7 +197,7 @@ function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX
     <Animated.View
       style={[
         styles.dot,
-        dotStyle,
+        animatedStyle,
         currentPage === index && styles.activeDot,
       ]}
     />
@@ -247,53 +209,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 10 : 20,
-    paddingBottom: 20,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.5,
-  },
   skipButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-      },
-    }),
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 20,
+    right: 20,
+    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  skipText: {
-    fontSize: 15,
-    color: colors.text,
-    fontWeight: '700',
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   scrollView: {
     flex: 1,
@@ -301,89 +228,34 @@ const styles = StyleSheet.create({
   page: {
     width: SCREEN_WIDTH,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 80 : 40,
   },
-  pageContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: 400,
-    width: '100%',
-  },
-  imageWrapper: {
-    width: '100%',
-    marginBottom: 48,
-  },
-  imageBackground: {
-    width: '100%',
-    height: 340,
-    borderRadius: 32,
-    overflow: 'hidden',
+  imageContainer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH * 0.8,
     position: 'relative',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.15,
-        shadowRadius: 40,
-      },
-      android: {
-        elevation: 10,
-      },
-      web: {
-        boxShadow: '0px 16px 40px rgba(0, 0, 0, 0.15)',
-      },
-    }),
+    marginBottom: 40,
   },
-  featureImage: {
+  image: {
     width: '100%',
     height: '100%',
+    borderRadius: 0,
   },
-  gradientOverlay: {
+  iconOverlay: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
-    ...Platform.select({
-      web: {
-        background: 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)',
-      },
-      default: {
-        backgroundColor: 'transparent',
-      },
-    }),
-  },
-  iconBadge: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: -30,
+    alignSelf: 'center',
     width: 80,
     height: 80,
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 12,
-      },
-      web: {
-        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
-      },
-    }),
-    borderWidth: 5,
-    borderColor: '#FFFFFF',
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+    elevation: 8,
   },
-  textContent: {
+  content: {
+    paddingHorizontal: 32,
     alignItems: 'center',
-    paddingHorizontal: 8,
   },
   title: {
     fontSize: 32,
@@ -391,72 +263,46 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 40,
     letterSpacing: -0.5,
   },
   description: {
-    fontSize: 17,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
-    fontWeight: '500',
-  },
-  bottomSection: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 20,
+    paddingHorizontal: 8,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 32,
     gap: 8,
   },
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.textSecondary,
+    backgroundColor: colors.primary,
   },
   activeDot: {
     backgroundColor: colors.primary,
   },
-  actionButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 20,
+  nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
-      },
-    }),
-    gap: 12,
+    backgroundColor: colors.primary,
+    marginHorizontal: 32,
+    marginBottom: 32,
+    paddingVertical: 18,
+    borderRadius: 16,
+    gap: 8,
+    boxShadow: '0px 8px 24px rgba(76, 175, 80, 0.3)',
+    elevation: 8,
   },
-  actionButtonText: {
+  nextButtonText: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  actionButtonIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

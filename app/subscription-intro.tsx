@@ -10,17 +10,17 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { startFreeTrial, getSubscription } from '@/utils/subscription';
-import Toast from '@/components/Toast';
 import { supabase } from '@/utils/supabase';
+import Toast from '@/components/Toast';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
 
-const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_completed';
+const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_seen';
 
 export default function SubscriptionIntroScreen() {
   const router = useRouter();
@@ -28,94 +28,57 @@ export default function SubscriptionIntroScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleStartFreeTrial = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      console.log('🎁 Starting 15-day free trial...');
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // First, ensure we have a valid session
-      console.log('🔍 Checking authentication session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('❌ Session error:', sessionError);
-        Toast.show({ 
-          type: 'error', 
-          message: 'Authentication error. Please sign in again.' 
+      if (!user) {
+        Toast.show({
+          type: 'error',
+          message: 'Please sign in to start your free trial',
+          duration: 3000,
         });
         router.replace('/auth');
         return;
       }
+
+      const subscription = await getSubscription();
       
-      if (!session) {
-        console.error('❌ No active session');
-        Toast.show({ 
-          type: 'error', 
-          message: 'Please sign in to start your free trial.' 
-        });
-        router.replace('/auth');
-        return;
-      }
-      
-      console.log('✅ Session valid for user:', session.user.email);
-      
-      // Check if user already has a subscription
-      console.log('🔍 Checking for existing subscription...');
-      const existingSub = await getSubscription();
-      
-      if (existingSub && (existingSub.status === 'trial' || existingSub.status === 'active')) {
-        console.log('ℹ️ User already has an active subscription');
-        Toast.show({ 
-          type: 'info', 
-          message: 'You already have an active subscription!' 
-        });
-        
-        // Mark subscription intro as completed
+      if (subscription && subscription.status === 'trial') {
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
-        
-        // Navigate to the main app
         router.replace('/(tabs)/pantry');
         return;
       }
-      
-      // Start the free trial in the database
-      console.log('🚀 Starting free trial...');
-      const success = await startFreeTrial();
-      
-      if (success) {
-        // Mark subscription intro as completed
+
+      if (subscription && subscription.status === 'active') {
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
-        console.log('✅ Free trial started successfully, navigating to app');
-        
-        Toast.show({ 
-          type: 'success', 
-          message: '🎉 Your 15-day free trial has started!' 
+        router.replace('/(tabs)/pantry');
+        return;
+      }
+
+      const result = await startFreeTrial();
+      
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          message: 'Free trial started! Enjoy 15 days of premium features.',
+          duration: 3000,
         });
-        
-        // Navigate to the main app
+        await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
         router.replace('/(tabs)/pantry');
       } else {
-        console.error('❌ Failed to start free trial');
-        Toast.show({ 
-          type: 'error', 
-          message: 'Failed to start free trial. Please try again or contact support.' 
+        Toast.show({
+          type: 'error',
+          message: result.error || 'Failed to start trial',
+          duration: 3000,
         });
       }
     } catch (error: any) {
-      console.error('❌ Error starting free trial:', error);
-      
-      // Provide more specific error messages
-      let errorMessage = 'An error occurred. Please try again.';
-      
-      if (error.message?.includes('not authenticated') || error.message?.includes('Authentication')) {
-        errorMessage = 'Please sign in to start your free trial.';
-        router.replace('/auth');
-      } else if (error.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      Toast.show({ 
-        type: 'error', 
-        message: errorMessage 
+      console.error('Error starting trial:', error);
+      Toast.show({
+        type: 'error',
+        message: error.message || 'An error occurred',
+        duration: 3000,
       });
     } finally {
       setLoading(false);
@@ -123,333 +86,276 @@ export default function SubscriptionIntroScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        style={commonStyles.container}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Hero Image */}
+        <View style={styles.heroContainer}>
           <Image
-            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-            style={styles.logo}
-            resizeMode="contain"
+            source={{ uri: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80' }}
+            style={styles.heroImage}
+            resizeMode="cover"
           />
-          <Text style={styles.appName}>Nutrion</Text>
-        </View>
-
-        {/* Main Content */}
-        <View style={styles.content}>
-          {/* Premium Badge */}
-          <View style={styles.premiumBadge}>
-            <IconSymbol ios_icon_name="crown.fill" android_material_icon_name="workspace_premium" size={40} color={colors.primary} />
-          </View>
-
-          {/* Title */}
-          <Text style={styles.title}>{t('subscription.title') || 'Unlock Premium Features'}</Text>
-          <Text style={styles.subtitle}>{t('subscription.subtitle') || 'Get full access to all features with our affordable subscription'}</Text>
-
-          {/* Pricing Card */}
-          <View style={styles.pricingCard}>
-            <View style={styles.priceContainer}>
-              <Text style={styles.currency}>$</Text>
-              <Text style={styles.price}>1.99</Text>
-              <Text style={styles.period}>/{t('subscription.month') || 'month'}</Text>
-            </View>
-            
-            <View style={styles.trialBadge}>
-              <IconSymbol ios_icon_name="gift.fill" android_material_icon_name="card_giftcard" size={20} color="#FFFFFF" />
-              <Text style={styles.trialText}>15 Days Free Trial</Text>
-            </View>
-          </View>
-
-          {/* Features List */}
-          <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>{t('subscription.whatYouGet') || 'What You Get'}</Text>
-            
-            <View style={styles.feature}>
-              <View style={styles.featureIcon}>
-                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{t('subscription.feature1Title') || 'Smart Pantry Management'}</Text>
-                <Text style={styles.featureDescription}>{t('subscription.feature1Desc') || 'Track all your food items with expiration alerts and smart categorization'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={styles.featureIcon}>
-                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{t('subscription.feature2Title') || 'AI Recipe Suggestions'}</Text>
-                <Text style={styles.featureDescription}>{t('subscription.feature2Desc') || 'Get personalized meal ideas based on ingredients you already have'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={styles.featureIcon}>
-                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{t('subscription.feature3Title') || 'Shopping List Sync'}</Text>
-                <Text style={styles.featureDescription}>{t('subscription.feature3Desc') || 'Automatically generate shopping lists and sync across devices'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.feature}>
-              <View style={styles.featureIcon}>
-                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{t('subscription.feature4Title') || 'Reduce Food Waste'}</Text>
-                <Text style={styles.featureDescription}>{t('subscription.feature4Desc') || 'Save money and help the environment with smart expiration tracking'}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Trial Info */}
-          <View style={styles.trialInfo}>
-            <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={20} color={colors.primary} />
-            <Text style={styles.trialInfoText}>
-              Try free for 15 days, then just $1.99 USD per month. Cancel anytime.
-            </Text>
+          <View style={styles.heroOverlay}>
+            <IconSymbol name="leaf.fill" size={64} color="#FFFFFF" />
           </View>
         </View>
-      </ScrollView>
 
-      {/* Bottom Action */}
-      <View style={styles.bottomContainer}>
+        {/* Title */}
+        <Text style={styles.title}>{t('subscription.title')}</Text>
+        <Text style={styles.subtitle}>{t('subscription.subtitle')}</Text>
+
+        {/* Pricing Card */}
+        <View style={styles.pricingCard}>
+          <View style={styles.priceContainer}>
+            <Text style={styles.currency}>$</Text>
+            <Text style={styles.price}>1.99</Text>
+            <Text style={styles.period}>/{t('subscription.month')}</Text>
+          </View>
+          <View style={styles.trialBadge}>
+            <IconSymbol name="gift.fill" size={20} color={colors.primary} />
+            <Text style={styles.trialBadgeText}>{t('subscription.freeTrial')}</Text>
+          </View>
+        </View>
+
+        {/* Features */}
+        <View style={styles.featuresContainer}>
+          <Text style={styles.featuresTitle}>{t('subscription.whatYouGet')}</Text>
+          
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#4CAF50' + '20' }]}>
+                <IconSymbol name="archivebox.fill" size={24} color="#4CAF50" />
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{t('subscription.feature1Title')}</Text>
+                <Text style={styles.featureDescription}>{t('subscription.feature1Desc')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#2196F3' + '20' }]}>
+                <IconSymbol name="cart.fill" size={24} color="#2196F3" />
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{t('subscription.feature3Title')}</Text>
+                <Text style={styles.featureDescription}>{t('subscription.feature3Desc')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.featureItem}>
+              <View style={[styles.featureIcon, { backgroundColor: '#FF9800' + '20' }]}>
+                <IconSymbol name="clock.badge.checkmark.fill" size={24} color="#FF9800" />
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{t('subscription.feature4Title')}</Text>
+                <Text style={styles.featureDescription}>{t('subscription.feature4Desc')}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Trial Info */}
+        <View style={styles.infoBox}>
+          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+          <Text style={styles.infoText}>{t('subscription.trialInfo')}</Text>
+        </View>
+
+        {/* CTA Button */}
         <TouchableOpacity
-          style={[styles.continueButton, loading && styles.continueButtonDisabled]}
+          style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
           onPress={handleStartFreeTrial}
           disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <React.Fragment>
-              <Text style={styles.continueButtonText}>
-                {t('subscription.startTrial') || 'Start 15-Day Free Trial'}
-              </Text>
-              <IconSymbol ios_icon_name="arrow.right" android_material_icon_name="arrow_forward" size={20} color="#FFFFFF" />
-            </React.Fragment>
+            <>
+              <Text style={styles.ctaButtonText}>{t('subscription.continue')}</Text>
+              <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+            </>
           )}
         </TouchableOpacity>
-        
-        <Text style={styles.disclaimer}>
-          {t('subscription.disclaimer') || 'No payment required during trial period'}
-        </Text>
-      </View>
+
+        {/* Disclaimer */}
+        <Text style={styles.disclaimer}>{t('subscription.disclaimer')}</Text>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.huge,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: spacing.md,
-  },
-  appName: {
-    ...typography.displayMedium,
-    color: colors.primary,
-    fontSize: 28,
-  },
   content: {
-    flex: 1,
+    paddingBottom: 40,
   },
-  premiumBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
+  heroContainer: {
+    width: '100%',
+    height: 240,
+    position: 'relative',
     marginBottom: spacing.xl,
   },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    bottom: -32,
+    alignSelf: 'center',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+    elevation: 8,
+  },
   title: {
-    ...typography.displayMedium,
-    fontSize: 32,
+    ...typography.displayLarge,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 40,
+    marginTop: 48,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xl,
   },
   subtitle: {
-    ...typography.bodyLarge,
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl,
-    lineHeight: 24,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   pricingCard: {
     backgroundColor: colors.card,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
+    padding: spacing.xl,
     borderRadius: borderRadius.xl,
-    padding: spacing.xxxl,
-    marginBottom: spacing.xxxl,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.2,
-        shadowRadius: 32,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: `0px 12px 32px ${colors.primary}20`,
-      },
-    }),
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   currency: {
-    ...typography.h2,
-    color: colors.primary,
     fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
     marginTop: 8,
   },
   price: {
-    ...typography.displayLarge,
-    fontSize: 72,
-    fontWeight: '900',
-    color: colors.primary,
+    fontSize: 64,
+    fontWeight: '800',
+    color: colors.text,
     lineHeight: 72,
   },
   period: {
-    ...typography.h3,
-    color: colors.textSecondary,
     fontSize: 20,
-    marginTop: 40,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginTop: 24,
   },
   trialBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  trialText: {
-    ...typography.label,
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 16,
+  trialBadgeText: {
+    ...typography.labelMedium,
+    color: colors.primary,
+    fontWeight: '700',
   },
   featuresContainer: {
-    marginBottom: spacing.xxxl,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
   },
   featuresTitle: {
     ...typography.h2,
     color: colors.text,
-    marginBottom: spacing.xl,
-    fontSize: 22,
+    marginBottom: spacing.lg,
   },
-  feature: {
+  featuresList: {
+    gap: spacing.lg,
+  },
+  featureItem: {
     flexDirection: 'row',
-    marginBottom: spacing.xl,
-    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   featureIcon: {
-    marginRight: spacing.lg,
-    marginTop: 2,
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   featureContent: {
     flex: 1,
+    justifyContent: 'center',
   },
   featureTitle: {
     ...typography.h3,
     color: colors.text,
-    marginBottom: spacing.xs,
-    fontSize: 17,
+    marginBottom: 4,
   },
   featureDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  trialInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary + '10',
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    gap: spacing.md,
-  },
-  trialInfoText: {
     ...typography.bodySmall,
-    color: colors.text,
-    flex: 1,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
-  bottomContainer: {
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.xl,
-    paddingTop: spacing.lg,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  continueButton: {
-    backgroundColor: colors.primary,
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary + '10',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
+    padding: spacing.lg,
     borderRadius: borderRadius.lg,
-    height: 56,
+    gap: spacing.md,
+  },
+  infoText: {
+    flex: 1,
+    ...typography.bodySmall,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.primary,
+    marginHorizontal: spacing.xl,
     marginBottom: spacing.md,
-    gap: spacing.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        boxShadow: `0px 8px 24px ${colors.primary}40`,
-      },
-    }),
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
+    boxShadow: '0px 8px 24px rgba(76, 175, 80, 0.3)',
+    elevation: 8,
   },
-  continueButtonDisabled: {
+  ctaButtonDisabled: {
     opacity: 0.6,
   },
-  continueButtonText: {
-    ...typography.h3,
+  ctaButtonText: {
+    ...typography.button,
     color: '#FFFFFF',
-    fontSize: 18,
   },
   disclaimer: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
+    ...typography.caption,
+    color: colors.textTertiary,
     textAlign: 'center',
-    lineHeight: 18,
+    paddingHorizontal: spacing.xl,
   },
 });

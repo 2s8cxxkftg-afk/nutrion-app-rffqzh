@@ -4,19 +4,13 @@ import { Slot } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
-  // Define the tabs configuration for Nutrion
+  // Define the tabs configuration for Nutrion (removed planner tab)
   const tabs: TabBarItem[] = [
     {
       name: 'pantry',
       route: '/(tabs)/pantry',
       icon: 'archivebox.fill',
       label: 'Pantry',
-    },
-    {
-      name: 'planner',
-      route: '/(tabs)/planner',
-      icon: 'calendar',
-      label: 'Planner',
     },
     {
       name: 'shopping',
