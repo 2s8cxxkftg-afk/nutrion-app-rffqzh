@@ -69,7 +69,7 @@ export default function EditProfileScreen() {
         setAvatarUrl(profileData.avatar_url || '');
       }
 
-      console.log('Profile loaded:', profileData);
+      console.log('Profile loaded successfully:', profileData);
     } catch (error: any) {
       console.error('Error loading profile:', error);
       Toast.show({
@@ -84,43 +84,106 @@ export default function EditProfileScreen() {
 
   const pickImage = async () => {
     try {
+      console.log('Starting image picker...');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
+      // Check current permission status
+      const { status: currentStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.log('Current permission status:', currentStatus);
+
+      let finalStatus = currentStatus;
+
+      // Request permission if not granted
+      if (currentStatus !== 'granted') {
+        console.log('Requesting media library permission...');
+        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        finalStatus = newStatus;
+        console.log('Permission request result:', newStatus);
+      }
+
+      // Check if permission was granted
+      if (finalStatus !== 'granted') {
+        console.log('Permission denied by user');
         Alert.alert(
           t('profile.permissionRequired') || 'Permission Required',
-          t('profile.photoPermissionMessage') || 'We need permission to access your photos to update your profile picture.',
-          [{ text: 'OK' }]
+          t('profile.photoPermissionMessage') || 'We need permission to access your photos to update your profile picture. Please enable photo access in your device settings.',
+          [
+            { text: t('cancel') || 'Cancel', style: 'cancel' },
+            {
+              text: t('notifications.openSettings') || 'Open Settings',
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  // On iOS, we can't directly open settings, but we can show a message
+                  Alert.alert(
+                    t('profile.permissionRequired'),
+                    'Please go to Settings > Nutrion > Photos and enable photo access.'
+                  );
+                }
+              }
+            }
+          ]
         );
         return;
       }
 
-      // Launch image picker
+      console.log('Permission granted, launching image picker...');
+
+      // Launch image picker with proper configuration
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // Use the new array format instead of MediaTypeOptions
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        await uploadImage(result.assets[0].uri);
+      console.log('Image picker result:', result);
+
+      // Check if user cancelled the picker
+      if (result.canceled) {
+        console.log('User cancelled image picker');
+        return;
       }
+
+      // Check if we have a valid asset
+      if (!result.assets || result.assets.length === 0) {
+        console.error('No assets returned from image picker');
+        Toast.show({
+          type: 'error',
+          message: t('profile.imagePickError') || 'Failed to pick image',
+          duration: 2000,
+        });
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+      console.log('Selected image URI:', selectedAsset.uri);
+
+      // Validate the URI
+      if (!selectedAsset.uri) {
+        console.error('Invalid image URI');
+        Toast.show({
+          type: 'error',
+          message: t('profile.imagePickError') || 'Failed to pick image',
+          duration: 2000,
+        });
+        return;
+      }
+
+      // Upload the selected image
+      await uploadImage(selectedAsset.uri);
     } catch (error: any) {
-      console.error('Error picking image:', error);
+      console.error('Error in pickImage:', error);
       Toast.show({
         type: 'error',
-        message: t('profile.imagePickError') || 'Failed to pick image',
-        duration: 2000,
+        message: error.message || t('profile.imagePickError') || 'Failed to pick image',
+        duration: 3000,
       });
     }
   };
 
   const uploadImage = async (uri: string) => {
     try {
+      console.log('Starting image upload for URI:', uri);
       setUploading(true);
 
       if (!user) {
@@ -128,27 +191,40 @@ export default function EditProfileScreen() {
       }
 
       // Convert image to blob
+      console.log('Fetching image data...');
       const response = await fetch(uri);
-      const blob = await response.blob();
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      }
 
-      // Create file name
+      const blob = await response.blob();
+      console.log('Image blob created, size:', blob.size, 'type:', blob.type);
+
+      // Validate blob
+      if (blob.size === 0) {
+        throw new Error('Image file is empty');
+      }
+
+      // Create file name with proper extension
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      console.log('Uploading image to:', filePath);
+      console.log('Uploading to Supabase Storage:', filePath);
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, blob, {
-          contentType: `image/${fileExt}`,
+          contentType: blob.type || `image/${fileExt}`,
           upsert: true,
+          cacheControl: '3600',
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
+        console.error('Supabase upload error:', uploadError);
+        throw new Error(uploadError.message || 'Failed to upload image to storage');
       }
 
       console.log('Image uploaded successfully:', uploadData);
@@ -159,9 +235,28 @@ export default function EditProfileScreen() {
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
-      console.log('Public URL:', publicUrl);
+      console.log('Public URL generated:', publicUrl);
 
+      // Update local state immediately for instant UI feedback
       setAvatarUrl(publicUrl);
+
+      // Update profile in database
+      console.log('Updating profile with new avatar URL...');
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating profile with avatar URL:', updateError);
+        // Don't throw here - the image is uploaded, just log the error
+        console.log('Image uploaded but profile update failed, will retry on save');
+      } else {
+        console.log('Profile updated with new avatar URL');
+      }
 
       Toast.show({
         type: 'success',
@@ -172,11 +267,27 @@ export default function EditProfileScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       console.error('Error uploading image:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = t('profile.imageUploadError') || 'Failed to upload image';
+      
+      if (error.message) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Failed to read image file. Please try again.';
+        } else if (error.message.includes('storage')) {
+          errorMessage = 'Failed to upload to storage. Please check your connection.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       Toast.show({
         type: 'error',
-        message: error.message || t('profile.imageUploadError') || 'Failed to upload image',
+        message: errorMessage,
         duration: 3000,
       });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setUploading(false);
     }
@@ -200,6 +311,8 @@ export default function EditProfileScreen() {
         throw new Error('No user found');
       }
 
+      console.log('Saving profile changes...');
+
       // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
@@ -211,6 +324,7 @@ export default function EditProfileScreen() {
 
       if (existingProfile) {
         // Update existing profile
+        console.log('Updating existing profile...');
         result = await supabase
           .from('profiles')
           .update({
@@ -223,6 +337,7 @@ export default function EditProfileScreen() {
           .eq('user_id', user.id);
       } else {
         // Insert new profile
+        console.log('Creating new profile...');
         result = await supabase
           .from('profiles')
           .insert({
@@ -260,6 +375,7 @@ export default function EditProfileScreen() {
         message: error.message || t('profile.saveError') || 'Failed to save profile',
         duration: 3000,
       });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
     }
@@ -306,7 +422,12 @@ export default function EditProfileScreen() {
               onPress={() => router.back()}
               activeOpacity={0.7}
             >
-              <IconSymbol name="chevron.left" size={28} color={colors.text} />
+              <IconSymbol 
+                ios_icon_name="chevron.left" 
+                android_material_icon_name="arrow_back"
+                size={28} 
+                color={colors.text} 
+              />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('profile.editProfile') || 'Edit Profile'}</Text>
             <View style={styles.backButton} />
@@ -316,30 +437,50 @@ export default function EditProfileScreen() {
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
               {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <Image 
+                  source={{ uri: avatarUrl }} 
+                  style={styles.avatar}
+                  onError={(error) => {
+                    console.error('Error loading avatar image:', error);
+                    setAvatarUrl(''); // Reset to placeholder on error
+                  }}
+                />
               ) : (
                 <View style={styles.avatarPlaceholder}>
-                  <IconSymbol name="person.fill" size={64} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="person.fill" 
+                    android_material_icon_name="person"
+                    size={64} 
+                    color={colors.primary} 
+                  />
                 </View>
               )}
               {uploading && (
                 <View style={styles.uploadingOverlay}>
                   <ActivityIndicator size="large" color="#FFFFFF" />
+                  <Text style={styles.uploadingText}>Uploading...</Text>
                 </View>
               )}
             </View>
 
             <TouchableOpacity
-              style={styles.changePhotoButton}
+              style={[styles.changePhotoButton, uploading && styles.changePhotoButtonDisabled]}
               onPress={pickImage}
               activeOpacity={0.7}
               disabled={uploading}
             >
-              <IconSymbol name="camera.fill" size={20} color={colors.primary} />
-              <Text style={styles.changePhotoText}>
-                {avatarUrl 
-                  ? (t('profile.changePhoto') || 'Change Photo')
-                  : (t('profile.addPhoto') || 'Add Photo')
+              <IconSymbol 
+                ios_icon_name="camera.fill" 
+                android_material_icon_name="photo_camera"
+                size={20} 
+                color={uploading ? colors.textSecondary : colors.primary} 
+              />
+              <Text style={[styles.changePhotoText, uploading && styles.changePhotoTextDisabled]}>
+                {uploading 
+                  ? 'Uploading...'
+                  : avatarUrl 
+                    ? (t('profile.changePhoto') || 'Change Photo')
+                    : (t('profile.addPhoto') || 'Add Photo')
                 }
               </Text>
             </TouchableOpacity>
@@ -357,6 +498,7 @@ export default function EditProfileScreen() {
                 onChangeText={setFirstName}
                 autoCapitalize="words"
                 returnKeyType="next"
+                editable={!saving}
               />
             </View>
 
@@ -371,11 +513,17 @@ export default function EditProfileScreen() {
                 autoCapitalize="words"
                 returnKeyType="done"
                 onSubmitEditing={handleSave}
+                editable={!saving}
               />
             </View>
 
             <View style={styles.infoBox}>
-              <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="info.circle.fill" 
+                android_material_icon_name="info"
+                size={20} 
+                color={colors.primary} 
+              />
               <Text style={styles.infoText}>
                 {t('profile.editProfileInfo') || 'Your name will be displayed on your profile and visible to you.'}
               </Text>
@@ -396,7 +544,12 @@ export default function EditProfileScreen() {
               </>
             ) : (
               <>
-                <IconSymbol name="checkmark.circle.fill" size={24} color="#FFFFFF" />
+                <IconSymbol 
+                  ios_icon_name="checkmark.circle.fill" 
+                  android_material_icon_name="check_circle"
+                  size={24} 
+                  color="#FFFFFF" 
+                />
                 <Text style={styles.saveButtonText}>{t('profile.saveChanges') || 'Save Changes'}</Text>
               </>
             )}
@@ -452,14 +605,14 @@ const styles = StyleSheet.create({
   avatar: {
     width: 140,
     height: 140,
-    borderRadius: borderRadius.full,
+    borderRadius: 70,
     borderWidth: 4,
     borderColor: colors.primary + '30',
   },
   avatarPlaceholder: {
     width: 140,
     height: 140,
-    borderRadius: borderRadius.full,
+    borderRadius: 70,
     backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
@@ -472,10 +625,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 70,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  uploadingText: {
+    ...typography.bodySmall,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   changePhotoButton: {
     flexDirection: 'row',
@@ -486,9 +645,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary + '15',
     borderRadius: borderRadius.lg,
   },
+  changePhotoButtonDisabled: {
+    opacity: 0.5,
+  },
   changePhotoText: {
     ...typography.h4,
     color: colors.primary,
+  },
+  changePhotoTextDisabled: {
+    color: colors.textSecondary,
   },
   formSection: {
     gap: spacing.xl,
