@@ -41,15 +41,41 @@ export default function ProfileScreen() {
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  
+  // Add loading states to prevent UI flickering
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log('Profile screen focused');
-      loadStats();
-      loadUserInfo();
-      loadSubscriptionInfo();
+      console.log('Profile screen focused - loading all data');
+      loadAllData();
     }, [])
   );
+
+  // Load all data in sequence to prevent race conditions
+  const loadAllData = async () => {
+    try {
+      // Set all loading states to true
+      setIsLoadingAuth(true);
+      setIsLoadingSubscription(true);
+      setIsLoadingStats(true);
+
+      // Load user info first (most critical)
+      await loadUserInfo();
+      
+      // Then load subscription info
+      await loadSubscriptionInfo();
+      
+      // Finally load stats
+      await loadStats();
+      
+      console.log('✅ All profile data loaded successfully');
+    } catch (error) {
+      console.error('❌ Error loading profile data:', error);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -69,22 +95,26 @@ export default function ProfileScreen() {
       setExpired(expiredCount);
     } catch (error) {
       console.error('Error loading stats:', error);
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
   const loadUserInfo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      console.log('User loaded:', user?.email);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      // Update user state
+      setUser(currentUser);
+      console.log('User loaded:', currentUser?.email || 'No user');
 
       // Load profile data if user exists
-      if (user) {
+      if (currentUser) {
         try {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', currentUser.id)
             .maybeSingle();
 
           if (profileError) {
@@ -94,31 +124,53 @@ export default function ProfileScreen() {
             } else {
               console.log('Profile not found or not acceptable, will create on edit');
             }
+            setProfile(null);
           } else if (profileData) {
             setProfile(profileData);
             console.log('Profile loaded:', profileData);
           } else {
             console.log('No profile found for user');
+            setProfile(null);
           }
         } catch (error: any) {
           // Silently handle 406 errors
           if (!error.message?.includes('406')) {
             console.error('Error fetching profile:', error);
           }
+          setProfile(null);
         }
+      } else {
+        // No user logged in - clear profile
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error loading user:', error);
+      setUser(null);
+      setProfile(null);
+    } finally {
+      setIsLoadingAuth(false);
     }
   };
 
   const loadSubscriptionInfo = async () => {
     try {
-      const sub = await getSubscription();
-      setSubscription(sub);
-      console.log('Subscription loaded:', sub?.status, 'Plan:', sub?.plan_type);
+      // Only load subscription if user is logged in
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        const sub = await getSubscription();
+        setSubscription(sub);
+        console.log('Subscription loaded:', sub?.status, 'Plan:', sub?.plan_type);
+      } else {
+        // No user - clear subscription
+        setSubscription(null);
+        console.log('No user logged in - clearing subscription');
+      }
     } catch (error) {
       console.error('Error loading subscription:', error);
+      setSubscription(null);
+    } finally {
+      setIsLoadingSubscription(false);
     }
   };
 
@@ -351,6 +403,25 @@ export default function ProfileScreen() {
 
   const isPremiumUser = subscription?.plan_type === 'premium' && (subscription?.status === 'active' || subscription?.status === 'trial');
 
+  // Show loading indicator while data is being loaded
+  const isLoading = isLoadingAuth || isLoadingSubscription;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>{t('profile.loading') || 'Loading profile...'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
@@ -384,7 +455,12 @@ export default function ProfileScreen() {
               />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <IconSymbol name="person.fill" size={48} color={colors.primary} />
+                <IconSymbol 
+                  ios_icon_name="person.fill" 
+                  android_material_icon_name="person" 
+                  size={48} 
+                  color={colors.primary} 
+                />
               </View>
             )}
           </View>
@@ -397,11 +473,12 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user.email}</Text>
           )}
 
-          {/* Subscription Badge */}
+          {/* Subscription Badge - Only show if user is logged in */}
           {user && (
             <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionBadgeColor() + '20' }]}>
               <IconSymbol 
-                name={isPremiumUser ? 'crown.fill' : 'person.fill'} 
+                ios_icon_name={isPremiumUser ? 'crown.fill' : 'person.fill'}
+                android_material_icon_name={isPremiumUser ? 'workspace_premium' : 'person'}
                 size={16} 
                 color={getSubscriptionBadgeColor()} 
               />
@@ -411,31 +488,42 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Edit Profile Button */}
+          {/* Edit Profile Button - Only show if user is logged in */}
           {user && (
             <TouchableOpacity
               style={styles.editProfileButton}
               onPress={handleEditProfile}
               activeOpacity={0.8}
             >
-              <IconSymbol name="pencil" size={18} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="pencil" 
+                android_material_icon_name="edit" 
+                size={18} 
+                color={colors.primary} 
+              />
               <Text style={styles.editProfileButtonText}>{t('profile.editProfile') || 'Edit Profile'}</Text>
             </TouchableOpacity>
           )}
 
+          {/* Sign In Button - Only show if user is NOT logged in */}
           {!user && (
             <TouchableOpacity
               style={styles.signInButton}
               onPress={handleSignIn}
               activeOpacity={0.8}
             >
-              <IconSymbol name="person.badge.key.fill" size={20} color="#FFFFFF" />
+              <IconSymbol 
+                ios_icon_name="person.badge.key.fill" 
+                android_material_icon_name="login" 
+                size={20} 
+                color="#FFFFFF" 
+              />
               <Text style={styles.signInButtonText}>{t('auth.signIn')}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Premium Subscription Card - Prominent placement for non-premium users */}
+        {/* Premium Subscription Card - Only show for logged in non-premium users */}
         {user && !isPremiumUser && (
           <TouchableOpacity
             style={styles.premiumCard}
@@ -445,12 +533,27 @@ export default function ProfileScreen() {
             <View style={styles.premiumGradient}>
               <View style={styles.premiumCardContent}>
                 <View style={styles.premiumIconContainer}>
-                  <IconSymbol name="crown.fill" size={48} color="#FFD700" />
+                  <IconSymbol 
+                    ios_icon_name="crown.fill" 
+                    android_material_icon_name="workspace_premium" 
+                    size={48} 
+                    color="#FFD700" 
+                  />
                   <View style={styles.sparkle1}>
-                    <IconSymbol name="sparkles" size={16} color="#FFD700" />
+                    <IconSymbol 
+                      ios_icon_name="sparkles" 
+                      android_material_icon_name="auto_awesome" 
+                      size={16} 
+                      color="#FFD700" 
+                    />
                   </View>
                   <View style={styles.sparkle2}>
-                    <IconSymbol name="sparkles" size={12} color="#FFD700" />
+                    <IconSymbol 
+                      ios_icon_name="sparkles" 
+                      android_material_icon_name="auto_awesome" 
+                      size={12} 
+                      color="#FFD700" 
+                    />
                   </View>
                 </View>
                 <View style={styles.premiumTextContainer}>
@@ -464,13 +567,23 @@ export default function ProfileScreen() {
                       <Text style={styles.premiumPriceLabel}>/{t('subscription.month')}</Text>
                     </View>
                     <View style={styles.trialBadge}>
-                      <IconSymbol name="gift.fill" size={14} color="#FFFFFF" />
+                      <IconSymbol 
+                        ios_icon_name="gift.fill" 
+                        android_material_icon_name="card_giftcard" 
+                        size={14} 
+                        color="#FFFFFF" 
+                      />
                       <Text style={styles.trialBadgeText}>15 Days Free</Text>
                     </View>
                   </View>
                 </View>
                 <View style={styles.premiumArrow}>
-                  <IconSymbol name="chevron.right" size={28} color="#FFFFFF" />
+                  <IconSymbol 
+                    ios_icon_name="chevron.right" 
+                    android_material_icon_name="chevron_right" 
+                    size={28} 
+                    color="#FFFFFF" 
+                  />
                 </View>
               </View>
             </View>
@@ -482,24 +595,39 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>{t('profile.statistics')}</Text>
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: colors.primary + '15' }]}>
-              <IconSymbol name="archivebox.fill" size={32} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="archivebox.fill" 
+                android_material_icon_name="inventory_2" 
+                size={32} 
+                color={colors.primary} 
+              />
               <Text style={[styles.statValue, { color: colors.primary }]}>{totalItems}</Text>
               <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: expirationColors.nearExpiry + '15' }]}>
-              <IconSymbol name="clock.fill" size={32} color={expirationColors.nearExpiry} />
+              <IconSymbol 
+                ios_icon_name="clock.fill" 
+                android_material_icon_name="schedule" 
+                size={32} 
+                color={expirationColors.nearExpiry} 
+              />
               <Text style={[styles.statValue, { color: expirationColors.nearExpiry }]}>{expiringSoon}</Text>
               <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: expirationColors.expired + '15' }]}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={32} color={expirationColors.expired} />
+              <IconSymbol 
+                ios_icon_name="exclamationmark.triangle.fill" 
+                android_material_icon_name="warning" 
+                size={32} 
+                color={expirationColors.expired} 
+              />
               <Text style={[styles.statValue, { color: expirationColors.expired }]}>{expired}</Text>
               <Text style={styles.statLabel}>{t('profile.expired')}</Text>
             </View>
           </View>
         </View>
 
-        {/* Subscription Section */}
+        {/* Subscription Section - Only show if user is logged in */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.subscription')}</Text>
@@ -511,7 +639,12 @@ export default function ProfileScreen() {
               >
                 <View style={styles.settingInfo}>
                   <View style={styles.settingIcon}>
-                    <IconSymbol name="crown.fill" size={24} color={colors.primary} />
+                    <IconSymbol 
+                      ios_icon_name="crown.fill" 
+                      android_material_icon_name="workspace_premium" 
+                      size={24} 
+                      color={colors.primary} 
+                    />
                   </View>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>{t('subscription.manageSub')}</Text>
@@ -520,7 +653,12 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                 </View>
-                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                <IconSymbol 
+                  ios_icon_name="chevron.right" 
+                  android_material_icon_name="chevron_right" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -537,7 +675,12 @@ export default function ProfileScreen() {
             >
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
-                  <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="bell.fill" 
+                    android_material_icon_name="notifications" 
+                    size={24} 
+                    color={colors.primary} 
+                  />
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
@@ -546,7 +689,12 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="chevron.right" 
+                android_material_icon_name="chevron_right" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -556,7 +704,12 @@ export default function ProfileScreen() {
             >
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
-                  <IconSymbol name="globe" size={24} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="globe" 
+                    android_material_icon_name="language" 
+                    size={24} 
+                    color={colors.primary} 
+                  />
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.language')}</Text>
@@ -565,7 +718,12 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="chevron.right" 
+                android_material_icon_name="chevron_right" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -575,7 +733,12 @@ export default function ProfileScreen() {
             >
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
-                  <IconSymbol name="book.fill" size={24} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="book.fill" 
+                    android_material_icon_name="menu_book" 
+                    size={24} 
+                    color={colors.primary} 
+                  />
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
@@ -584,7 +747,12 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="chevron.right" 
+                android_material_icon_name="chevron_right" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -594,7 +762,12 @@ export default function ProfileScreen() {
             >
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
-                  <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="info.circle.fill" 
+                    android_material_icon_name="info" 
+                    size={24} 
+                    color={colors.primary} 
+                  />
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.about')}</Text>
@@ -603,12 +776,17 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="chevron.right" 
+                android_material_icon_name="chevron_right" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Account Management Section */}
+        {/* Account Management Section - Only show if user is logged in */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.accountManagement')}</Text>
@@ -620,7 +798,12 @@ export default function ProfileScreen() {
               >
                 <View style={styles.settingInfo}>
                   <View style={[styles.settingIcon, { backgroundColor: colors.error + '15' }]}>
-                    <IconSymbol name="trash.fill" size={24} color={colors.error} />
+                    <IconSymbol 
+                      ios_icon_name="trash.fill" 
+                      android_material_icon_name="delete" 
+                      size={24} 
+                      color={colors.error} 
+                    />
                   </View>
                   <View style={styles.settingTextContainer}>
                     <Text style={[styles.settingTitle, { color: colors.error }]}>
@@ -631,13 +814,18 @@ export default function ProfileScreen() {
                     </Text>
                   </View>
                 </View>
-                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                <IconSymbol 
+                  ios_icon_name="chevron.right" 
+                  android_material_icon_name="chevron_right" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Sign Out */}
+        {/* Sign Out - Only show if user is logged in */}
         {user && (
           <TouchableOpacity
             style={[styles.signOutButton, isSigningOut && styles.signOutButtonDisabled]}
@@ -652,7 +840,12 @@ export default function ProfileScreen() {
               </>
             ) : (
               <>
-                <IconSymbol name="arrow.right.square.fill" size={24} color={colors.error} />
+                <IconSymbol 
+                  ios_icon_name="arrow.right.square.fill" 
+                  android_material_icon_name="logout" 
+                  size={24} 
+                  color={colors.error} 
+                />
                 <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
               </>
             )}
@@ -667,7 +860,12 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={48} color={colors.error} />
+              <IconSymbol 
+                ios_icon_name="exclamationmark.triangle.fill" 
+                android_material_icon_name="warning" 
+                size={48} 
+                color={colors.error} 
+              />
               <Text style={styles.modalTitle}>{t('profile.deleteAccount')}</Text>
               <Text style={styles.modalDescription}>
                 {t('profile.deleteAccountConfirm')}
@@ -719,6 +917,17 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.lg,
+  },
   content: {
     paddingHorizontal: spacing.xl,
   },
