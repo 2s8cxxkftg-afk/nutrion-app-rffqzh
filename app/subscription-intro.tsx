@@ -127,7 +127,7 @@ export default function SubscriptionIntroScreen() {
               size={20} 
               color={colors.primary} 
             />
-            <Text style={styles.trialBadgeText}>7 Days Free Trial</Text>
+            <Text style={styles.trialBadgeText}>{t('subscription.freeTrial')}</Text>
           </View>
         </View>
 
@@ -140,7 +140,7 @@ export default function SubscriptionIntroScreen() {
               <View style={[styles.featureIcon, { backgroundColor: '#4CAF50' + '20' }]}>
                 <IconSymbol 
                   ios_icon_name="archivebox.fill" 
-                  android_material_icon_name="inventory_2"
+                  android_material_icon_name="inventory"
                   size={24} 
                   color="#4CAF50" 
                 />
@@ -169,7 +169,7 @@ export default function SubscriptionIntroScreen() {
             <View style={styles.featureItem}>
               <View style={[styles.featureIcon, { backgroundColor: '#FF9800' + '20' }]}>
                 <IconSymbol 
-                  ios_icon_name="clock.badge.checkmark.fill" 
+                  ios_icon_name="clock.fill" 
                   android_material_icon_name="schedule"
                   size={24} 
                   color="#FF9800" 
@@ -191,7 +191,7 @@ export default function SubscriptionIntroScreen() {
             size={20} 
             color={colors.primary} 
           />
-          <Text style={styles.infoText}>Start your 7-day free trial today. Cancel anytime before the trial ends to avoid charges.</Text>
+          <Text style={styles.infoText}>{t('subscription.trialInfo')}</Text>
         </View>
 
         {/* CTA Button */}

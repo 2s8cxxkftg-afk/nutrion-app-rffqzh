@@ -244,7 +244,12 @@ export default function SubscriptionManagementScreen() {
 
           {subscription?.status === 'trial' && (
             <View style={styles.trialInfo}>
-              <IconSymbol name="clock.fill" size={20} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="clock.fill" 
+                android_material_icon_name="schedule"
+                size={20} 
+                color={colors.primary} 
+              />
               <Text style={styles.trialText}>
                 {t('subscription.trialEndsIn', { days: getTrialDaysRemaining(subscription) })}
               </Text>
@@ -253,7 +258,12 @@ export default function SubscriptionManagementScreen() {
 
           {subscription?.status === 'active' && subscription.current_period_end && (
             <View style={styles.renewalInfo}>
-              <IconSymbol name="arrow.clockwise" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="arrow.clockwise" 
+                android_material_icon_name="refresh"
+                size={20} 
+                color={colors.textSecondary} 
+              />
               <Text style={styles.renewalText}>
                 {t('subscription.renewsOn', { 
                   date: new Date(subscription.current_period_end).toLocaleDateString() 
@@ -264,7 +274,12 @@ export default function SubscriptionManagementScreen() {
 
           {subscription?.status === 'cancelled' && subscription.current_period_end && (
             <View style={styles.cancelledInfo}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.error} />
+              <IconSymbol 
+                ios_icon_name="exclamationmark.triangle.fill" 
+                android_material_icon_name="warning"
+                size={20} 
+                color={colors.error} 
+              />
               <Text style={styles.cancelledText}>
                 Access until {new Date(subscription.current_period_end).toLocaleDateString()}
               </Text>
@@ -278,17 +293,32 @@ export default function SubscriptionManagementScreen() {
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill" 
+                android_material_icon_name="check_circle"
+                size={24} 
+                color={colors.success} 
+              />
               <Text style={styles.featureText}>{t('subscription.feature1Title')}</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill" 
+                android_material_icon_name="check_circle"
+                size={24} 
+                color={colors.success} 
+              />
               <Text style={styles.featureText}>{t('subscription.feature3Title')}</Text>
             </View>
 
             <View style={styles.featureItem}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill" 
+                android_material_icon_name="check_circle"
+                size={24} 
+                color={colors.success} 
+              />
               <Text style={styles.featureText}>{t('subscription.feature4Title')}</Text>
             </View>
           </View>
@@ -308,7 +338,12 @@ export default function SubscriptionManagementScreen() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <>
-                    <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
+                    <IconSymbol 
+                      ios_icon_name="gift.fill" 
+                      android_material_icon_name="card_giftcard"
+                      size={20} 
+                      color="#FFFFFF" 
+                    />
                     <Text style={styles.primaryButtonText}>{t('subscription.startTrial')}</Text>
                   </>
                 )}
@@ -334,7 +369,12 @@ export default function SubscriptionManagementScreen() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
-                  <IconSymbol name="star.fill" size={20} color="#FFFFFF" />
+                  <IconSymbol 
+                    ios_icon_name="star.fill" 
+                    android_material_icon_name="star"
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
                   <Text style={styles.primaryButtonText}>{t('subscription.subscribe')}</Text>
                 </>
               )}
