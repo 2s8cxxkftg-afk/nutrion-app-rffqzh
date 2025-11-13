@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { supabase } from '@/utils/supabase';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -98,11 +99,33 @@ export default function OnboardingScreen() {
     try {
       console.log('Onboarding completed, saving to AsyncStorage');
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      console.log('Navigating to auth screen');
-      router.replace('/auth');
+      
+      // Check if user is already logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is already logged in, redirect to the app
+        console.log('User is already logged in, navigating to pantry');
+        router.replace('/(tabs)/pantry');
+      } else {
+        // User is not logged in, redirect to auth
+        console.log('User is not logged in, navigating to auth screen');
+        router.replace('/auth');
+      }
     } catch (error) {
       console.error('Error saving onboarding status:', error);
-      router.replace('/auth');
+      // On error, check auth status and redirect accordingly
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.replace('/(tabs)/pantry');
+        } else {
+          router.replace('/auth');
+        }
+      } catch (authError) {
+        console.error('Error checking auth status:', authError);
+        router.replace('/auth');
+      }
     }
   };
 
