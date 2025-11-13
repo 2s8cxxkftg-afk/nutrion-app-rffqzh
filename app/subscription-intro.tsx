@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { startFreeTrial, getSubscription } from '@/utils/subscription';
 import Toast from '@/components/Toast';
+import { supabase } from '@/utils/supabase';
 
 const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_completed';
 
@@ -29,13 +30,40 @@ export default function SubscriptionIntroScreen() {
   const handleStartFreeTrial = async () => {
     try {
       setLoading(true);
-      console.log('Starting 15-day free trial...');
+      console.log('🎁 Starting 15-day free trial...');
+      
+      // First, ensure we have a valid session
+      console.log('🔍 Checking authentication session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        Toast.show({ 
+          type: 'error', 
+          message: 'Authentication error. Please sign in again.' 
+        });
+        router.replace('/auth');
+        return;
+      }
+      
+      if (!session) {
+        console.error('❌ No active session');
+        Toast.show({ 
+          type: 'error', 
+          message: 'Please sign in to start your free trial.' 
+        });
+        router.replace('/auth');
+        return;
+      }
+      
+      console.log('✅ Session valid for user:', session.user.email);
       
       // Check if user already has a subscription
+      console.log('🔍 Checking for existing subscription...');
       const existingSub = await getSubscription();
       
       if (existingSub && (existingSub.status === 'trial' || existingSub.status === 'active')) {
-        console.log('User already has an active subscription');
+        console.log('ℹ️ User already has an active subscription');
         Toast.show({ 
           type: 'info', 
           message: 'You already have an active subscription!' 
@@ -50,12 +78,13 @@ export default function SubscriptionIntroScreen() {
       }
       
       // Start the free trial in the database
+      console.log('🚀 Starting free trial...');
       const success = await startFreeTrial();
       
       if (success) {
         // Mark subscription intro as completed
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
-        console.log('Free trial started successfully, navigating to app');
+        console.log('✅ Free trial started successfully, navigating to app');
         
         Toast.show({ 
           type: 'success', 
@@ -65,20 +94,21 @@ export default function SubscriptionIntroScreen() {
         // Navigate to the main app
         router.replace('/(tabs)/pantry');
       } else {
-        console.error('Failed to start free trial');
+        console.error('❌ Failed to start free trial');
         Toast.show({ 
           type: 'error', 
           message: 'Failed to start free trial. Please try again or contact support.' 
         });
       }
     } catch (error: any) {
-      console.error('Error starting free trial:', error);
+      console.error('❌ Error starting free trial:', error);
       
       // Provide more specific error messages
       let errorMessage = 'An error occurred. Please try again.';
       
-      if (error.message?.includes('not authenticated')) {
+      if (error.message?.includes('not authenticated') || error.message?.includes('Authentication')) {
         errorMessage = 'Please sign in to start your free trial.';
+        router.replace('/auth');
       } else if (error.message?.includes('network')) {
         errorMessage = 'Network error. Please check your connection.';
       }
@@ -112,7 +142,7 @@ export default function SubscriptionIntroScreen() {
         <View style={styles.content}>
           {/* Premium Badge */}
           <View style={styles.premiumBadge}>
-            <IconSymbol name="crown.fill" size={40} color={colors.primary} />
+            <IconSymbol ios_icon_name="crown.fill" android_material_icon_name="workspace_premium" size={40} color={colors.primary} />
           </View>
 
           {/* Title */}
@@ -128,7 +158,7 @@ export default function SubscriptionIntroScreen() {
             </View>
             
             <View style={styles.trialBadge}>
-              <IconSymbol name="gift.fill" size={20} color="#FFFFFF" />
+              <IconSymbol ios_icon_name="gift.fill" android_material_icon_name="card_giftcard" size={20} color="#FFFFFF" />
               <Text style={styles.trialText}>15 Days Free Trial</Text>
             </View>
           </View>
@@ -139,7 +169,7 @@ export default function SubscriptionIntroScreen() {
             
             <View style={styles.feature}>
               <View style={styles.featureIcon}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature1Title') || 'Smart Pantry Management'}</Text>
@@ -149,7 +179,7 @@ export default function SubscriptionIntroScreen() {
 
             <View style={styles.feature}>
               <View style={styles.featureIcon}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature2Title') || 'AI Recipe Suggestions'}</Text>
@@ -159,7 +189,7 @@ export default function SubscriptionIntroScreen() {
 
             <View style={styles.feature}>
               <View style={styles.featureIcon}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature3Title') || 'Shopping List Sync'}</Text>
@@ -169,7 +199,7 @@ export default function SubscriptionIntroScreen() {
 
             <View style={styles.feature}>
               <View style={styles.featureIcon}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+                <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name="check_circle" size={24} color={colors.success} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{t('subscription.feature4Title') || 'Reduce Food Waste'}</Text>
@@ -180,7 +210,7 @@ export default function SubscriptionIntroScreen() {
 
           {/* Trial Info */}
           <View style={styles.trialInfo}>
-            <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+            <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={20} color={colors.primary} />
             <Text style={styles.trialInfoText}>
               Try free for 15 days, then just $1.99 USD per month. Cancel anytime.
             </Text>
@@ -202,7 +232,7 @@ export default function SubscriptionIntroScreen() {
               <Text style={styles.continueButtonText}>
                 {t('subscription.startTrial') || 'Start 15-Day Free Trial'}
               </Text>
-              <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+              <IconSymbol ios_icon_name="arrow.right" android_material_icon_name="arrow_forward" size={20} color="#FFFFFF" />
             </React.Fragment>
           )}
         </TouchableOpacity>

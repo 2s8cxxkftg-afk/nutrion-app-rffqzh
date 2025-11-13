@@ -18,26 +18,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
-    fetch: (url, options = {}) => {
-      // Add timeout to all fetch requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      // Ensure headers are properly set
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        ...options.headers,
-      };
-
-      return fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal,
-      }).finally(() => {
-        clearTimeout(timeoutId);
-      });
-    },
   },
   db: {
     schema: 'public',
@@ -82,93 +62,6 @@ const testConnection = async () => {
 
 testConnection();
 
-// Database table schemas for Nutrion:
-// 
-// Table: pantry_items
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users)
-// - name: text
-// - food_name: text
-// - brand_name: text (nullable)
-// - calories: numeric (nullable)
-// - photo: text (nullable)
-// - category: text
-// - quantity: numeric
-// - unit: text
-// - expiration_date: date (nullable)
-// - notes: text (nullable)
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: recipes
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users)
-// - name: text
-// - ingredients: text[] (array)
-// - instructions: text
-// - prep_time: integer
-// - servings: integer
-// - category: text
-// - match_percentage: integer (nullable)
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: shopping_items
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users)
-// - name: text
-// - quantity: numeric
-// - unit: text
-// - category: text
-// - checked: boolean
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: subscriptions
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users, unique)
-// - status: text (active, inactive, trial, cancelled)
-// - plan_type: text (free, premium)
-// - trial_start_date: timestamp (nullable)
-// - trial_end_date: timestamp (nullable)
-// - subscription_start_date: timestamp (nullable)
-// - subscription_end_date: timestamp (nullable)
-// - price_usd: numeric (default 1.99)
-// - payment_method: text (nullable)
-// - last_payment_date: timestamp (nullable)
-// - next_payment_date: timestamp (nullable)
-// - cancelled_at: timestamp (nullable)
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: profiles
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users, unique)
-// - full_name: text (nullable)
-// - avatar_url: text (nullable)
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: user_settings
-// - id: uuid (primary key)
-// - user_id: uuid (foreign key to auth.users, unique)
-// - biometric_enabled: boolean (default false)
-// - two_factor_enabled: boolean (default false)
-// - two_factor_secret: text (nullable)
-// - backup_codes: text[] (nullable)
-// - created_at: timestamp
-// - updated_at: timestamp
-//
-// Table: foods_cache
-// - id: uuid (primary key)
-// - food_name: text
-// - brand_name: text (nullable)
-// - calories: numeric (nullable)
-// - photo: text (nullable)
-// - search_count: integer (default 1)
-// - last_searched_at: timestamp
-// - created_at: timestamp
-
 // Helper function for retry logic with exponential backoff
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -184,7 +77,7 @@ async function retryWithBackoff<T>(
       lastError = error;
       
       // Don't retry on authentication errors
-      if (error.message?.includes('not authenticated') || error.message?.includes('JWT')) {
+      if (error.message?.includes('not authenticated') || error.message?.includes('JWT') || error.code === 'PGRST301') {
         throw error;
       }
       

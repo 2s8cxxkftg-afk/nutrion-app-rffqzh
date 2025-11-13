@@ -25,21 +25,33 @@ export interface Subscription {
   stripe_payment_intent_id?: string;
 }
 
+// Helper function to ensure we have a valid session
+async function ensureAuthenticated() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error('❌ Error getting session:', error);
+    throw new Error('Authentication error');
+  }
+  
+  if (!session) {
+    console.error('❌ No active session');
+    throw new Error('Not authenticated');
+  }
+  
+  return session;
+}
+
 // Get subscription from Supabase or local storage
 export async function getSubscription(): Promise<Subscription | null> {
   try {
-    // Check if user is authenticated
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('📊 Getting subscription...');
     
-    if (userError) {
-      console.error('Error getting user:', userError);
-      return null;
-    }
+    // Ensure we have a valid session
+    const session = await ensureAuthenticated();
+    const user = session.user;
     
-    if (!user) {
-      console.log('No authenticated user, returning null subscription');
-      return null;
-    }
+    console.log('✅ User authenticated:', user.email);
 
     // Try to get from Supabase first
     const { data, error } = await supabase
@@ -49,10 +61,18 @@ export async function getSubscription(): Promise<Subscription | null> {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching subscription from Supabase:', error);
+      console.error('❌ Error fetching subscription from Supabase:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      
       // Fall back to local storage
       const localData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
-      return localData ? JSON.parse(localData) : null;
+      if (localData) {
+        console.log('📱 Using cached subscription from local storage');
+        return JSON.parse(localData);
+      }
+      return null;
     }
 
     if (data) {
@@ -62,18 +82,24 @@ export async function getSubscription(): Promise<Subscription | null> {
       return data;
     }
 
-    console.log('No subscription found for user');
+    console.log('ℹ️ No subscription found for user');
     return null;
-  } catch (error) {
-    console.error('Error getting subscription:', error);
+  } catch (error: any) {
+    console.error('❌ Error getting subscription:', error);
+    console.error('Error message:', error.message);
+    
     // Fall back to local storage
     try {
       const localData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
-      return localData ? JSON.parse(localData) : null;
+      if (localData) {
+        console.log('📱 Using cached subscription from local storage');
+        return JSON.parse(localData);
+      }
     } catch (localError) {
-      console.error('Error reading local subscription:', localError);
-      return null;
+      console.error('❌ Error reading local subscription:', localError);
     }
+    
+    return null;
   }
 }
 
@@ -82,18 +108,10 @@ export async function startFreeTrial(): Promise<boolean> {
   try {
     console.log('🎁 Starting free trial...');
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Ensure we have a valid session
+    const session = await ensureAuthenticated();
+    const user = session.user;
     
-    if (userError) {
-      console.error('❌ Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
-    
-    if (!user) {
-      console.error('❌ User not authenticated');
-      throw new Error('User not authenticated');
-    }
-
     console.log('✅ User authenticated:', user.email);
 
     const trialStartDate = new Date();
@@ -106,6 +124,7 @@ export async function startFreeTrial(): Promise<boolean> {
     });
 
     // Check if subscription already exists
+    console.log('🔍 Checking for existing subscription...');
     const { data: existingSubscription, error: checkError } = await supabase
       .from('subscriptions')
       .select('*')
@@ -114,6 +133,8 @@ export async function startFreeTrial(): Promise<boolean> {
 
     if (checkError) {
       console.error('❌ Error checking existing subscription:', checkError);
+      console.error('Error code:', checkError.code);
+      console.error('Error message:', checkError.message);
       throw checkError;
     }
 
@@ -138,6 +159,9 @@ export async function startFreeTrial(): Promise<boolean> {
 
       if (error) {
         console.error('❌ Error updating subscription for trial:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         throw error;
       }
 
@@ -162,7 +186,9 @@ export async function startFreeTrial(): Promise<boolean> {
 
       if (error) {
         console.error('❌ Error creating subscription for trial:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         throw error;
       }
 
@@ -177,8 +203,18 @@ export async function startFreeTrial(): Promise<boolean> {
     return true;
   } catch (error: any) {
     console.error('❌ Error starting free trial:', error);
+    console.error('Error name:', error.name);
     console.error('Error message:', error.message);
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('Error code:', error.code);
+    
+    if (error.details) {
+      console.error('Error details:', error.details);
+    }
+    
+    if (error.hint) {
+      console.error('Error hint:', error.hint);
+    }
+    
     return false;
   }
 }
@@ -190,16 +226,13 @@ export async function activatePremiumSubscription(
   paymentMethod: string
 ): Promise<Subscription> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('💳 Activating premium subscription...');
     
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
+    // Ensure we have a valid session
+    const session = await ensureAuthenticated();
+    const user = session.user;
     
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    console.log('✅ User authenticated:', user.email);
 
     const subscriptionStartDate = new Date();
     const nextPaymentDate = new Date();
@@ -234,7 +267,7 @@ export async function activatePremiumSubscription(
         .single();
 
       if (error) {
-        console.error('Error updating subscription:', error);
+        console.error('❌ Error updating subscription:', error);
         throw error;
       }
 
@@ -260,7 +293,7 @@ export async function activatePremiumSubscription(
         .single();
 
       if (error) {
-        console.error('Error creating subscription:', error);
+        console.error('❌ Error creating subscription:', error);
         throw error;
       }
 
@@ -273,7 +306,7 @@ export async function activatePremiumSubscription(
 
     return subscription;
   } catch (error) {
-    console.error('Error activating premium subscription:', error);
+    console.error('❌ Error activating premium subscription:', error);
     throw error;
   }
 }
@@ -281,16 +314,13 @@ export async function activatePremiumSubscription(
 // Cancel subscription
 export async function cancelSubscription(): Promise<void> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('🚫 Cancelling subscription...');
     
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
+    // Ensure we have a valid session
+    const session = await ensureAuthenticated();
+    const user = session.user;
     
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    console.log('✅ User authenticated:', user.email);
 
     const { error } = await supabase
       .from('subscriptions')
@@ -302,7 +332,7 @@ export async function cancelSubscription(): Promise<void> {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error cancelling subscription:', error);
+      console.error('❌ Error cancelling subscription:', error);
       throw error;
     }
 
@@ -316,7 +346,7 @@ export async function cancelSubscription(): Promise<void> {
 
     console.log('✅ Subscription cancelled');
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
+    console.error('❌ Error cancelling subscription:', error);
     throw error;
   }
 }
