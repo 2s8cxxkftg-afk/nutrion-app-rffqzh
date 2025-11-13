@@ -190,7 +190,15 @@ export default function EditProfileScreen() {
         throw new Error('No user found');
       }
 
-      // Convert image to blob
+      // Determine file extension
+      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      console.log('Preparing to upload to:', filePath);
+
+      // For React Native, we need to use FormData or ArrayBuffer
+      // The best approach is to use fetch to get the file as ArrayBuffer
       console.log('Fetching image data...');
       const response = await fetch(uri);
       
@@ -198,26 +206,24 @@ export default function EditProfileScreen() {
         throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      console.log('Image blob created, size:', blob.size, 'type:', blob.type);
+      // Convert to ArrayBuffer instead of blob
+      const arrayBuffer = await response.arrayBuffer();
+      console.log('Image data loaded, size:', arrayBuffer.byteLength);
 
-      // Validate blob
-      if (blob.size === 0) {
+      // Validate data
+      if (arrayBuffer.byteLength === 0) {
         throw new Error('Image file is empty');
       }
 
-      // Create file name with proper extension
-      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      // Determine content type
+      const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
+      console.log('Content type:', contentType);
 
-      console.log('Uploading to Supabase Storage:', filePath);
-
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage using ArrayBuffer
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(filePath, blob, {
-          contentType: blob.type || `image/${fileExt}`,
+        .upload(filePath, arrayBuffer, {
+          contentType: contentType,
           upsert: true,
           cacheControl: '3600',
         });
