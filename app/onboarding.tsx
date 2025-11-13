@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,14 +25,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ONBOARDING_KEY = '@nutrion_onboarding_complete';
+const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 interface OnboardingPage {
   titleKey: string;
   descriptionKey: string;
   icon: string;
   color: string;
-  imageUrl: string;
 }
 
 const pages: OnboardingPage[] = [
@@ -41,21 +40,24 @@ const pages: OnboardingPage[] = [
     descriptionKey: 'onboarding.welcomeDesc',
     icon: 'leaf.fill',
     color: '#4CAF50',
-    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80',
   },
   {
     titleKey: 'onboarding.pantryTitle',
     descriptionKey: 'onboarding.pantryDesc',
     icon: 'archivebox.fill',
     color: '#2196F3',
-    imageUrl: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=800&q=80',
   },
   {
-    titleKey: 'onboarding.wasteTitle',
-    descriptionKey: 'onboarding.wasteDesc',
+    titleKey: 'onboarding.expirationTitle',
+    descriptionKey: 'onboarding.expirationDesc',
     icon: 'clock.badge.checkmark.fill',
     color: '#FF9800',
-    imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80',
+  },
+  {
+    titleKey: 'onboarding.shoppingTitle',
+    descriptionKey: 'onboarding.shoppingDesc',
+    icon: 'cart.fill',
+    color: '#9C27B0',
   },
 ];
 
@@ -94,16 +96,27 @@ export default function OnboardingScreen() {
 
   const handleGetStarted = async () => {
     try {
+      console.log('Onboarding completed, saving to AsyncStorage');
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      router.replace('/language-selection');
+      console.log('Navigating to auth screen');
+      router.replace('/auth');
     } catch (error) {
       console.error('Error saving onboarding status:', error);
-      router.replace('/language-selection');
+      router.replace('/auth');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with Logo */}
+      <View style={styles.header}>
+        <Image
+          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       {/* Skip Button */}
       {currentPage < pages.length - 1 && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
@@ -123,14 +136,9 @@ export default function OnboardingScreen() {
       >
         {pages.map((page, index) => (
           <View key={index} style={styles.page}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: page.imageUrl }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-              <View style={[styles.iconOverlay, { backgroundColor: page.color }]}>
-                <IconSymbol name={page.icon} size={48} color="#FFFFFF" />
+            <View style={[styles.iconContainer, { backgroundColor: page.color + '20' }]}>
+              <View style={[styles.iconCircle, { backgroundColor: page.color }]}>
+                <IconSymbol name={page.icon} size={64} color="#FFFFFF" />
               </View>
             </View>
 
@@ -209,6 +217,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  header: {
+    alignItems: 'center',
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
   skipButton: {
     position: 'absolute',
     top: Platform.OS === 'android' ? 60 : 20,
@@ -228,56 +245,54 @@ const styles = StyleSheet.create({
   page: {
     width: SCREEN_WIDTH,
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? 80 : 40,
+    paddingTop: spacing.xl,
+    justifyContent: 'center',
   },
-  imageContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * 0.8,
-    position: 'relative',
-    marginBottom: 40,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-  },
-  iconOverlay: {
-    position: 'absolute',
-    bottom: -30,
+  iconContainer: {
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
     alignSelf: 'center',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    borderRadius: (SCREEN_WIDTH * 0.7) / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xxxl,
+  },
+  iconCircle: {
+    width: SCREEN_WIDTH * 0.5,
+    height: SCREEN_WIDTH * 0.5,
+    borderRadius: (SCREEN_WIDTH * 0.5) / 2,
     justifyContent: 'center',
     alignItems: 'center',
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
   },
   content: {
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xxxl,
     alignItems: 'center',
   },
   title: {
+    ...typography.displayMedium,
     fontSize: 32,
     fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     letterSpacing: -0.5,
   },
   description: {
+    ...typography.bodyLarge,
     fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.md,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 32,
-    gap: 8,
+    paddingVertical: spacing.xxl,
+    gap: spacing.sm,
   },
   dot: {
     height: 8,
@@ -292,11 +307,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    marginHorizontal: 32,
-    marginBottom: 32,
+    marginHorizontal: spacing.xxxl,
+    marginBottom: spacing.xxxl,
     paddingVertical: 18,
-    borderRadius: 16,
-    gap: 8,
+    borderRadius: borderRadius.xl,
+    gap: spacing.sm,
     boxShadow: '0px 8px 24px rgba(76, 175, 80, 0.3)',
     elevation: 8,
   },
