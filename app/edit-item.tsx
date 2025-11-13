@@ -287,6 +287,7 @@ export default function EditItemScreen() {
             title: 'Edit Item',
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
+            headerBackTitleVisible: false,
             presentation: 'card',
           }}
         />
@@ -305,6 +306,7 @@ export default function EditItemScreen() {
           title: 'Edit Item',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          headerBackTitleVisible: false,
           presentation: 'card',
         }}
       />
@@ -346,7 +348,7 @@ export default function EditItemScreen() {
           {(aiEstimation || autoCategory) && (
             <View style={styles.aiEstimationBanner}>
               <View style={styles.aiEstimationIcon}>
-                <IconSymbol name="sparkles" size={16} color={colors.primary} />
+                <IconSymbol ios_icon_name="sparkles" android_material_icon_name="auto_awesome" size={16} color={colors.primary} />
               </View>
               <View style={styles.aiEstimationContent}>
                 <Text style={styles.aiEstimationTitle}>✨ AI Suggestion</Text>
@@ -372,7 +374,8 @@ export default function EditItemScreen() {
           >
             <Text style={{ color: colors.text }}>{category}</Text>
             <IconSymbol 
-              name={showCategoryPicker ? "chevron.up" : "chevron.down"} 
+              ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
+              android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
               size={20} 
               color={colors.textSecondary} 
             />
@@ -403,7 +406,7 @@ export default function EditItemScreen() {
                       {cat}
                     </Text>
                     {category === cat && (
-                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -437,7 +440,7 @@ export default function EditItemScreen() {
                   onPress={openQuantityPicker}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol name="list.bullet" size={20} color={colors.text} />
+                  <IconSymbol ios_icon_name="list.bullet" android_material_icon_name="format_list_bulleted" size={20} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -451,7 +454,8 @@ export default function EditItemScreen() {
               >
                 <Text style={{ color: colors.text }}>{unit}</Text>
                 <IconSymbol 
-                  name={showUnitPicker ? "chevron.up" : "chevron.down"} 
+                  ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
+                  android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -477,7 +481,7 @@ export default function EditItemScreen() {
                       {preset.label}
                     </Text>
                     {parseFloat(quantity) === preset.value && (
-                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -510,7 +514,7 @@ export default function EditItemScreen() {
                       {u}
                     </Text>
                     {unit === u && (
-                      <IconSymbol name="checkmark" size={20} color={colors.primary} />
+                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
