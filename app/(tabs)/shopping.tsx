@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { ShoppingItem } from '@/types/pantry';
 import {
   View,
   Text,
@@ -13,21 +13,19 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useFocusEffect } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { ShoppingItem } from '@/types/pantry';
 import { loadShoppingItems, saveShoppingItems } from '@/utils/storage';
-import * as Haptics from 'expo-haptics';
+import { IconSymbol } from '@/components/IconSymbol';
+import React, { useState } from 'react';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 export default function ShoppingScreen() {
   const { t } = useTranslation();
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
-  const [newItemQuantity, setNewItemQuantity] = useState('1');
-  const [showAddForm, setShowAddForm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
@@ -38,12 +36,11 @@ export default function ShoppingScreen() {
 
   const loadItems = async () => {
     try {
-      const items = await loadShoppingItems();
-      setShoppingItems(items);
-      console.log('Loaded shopping items:', items.length);
+      const loadedItems = await loadShoppingItems();
+      setItems(loadedItems);
+      console.log('Loaded shopping items:', loadedItems.length);
     } catch (error) {
       console.error('Error loading shopping items:', error);
-      Alert.alert(t('error'), t('shopping.loadError'));
     }
   };
 
@@ -55,112 +52,105 @@ export default function ShoppingScreen() {
 
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
-      Alert.alert(t('error'), t('shopping.enterItemName'));
       return;
     }
 
-    const quantityNum = parseFloat(newItemQuantity);
-    if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert(t('error'), t('shopping.enterValidQuantity'));
-      return;
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Haptics not available:', error);
     }
 
     const newItem: ShoppingItem = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: newItemName.trim(),
-      quantity: quantityNum,
+      quantity: 1,
       unit: 'pcs',
       category: 'Other',
       checked: false,
     };
 
-    try {
-      const updatedItems = [...shoppingItems, newItem];
-      await saveShoppingItems(updatedItems);
-      setShoppingItems(updatedItems);
-      setNewItemName('');
-      setNewItemQuantity('1');
-      setShowAddForm(false);
-      Keyboard.dismiss();
-      
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.log('Haptics not available:', error);
-      }
-    } catch (error) {
-      console.error('Error adding item:', error);
-      Alert.alert(t('error'), t('shopping.addItemError'));
-    }
+    const updatedItems = [...items, newItem];
+    await saveShoppingItems(updatedItems);
+    setItems(updatedItems);
+    setNewItemName('');
+    Keyboard.dismiss();
   };
 
   const handleToggleItem = async (itemId: string) => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       console.log('Haptics not available:', error);
     }
-    
-    try {
-      const updatedItems = shoppingItems.map(item =>
-        item.id === itemId ? { ...item, checked: !item.checked } : item
-      );
-      await saveShoppingItems(updatedItems);
-      setShoppingItems(updatedItems);
-    } catch (error) {
-      console.error('Error toggling item:', error);
-      Alert.alert(t('error'), t('shopping.updateItemError'));
-    }
+
+    const updatedItems = items.map(item =>
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    );
+    await saveShoppingItems(updatedItems);
+    setItems(updatedItems);
   };
 
   const handleDeleteItem = async (itemId: string) => {
     try {
-      const updatedItems = shoppingItems.filter(item => item.id !== itemId);
-      await saveShoppingItems(updatedItems);
-      setShoppingItems(updatedItems);
-      
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.log('Haptics not available:', error);
-      }
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
-      console.error('Error deleting item:', error);
-      Alert.alert(t('error'), t('shopping.deleteItemError'));
+      console.log('Haptics not available:', error);
     }
-  };
 
-  const handleClearCompleted = async () => {
     Alert.alert(
-      t('shopping.clearCompleted'),
-      t('shopping.clearCompletedConfirm'),
+      t('delete'),
+      t('shopping.deleteConfirm'),
       [
-        { text: t('cancel'), style: 'cancel' },
         {
-          text: t('shopping.clear'),
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
-            try {
-              const updatedItems = shoppingItems.filter(item => !item.checked);
-              await saveShoppingItems(updatedItems);
-              setShoppingItems(updatedItems);
-            } catch (error) {
-              console.error('Error clearing completed items:', error);
-              Alert.alert(t('error'), t('shopping.clearCompletedError'));
-            }
+            const updatedItems = items.filter(item => item.id !== itemId);
+            await saveShoppingItems(updatedItems);
+            setItems(updatedItems);
           },
         },
       ]
     );
   };
 
-  const uncheckedItems = shoppingItems.filter(item => !item.checked);
-  const checkedItems = shoppingItems.filter(item => item.checked);
+  const handleClearCompleted = async () => {
+    const completedCount = items.filter(item => item.checked).length;
+    
+    if (completedCount === 0) {
+      return;
+    }
+
+    Alert.alert(
+      t('shopping.clearCompleted'),
+      t('shopping.clearCompletedConfirm', { count: completedCount }),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('shopping.clear'),
+          style: 'destructive',
+          onPress: async () => {
+            const updatedItems = items.filter(item => !item.checked);
+            await saveShoppingItems(updatedItems);
+            setItems(updatedItems);
+          },
+        },
+      ]
+    );
+  };
 
   const renderShoppingItem = (item: ShoppingItem) => (
     <View key={item.id} style={styles.itemCard}>
       <TouchableOpacity
-        style={styles.itemContent}
+        style={styles.checkboxContainer}
         onPress={() => handleToggleItem(item.id)}
         activeOpacity={0.7}
       >
@@ -169,32 +159,45 @@ export default function ShoppingScreen() {
           item.checked && styles.checkboxChecked
         ]}>
           {item.checked && (
-            <IconSymbol name="checkmark" size={18} color="#FFFFFF" />
+            <IconSymbol 
+              ios_icon_name="checkmark" 
+              android_material_icon_name="check"
+              size={18} 
+              color="#FFFFFF" 
+            />
           )}
         </View>
-        
-        <View style={styles.itemInfo}>
-          <Text style={[
-            styles.itemName,
-            item.checked && styles.itemNameChecked
-          ]}>
-            {item.name}
-          </Text>
-          <Text style={styles.itemQuantity}>
-            {t('shopping.qty')}: {item.quantity} {item.unit}
-          </Text>
-        </View>
       </TouchableOpacity>
+
+      <View style={styles.itemContent}>
+        <Text style={[
+          styles.itemName,
+          item.checked && styles.itemNameChecked
+        ]}>
+          {item.name}
+        </Text>
+        <Text style={styles.itemDetails}>
+          {item.quantity} {item.unit}
+        </Text>
+      </View>
 
       <TouchableOpacity
         onPress={() => handleDeleteItem(item.id)}
         style={styles.deleteButton}
-        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <IconSymbol name="trash" size={20} color={colors.error} />
+        <IconSymbol 
+          ios_icon_name="trash" 
+          android_material_icon_name="delete"
+          size={20} 
+          color={colors.error} 
+        />
       </TouchableOpacity>
     </View>
   );
+
+  const uncheckedItems = items.filter(item => !item.checked);
+  const checkedItems = items.filter(item => item.checked);
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
@@ -203,165 +206,121 @@ export default function ShoppingScreen() {
           headerShown: false,
         }}
       />
-      
-      <KeyboardAvoidingView 
-        style={commonStyles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
+        <View style={[commonStyles.container, Platform.OS === 'android' && { paddingTop: 24 }]}>
+          {/* Header */}
+          <View style={styles.header}>
             <Text style={styles.headerTitle}>{t('shopping.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              {uncheckedItems.length} {uncheckedItems.length === 1 ? t('shopping.item') : t('shopping.items')} {t('shopping.toBuy')}
+              {uncheckedItems.length} {t('shopping.itemsRemaining')}
             </Text>
           </View>
-          {checkedItems.length > 0 && (
-            <TouchableOpacity 
-              onPress={handleClearCompleted} 
+
+          {/* Add Item Input */}
+          <View style={styles.addItemContainer}>
+            <TextInput
+              style={styles.addItemInput}
+              placeholder={t('shopping.addItemPlaceholder')}
+              placeholderTextColor={colors.textSecondary}
+              value={newItemName}
+              onChangeText={setNewItemName}
+              onSubmitEditing={handleAddItem}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                !newItemName.trim() && styles.addButtonDisabled
+              ]}
+              onPress={handleAddItem}
+              disabled={!newItemName.trim()}
               activeOpacity={0.7}
-              style={styles.clearButton}
             >
-              <Text style={styles.clearText}>{t('shopping.clear')}</Text>
+              <IconSymbol 
+                ios_icon_name="plus" 
+                android_material_icon_name="add"
+                size={24} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Clear Completed Button */}
+          {checkedItems.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClearCompleted}
+              activeOpacity={0.7}
+            >
+              <IconSymbol 
+                ios_icon_name="trash" 
+                android_material_icon_name="delete"
+                size={18} 
+                color={colors.error} 
+              />
+              <Text style={styles.clearButtonText}>
+                {t('shopping.clearCompleted')} ({checkedItems.length})
+              </Text>
             </TouchableOpacity>
           )}
-        </View>
 
-        {/* Add Form */}
-        {showAddForm && (
-          <View style={styles.addForm}>
-            <View style={styles.addInputContainer}>
-              <IconSymbol name="plus.circle.fill" size={24} color={colors.primary} />
-              <TextInput
-                style={styles.addInput}
-                placeholder={t('shopping.itemName')}
-                placeholderTextColor={colors.textSecondary}
-                value={newItemName}
-                onChangeText={setNewItemName}
-                autoFocus
-                returnKeyType="next"
-                onSubmitEditing={() => {}}
+          {/* Items List */}
+          <ScrollView
+            style={styles.itemsList}
+            contentContainerStyle={styles.itemsListContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
               />
-            </View>
-            
-            <View style={styles.quantityRow}>
-              <Text style={styles.quantityLabel}>{t('shopping.quantity')}:</Text>
-              <View style={styles.quantityInputContainer}>
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => {
-                    const current = parseFloat(newItemQuantity) || 1;
-                    if (current > 1) {
-                      setNewItemQuantity((current - 1).toString());
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol name="minus" size={18} color={colors.text} />
-                </TouchableOpacity>
-                
-                <TextInput
-                  style={styles.quantityInput}
-                  value={newItemQuantity}
-                  onChangeText={setNewItemQuantity}
-                  keyboardType="decimal-pad"
-                  selectTextOnFocus
-                />
-                
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => {
-                    const current = parseFloat(newItemQuantity) || 1;
-                    setNewItemQuantity((current + 1).toString());
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol name="plus" size={18} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
-            
-            <View style={styles.formButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  setShowAddForm(false);
-                  setNewItemName('');
-                  setNewItemQuantity('1');
-                  Keyboard.dismiss();
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddItem}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.addButtonText}>{t('shopping.addItem')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Items List */}
-        <ScrollView
-          style={styles.itemsList}
-          contentContainerStyle={styles.itemsListContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
-          }
-        >
-          {uncheckedItems.length === 0 && checkedItems.length === 0 ? (
-            <View style={commonStyles.emptyState}>
-              <View style={commonStyles.emptyStateIcon}>
-                <IconSymbol name="cart" size={64} color={colors.textTertiary} />
-              </View>
-              <Text style={commonStyles.emptyStateTitle}>{t('shopping.emptyTitle')}</Text>
-              <Text style={commonStyles.emptyStateDescription}>
-                {t('shopping.emptyDescription')}
-              </Text>
-            </View>
-          ) : (
-            <>
-              {/* Unchecked Items */}
-              {uncheckedItems.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('shopping.toBuySection')}</Text>
-                  {uncheckedItems.map(renderShoppingItem)}
-                </View>
-              )}
-              
-              {/* Checked Items */}
-              {checkedItems.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('shopping.completedSection')}</Text>
-                  {checkedItems.map(renderShoppingItem)}
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
-
-        {/* FAB */}
-        {!showAddForm && (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setShowAddForm(true)}
-            activeOpacity={0.8}
+            }
           >
-            <IconSymbol name="plus" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
+            {items.length === 0 ? (
+              <View style={commonStyles.emptyState}>
+                <View style={commonStyles.emptyStateIcon}>
+                  <IconSymbol 
+                    ios_icon_name="cart" 
+                    android_material_icon_name="shopping-cart"
+                    size={64} 
+                    color={colors.textTertiary} 
+                  />
+                </View>
+                <Text style={commonStyles.emptyStateTitle}>
+                  {t('shopping.emptyTitle')}
+                </Text>
+                <Text style={commonStyles.emptyStateDescription}>
+                  {t('shopping.emptyDescription')}
+                </Text>
+              </View>
+            ) : (
+              <React.Fragment>
+                {/* Unchecked Items */}
+                {uncheckedItems.map(renderShoppingItem)}
+
+                {/* Checked Items */}
+                {checkedItems.length > 0 && (
+                  <React.Fragment>
+                    <View style={styles.sectionDivider}>
+                      <View style={styles.dividerLine} />
+                      <Text style={styles.sectionTitle}>
+                        {t('shopping.completed')} ({checkedItems.length})
+                      </Text>
+                      <View style={styles.dividerLine} />
+                    </View>
+                    {checkedItems.map(renderShoppingItem)}
+                  </React.Fragment>
+                )}
+              </React.Fragment>
+            )}
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -369,9 +328,6 @@ export default function ShoppingScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
@@ -385,104 +341,51 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
   },
-  clearButton: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.error + '15',
-    borderRadius: borderRadius.md,
-  },
-  clearText: {
-    ...typography.label,
-    color: colors.error,
-  },
-  addForm: {
+  addItemContainer: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
+    marginBottom: spacing.lg,
     gap: spacing.md,
   },
-  addInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  addItemInput: {
+    flex: 1,
     backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    gap: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    boxShadow: `0px 4px 12px ${colors.primary}20`,
-    elevation: 3,
-  },
-  addInput: {
-    flex: 1,
     fontSize: 16,
     color: colors.text,
-    fontWeight: '500',
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-  },
-  quantityLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  quantityInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  quantityButton: {
-    padding: spacing.md,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 44,
-  },
-  quantityInput: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    minWidth: 60,
-    paddingHorizontal: spacing.sm,
-  },
-  formButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  cancelButtonText: {
-    ...typography.h4,
-    color: colors.text,
   },
   addButton: {
-    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0px 2px 8px ${colors.primary}40`,
+    elevation: 2,
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.error + '15',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
   },
-  addButtonText: {
-    ...typography.h4,
-    color: '#FFFFFF',
+  clearButtonText: {
+    ...typography.label,
+    color: colors.error,
+    fontWeight: '600',
   },
   itemsList: {
     flex: 1,
@@ -491,44 +394,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 120,
   },
-  section: {
-    marginBottom: spacing.xxl,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    gap: spacing.md,
     boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 2,
   },
-  itemContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  checkboxContainer: {
+    padding: spacing.xs,
   },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: borderRadius.sm,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
-  itemInfo: {
+  itemContent: {
     flex: 1,
   },
   itemName: {
@@ -540,25 +432,27 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: colors.textSecondary,
   },
-  itemQuantity: {
+  itemDetails: {
     ...typography.bodySmall,
     color: colors.textSecondary,
   },
   deleteButton: {
-    padding: spacing.sm,
-    marginLeft: spacing.sm,
+    padding: spacing.xs,
   },
-  fab: {
-    position: 'absolute',
-    right: spacing.xl,
-    bottom: 100,
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary,
+  sectionDivider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 8px 24px ${colors.primary}60`,
-    elevation: 8,
+    marginVertical: spacing.lg,
+    gap: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  sectionTitle: {
+    ...typography.label,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
 });

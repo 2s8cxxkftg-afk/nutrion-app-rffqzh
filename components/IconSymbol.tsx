@@ -18,7 +18,7 @@ const MAPPING = {
 
   // Navigation & Home
   "house.fill": "home",
-  "house": "home-outlined",
+  "house": "home",
   "arrow.left": "arrow-back",
   "arrow.right": "arrow-forward",
   "arrow_forward": "arrow-forward",
@@ -27,20 +27,21 @@ const MAPPING = {
   "chevron.left": "chevron-left",
   "chevron_left": "chevron-left",
   "chevron.right": "chevron-right",
-  "chevron.up": "keyboard-arrow-up",
-  "chevron.down": "keyboard-arrow-down",
+  "chevron.up": "expand-less",
+  "chevron.down": "expand-more",
   "arrow.clockwise": "refresh",
   "arrow.counterclockwise": "refresh",
+  "arrow.right.square.fill": "logout",
 
   // Communication & Social
   "paperplane.fill": "send",
-  "paperplane": "send-outlined",
-  "envelope.fill": "mail",
-  "envelope": "mail-outline",
+  "paperplane": "send",
+  "envelope.fill": "email",
+  "envelope": "email",
   "phone.fill": "phone",
-  "phone": "phone-outlined",
+  "phone": "phone",
   "message.fill": "chat",
-  "message": "chat-bubble-outline",
+  "message": "chat-bubble",
   "bell.fill": "notifications",
   "bell": "notifications-none",
   "heart.fill": "favorite",
@@ -48,6 +49,7 @@ const MAPPING = {
 
   // Actions & Controls
   "plus": "add",
+  "plus.circle.fill": "add-circle",
   "minus": "remove",
   "xmark": "close",
   "xmark.circle.fill": "cancel",
@@ -70,14 +72,15 @@ const MAPPING = {
   "folder": "folder-open",
   "doc.fill": "insert-drive-file",
   "doc": "insert-drive-file",
+  "list.bullet": "format-list-bulleted",
 
   // Media & Content
   "photo.fill": "image",
-  "photo": "image-outlined",
-  "camera.fill": "camera-alt",
-  "camera": "camera-alt",
+  "photo": "image",
+  "camera.fill": "photo-camera",
+  "camera": "photo-camera",
   "video.fill": "videocam",
-  "video": "videocam-off",
+  "video": "videocam",
   "music.note": "music-note",
   "speaker.wave.2.fill": "volume-up",
   "speaker.slash.fill": "volume-off",
@@ -90,14 +93,14 @@ const MAPPING = {
   "gearshape.fill": "settings",
   "slider.horizontal.3": "tune",
   "info.circle.fill": "info",
-  "info.circle": "info-outlined",
+  "info.circle": "info",
   "exclamationmark.triangle.fill": "warning",
-  "exclamationmark.triangle": "warning-amber",
+  "exclamationmark.triangle": "warning",
   "questionmark.circle.fill": "help",
   "questionmark.circle": "help-outline",
 
   // Shapes & Symbols
-  "square": "square",
+  "square": "crop-square",
   "square.grid.3x3": "apps",
   "circle": "circle",
   "triangle.fill": "change-history",
@@ -105,10 +108,13 @@ const MAPPING = {
   "star": "star-border",
   "bookmark.fill": "bookmark",
   "bookmark": "bookmark-border",
+  "crown.fill": "workspace-premium",
+  "sparkles": "auto-awesome",
+  "gift.fill": "card-giftcard",
 
   // Technology & Code
   "chevron.left.forwardslash.chevron.right": "code",
-  "qrcode.viewfinder": "qr-code",
+  "qrcode.viewfinder": "qr-code-scanner",
   "qrcode": "qr-code-scanner",
   "wifi": "wifi",
   "antenna.radiowaves.left.and.right": "signal-cellular-alt",
@@ -116,10 +122,11 @@ const MAPPING = {
   "battery.25": "battery-2-bar",
   "lock.fill": "lock",
   "lock.open.fill": "lock-open",
+  "person.badge.key.fill": "vpn-key",
 
   // Shopping & Commerce
   "cart.fill": "shopping-cart",
-  "cart": "shopping-cart-outlined",
+  "cart": "shopping-cart",
   "creditcard.fill": "credit-card",
   "creditcard": "credit-card",
   "dollarsign.circle.fill": "monetization-on",
@@ -134,8 +141,8 @@ const MAPPING = {
   "compass.drawing": "explore",
 
   // Time & Calendar
-  "clock.fill": "access-time",
-  "clock": "access-time",
+  "clock.fill": "schedule",
+  "clock": "schedule",
   "calendar": "event",
   "timer": "timer",
 
@@ -157,6 +164,7 @@ const MAPPING = {
 
   // Search & Discovery
   "magnifyingglass": "search",
+  "magnifyingglass.circle.fill": "search",
   "line.3.horizontal.decrease": "filter-list",
   "arrow.up.arrow.down": "sort",
 
@@ -172,7 +180,6 @@ const MAPPING = {
   "archivebox": "inventory-2",
   "leaf.fill": "eco",
   "leaf": "eco",
-  "sparkles": "auto-awesome",
   "book.closed": "menu-book",
   "cloud": "cloud",
   "tag": "label",
@@ -182,7 +189,7 @@ const MAPPING = {
   "barcode": "qr-code-scanner",
   "barcode.viewfinder": "qr-code-scanner",
   "globe": "language",
-  "text.bubble": "chat-bubble-outline",
+  "text.bubble": "chat-bubble",
   "shield.fill": "security",
   "faceid": "face",
   "touchid": "fingerprint",
@@ -199,23 +206,49 @@ export type IconSymbolName = keyof typeof MAPPING;
  * An icon component that uses native SFSymbols on iOS, and MaterialIcons on Android and web. This ensures a consistent look across platforms, and optimal resource usage.
  *
  * Icon `name`s are based on SFSymbols and require manual mapping to MaterialIcons.
+ * 
+ * Usage:
+ * <IconSymbol ios_icon_name="house.fill" android_material_icon_name="home" size={24} color={colors.text} />
+ * OR (legacy support):
+ * <IconSymbol name="house.fill" size={24} color={colors.text} />
  */
 export function IconSymbol({
   name,
+  ios_icon_name,
+  android_material_icon_name,
   size = 24,
   color,
   style,
+  weight,
 }: {
-  name: IconSymbolName;
+  name?: IconSymbolName;
+  ios_icon_name?: IconSymbolName;
+  android_material_icon_name?: string;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
-  const mappedName = MAPPING[name];
+  // Support both old and new prop names for backward compatibility
+  const iconName = ios_icon_name || name;
+  
+  // If android_material_icon_name is provided, use it directly
+  if (android_material_icon_name) {
+    return (
+      <MaterialIcons
+        color={color}
+        size={size}
+        name={android_material_icon_name as any}
+        style={style as StyleProp<TextStyle>}
+      />
+    );
+  }
+  
+  // Otherwise, use the mapping
+  const mappedName = iconName ? MAPPING[iconName] : undefined;
   
   if (!mappedName) {
-    console.warn(`IconSymbol: No mapping found for "${name}". Using default icon.`);
+    console.warn(`IconSymbol: No mapping found for "${iconName}". Using default icon.`);
     return (
       <MaterialIcons
         color={color}

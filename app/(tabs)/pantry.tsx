@@ -14,6 +14,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { PantryItem } from '@/types/pantry';
 import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
@@ -124,28 +125,48 @@ export default function PantryScreen() {
               style={styles.editButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <IconSymbol name="pencil" size={20} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="pencil" 
+                android_material_icon_name="edit"
+                size={20} 
+                color={colors.primary} 
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDeleteItem(item.id)}
               style={styles.deleteButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <IconSymbol name="trash" size={20} color={colors.error} />
+              <IconSymbol 
+                ios_icon_name="trash" 
+                android_material_icon_name="delete"
+                size={20} 
+                color={colors.error} 
+              />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.itemDetails}>
           <View style={styles.detailRow}>
-            <IconSymbol name="number" size={16} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="number" 
+              android_material_icon_name="tag"
+              size={16} 
+              color={colors.textSecondary} 
+            />
             <Text style={styles.detailText}>
               {item.quantity} {item.unit}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <IconSymbol name="calendar" size={16} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="calendar" 
+              android_material_icon_name="event"
+              size={16} 
+              color={colors.textSecondary} 
+            />
             <Text style={[
               styles.detailText,
               { color: expirationColors[status] }
@@ -184,7 +205,7 @@ export default function PantryScreen() {
         }}
       />
       
-      <View style={commonStyles.container}>
+      <View style={[commonStyles.container, Platform.OS === 'android' && { paddingTop: 24 }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('pantry.title')}</Text>
@@ -195,7 +216,12 @@ export default function PantryScreen() {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+          <IconSymbol 
+            ios_icon_name="magnifyingglass" 
+            android_material_icon_name="search"
+            size={20} 
+            color={colors.textSecondary} 
+          />
           <TextInput
             style={styles.searchInput}
             placeholder={t('pantry.search')}
@@ -205,7 +231,12 @@ export default function PantryScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="xmark.circle.fill" 
+                android_material_icon_name="cancel"
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -217,7 +248,12 @@ export default function PantryScreen() {
             onPress={() => router.push('/add-item')}
             activeOpacity={0.7}
           >
-            <IconSymbol name="plus.circle.fill" size={24} color={colors.primary} />
+            <IconSymbol 
+              ios_icon_name="plus.circle.fill" 
+              android_material_icon_name="add-circle"
+              size={24} 
+              color={colors.primary} 
+            />
             <Text style={styles.actionButtonText}>{t('pantry.addItem')}</Text>
           </TouchableOpacity>
 
@@ -226,7 +262,12 @@ export default function PantryScreen() {
             onPress={() => router.push('/food-search')}
             activeOpacity={0.7}
           >
-            <IconSymbol name="magnifyingglass.circle.fill" size={24} color={colors.accent} />
+            <IconSymbol 
+              ios_icon_name="magnifyingglass.circle.fill" 
+              android_material_icon_name="search"
+              size={24} 
+              color={colors.accent} 
+            />
             <Text style={styles.actionButtonText}>{t('pantry.foodSearch')}</Text>
           </TouchableOpacity>
         </View>
@@ -247,7 +288,12 @@ export default function PantryScreen() {
           {filteredItems.length === 0 ? (
             <View style={commonStyles.emptyState}>
               <View style={commonStyles.emptyStateIcon}>
-                <IconSymbol name="archivebox" size={64} color={colors.textTertiary} />
+                <IconSymbol 
+                  ios_icon_name="archivebox" 
+                  android_material_icon_name="inventory-2"
+                  size={64} 
+                  color={colors.textTertiary} 
+                />
               </View>
               <Text style={commonStyles.emptyStateTitle}>
                 {searchQuery ? 'No items found' : t('pantry.emptyTitle')}
@@ -263,7 +309,12 @@ export default function PantryScreen() {
                   style={commonStyles.emptyStateButton}
                   onPress={() => router.push('/add-item')}
                 >
-                  <IconSymbol name="plus" size={20} color="#FFFFFF" />
+                  <IconSymbol 
+                    ios_icon_name="plus" 
+                    android_material_icon_name="add"
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
                   <Text style={commonStyles.emptyStateButtonText}>
                     {t('pantry.addFirst')}
                   </Text>
