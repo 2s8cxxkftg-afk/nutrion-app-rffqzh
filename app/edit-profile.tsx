@@ -74,7 +74,7 @@ export default function EditProfileScreen() {
       console.error('Error loading profile:', error);
       Toast.show({
         type: 'error',
-        message: t('profile.loadError') || 'Failed to load profile',
+        message: t('profile.loadError'),
         duration: 2000,
       });
     } finally {
@@ -105,18 +105,18 @@ export default function EditProfileScreen() {
       if (finalStatus !== 'granted') {
         console.log('Permission denied by user');
         Alert.alert(
-          t('profile.permissionRequired') || 'Permission Required',
-          t('profile.photoPermissionMessage') || 'We need permission to access your photos to update your profile picture. Please enable photo access in your device settings.',
+          t('profile.permissionRequired'),
+          t('profile.photoPermissionMessage'),
           [
-            { text: t('cancel') || 'Cancel', style: 'cancel' },
+            { text: t('cancel'), style: 'cancel' },
             {
-              text: t('notifications.openSettings') || 'Open Settings',
+              text: t('notifications.openSettings'),
               onPress: () => {
                 if (Platform.OS === 'ios') {
                   // On iOS, we can't directly open settings, but we can show a message
                   Alert.alert(
                     t('profile.permissionRequired'),
-                    'Please go to Settings > Nutrion > Photos and enable photo access.'
+                    t('profile.photoPermissionMessage')
                   );
                 }
               }
@@ -149,7 +149,7 @@ export default function EditProfileScreen() {
         console.error('No assets returned from image picker');
         Toast.show({
           type: 'error',
-          message: t('profile.imagePickError') || 'Failed to pick image',
+          message: t('profile.imagePickError'),
           duration: 2000,
         });
         return;
@@ -163,7 +163,7 @@ export default function EditProfileScreen() {
         console.error('Invalid image URI');
         Toast.show({
           type: 'error',
-          message: t('profile.imagePickError') || 'Failed to pick image',
+          message: t('profile.imagePickError'),
           duration: 2000,
         });
         return;
@@ -175,7 +175,7 @@ export default function EditProfileScreen() {
       console.error('Error in pickImage:', error);
       Toast.show({
         type: 'error',
-        message: error.message || t('profile.imagePickError') || 'Failed to pick image',
+        message: error.message || t('profile.imagePickError'),
         duration: 3000,
       });
     }
@@ -266,7 +266,7 @@ export default function EditProfileScreen() {
 
       Toast.show({
         type: 'success',
-        message: t('profile.imageUploaded') || 'Image uploaded successfully',
+        message: t('profile.imageUploaded'),
         duration: 2000,
       });
 
@@ -275,13 +275,13 @@ export default function EditProfileScreen() {
       console.error('Error uploading image:', error);
       
       // Provide more specific error messages
-      let errorMessage = t('profile.imageUploadError') || 'Failed to upload image';
+      let errorMessage = t('profile.imageUploadError');
       
       if (error.message) {
         if (error.message.includes('fetch')) {
-          errorMessage = 'Failed to read image file. Please try again.';
+          errorMessage = t('profile.imageUploadError');
         } else if (error.message.includes('storage')) {
-          errorMessage = 'Failed to upload to storage. Please check your connection.';
+          errorMessage = t('profile.imageUploadError');
         } else {
           errorMessage = error.message;
         }
@@ -304,7 +304,7 @@ export default function EditProfileScreen() {
       if (!firstName.trim() || !lastName.trim()) {
         Toast.show({
           type: 'error',
-          message: t('profile.nameRequired') || 'First and last name are required',
+          message: t('profile.nameRequired'),
           duration: 2000,
         });
         return;
@@ -364,7 +364,7 @@ export default function EditProfileScreen() {
 
       Toast.show({
         type: 'success',
-        message: t('profile.profileUpdated') || 'Profile updated successfully',
+        message: t('profile.profileUpdated'),
         duration: 2000,
       });
 
@@ -378,7 +378,7 @@ export default function EditProfileScreen() {
       console.error('Error saving profile:', error);
       Toast.show({
         type: 'error',
-        message: error.message || t('profile.saveError') || 'Failed to save profile',
+        message: error.message || t('profile.saveError'),
         duration: 3000,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -397,7 +397,7 @@ export default function EditProfileScreen() {
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>{t('profile.loading') || 'Loading...'}</Text>
+          <Text style={styles.loadingText}>{t('profile.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -435,7 +435,7 @@ export default function EditProfileScreen() {
                 color={colors.text} 
               />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{t('profile.editProfile') || 'Edit Profile'}</Text>
+            <Text style={styles.headerTitle}>{t('profile.editProfile')}</Text>
             <View style={styles.backButton} />
           </View>
 
@@ -464,7 +464,7 @@ export default function EditProfileScreen() {
               {uploading && (
                 <View style={styles.uploadingOverlay}>
                   <ActivityIndicator size="large" color="#FFFFFF" />
-                  <Text style={styles.uploadingText}>Uploading...</Text>
+                  <Text style={styles.uploadingText}>{t('profile.uploading')}</Text>
                 </View>
               )}
             </View>
@@ -483,10 +483,10 @@ export default function EditProfileScreen() {
               />
               <Text style={[styles.changePhotoText, uploading && styles.changePhotoTextDisabled]}>
                 {uploading 
-                  ? 'Uploading...'
+                  ? t('profile.uploading')
                   : avatarUrl 
-                    ? (t('profile.changePhoto') || 'Change Photo')
-                    : (t('profile.addPhoto') || 'Add Photo')
+                    ? t('profile.changePhoto')
+                    : t('profile.addPhoto')
                 }
               </Text>
             </TouchableOpacity>
@@ -495,10 +495,10 @@ export default function EditProfileScreen() {
           {/* Form Section */}
           <View style={styles.formSection}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{t('auth.firstName') || 'First Name'}</Text>
+              <Text style={styles.label}>{t('auth.firstName')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.firstNamePlaceholder') || 'Enter your first name'}
+                placeholder={t('auth.firstNamePlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 value={firstName}
                 onChangeText={setFirstName}
@@ -509,10 +509,10 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{t('auth.lastName') || 'Last Name'}</Text>
+              <Text style={styles.label}>{t('auth.lastName')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.lastNamePlaceholder') || 'Enter your last name'}
+                placeholder={t('auth.lastNamePlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 value={lastName}
                 onChangeText={setLastName}
@@ -531,7 +531,7 @@ export default function EditProfileScreen() {
                 color={colors.primary} 
               />
               <Text style={styles.infoText}>
-                {t('profile.editProfileInfo') || 'Your name will be displayed on your profile and visible to you.'}
+                {t('profile.editProfileInfo')}
               </Text>
             </View>
           </View>
@@ -546,7 +546,7 @@ export default function EditProfileScreen() {
             {saving ? (
               <>
                 <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.saveButtonText}>{t('profile.saving') || 'Saving...'}</Text>
+                <Text style={styles.saveButtonText}>{t('profile.saving')}</Text>
               </>
             ) : (
               <>
@@ -556,7 +556,7 @@ export default function EditProfileScreen() {
                   size={24} 
                   color="#FFFFFF" 
                 />
-                <Text style={styles.saveButtonText}>{t('profile.saveChanges') || 'Save Changes'}</Text>
+                <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
               </>
             )}
           </TouchableOpacity>

@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Natively",
@@ -17,7 +18,8 @@
       "bundleIdentifier": "com.anonymous.Natively",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "deploymentTarget": "13.0"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +27,9 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      "package": "com.anonymous.Natively",
+      "minSdkVersion": 21,
+      "targetSdkVersion": 34
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
