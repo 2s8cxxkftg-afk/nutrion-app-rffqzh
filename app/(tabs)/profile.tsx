@@ -456,8 +456,7 @@ export default function ProfileScreen() {
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <IconSymbol 
-                  ios_icon_name="person.fill" 
-                  android_material_icon_name="person" 
+                  name="person.fill" 
                   size={48} 
                   color={colors.primary} 
                 />
@@ -477,8 +476,7 @@ export default function ProfileScreen() {
           {user && (
             <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionBadgeColor() + '20' }]}>
               <IconSymbol 
-                ios_icon_name={isPremiumUser ? 'crown.fill' : 'person.fill'}
-                android_material_icon_name={isPremiumUser ? 'workspace_premium' : 'person'}
+                name={isPremiumUser ? 'crown.fill' : 'person.fill'}
                 size={16} 
                 color={getSubscriptionBadgeColor()} 
               />
@@ -496,8 +494,7 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
             >
               <IconSymbol 
-                ios_icon_name="pencil" 
-                android_material_icon_name="edit" 
+                name="pencil" 
                 size={18} 
                 color={colors.primary} 
               />
@@ -513,8 +510,7 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
             >
               <IconSymbol 
-                ios_icon_name="person.badge.key.fill" 
-                android_material_icon_name="login" 
+                name="person.badge.key.fill" 
                 size={20} 
                 color="#FFFFFF" 
               />
@@ -534,23 +530,20 @@ export default function ProfileScreen() {
               <View style={styles.premiumCardContent}>
                 <View style={styles.premiumIconContainer}>
                   <IconSymbol 
-                    ios_icon_name="crown.fill" 
-                    android_material_icon_name="workspace_premium" 
+                    name="crown.fill" 
                     size={48} 
                     color="#FFD700" 
                   />
                   <View style={styles.sparkle1}>
                     <IconSymbol 
-                      ios_icon_name="sparkles" 
-                      android_material_icon_name="auto_awesome" 
+                      name="sparkles" 
                       size={16} 
                       color="#FFD700" 
                     />
                   </View>
                   <View style={styles.sparkle2}>
                     <IconSymbol 
-                      ios_icon_name="sparkles" 
-                      android_material_icon_name="auto_awesome" 
+                      name="sparkles" 
                       size={12} 
                       color="#FFD700" 
                     />
@@ -568,8 +561,7 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.trialBadge}>
                       <IconSymbol 
-                        ios_icon_name="gift.fill" 
-                        android_material_icon_name="card_giftcard" 
+                        name="gift.fill" 
                         size={14} 
                         color="#FFFFFF" 
                       />
@@ -579,8 +571,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.premiumArrow}>
                   <IconSymbol 
-                    ios_icon_name="chevron.right" 
-                    android_material_icon_name="chevron_right" 
+                    name="chevron.right" 
                     size={28} 
                     color="#FFFFFF" 
                   />
@@ -596,8 +587,7 @@ export default function ProfileScreen() {
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: colors.primary + '15' }]}>
               <IconSymbol 
-                ios_icon_name="archivebox.fill" 
-                android_material_icon_name="inventory_2" 
+                name="archivebox.fill" 
                 size={32} 
                 color={colors.primary} 
               />
@@ -606,8 +596,7 @@ export default function ProfileScreen() {
             </View>
             <View style={[styles.statCard, { backgroundColor: expirationColors.nearExpiry + '15' }]}>
               <IconSymbol 
-                ios_icon_name="clock.fill" 
-                android_material_icon_name="schedule" 
+                name="clock.fill" 
                 size={32} 
                 color={expirationColors.nearExpiry} 
               />
@@ -616,8 +605,7 @@ export default function ProfileScreen() {
             </View>
             <View style={[styles.statCard, { backgroundColor: expirationColors.expired + '15' }]}>
               <IconSymbol 
-                ios_icon_name="exclamationmark.triangle.fill" 
-                android_material_icon_name="warning" 
+                name="exclamationmark.triangle.fill" 
                 size={32} 
                 color={expirationColors.expired} 
               />
@@ -640,8 +628,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingInfo}>
                   <View style={styles.settingIcon}>
                     <IconSymbol 
-                      ios_icon_name="crown.fill" 
-                      android_material_icon_name="workspace_premium" 
+                      name="crown.fill" 
                       size={24} 
                       color={colors.primary} 
                     />
@@ -654,8 +641,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
                 <IconSymbol 
-                  ios_icon_name="chevron.right" 
-                  android_material_icon_name="chevron_right" 
+                  name="chevron.right" 
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -676,8 +662,7 @@ export default function ProfileScreen() {
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
-                    ios_icon_name="bell.fill" 
-                    android_material_icon_name="notifications" 
+                    name="bell.fill" 
                     size={24} 
                     color={colors.primary} 
                   />
@@ -690,8 +675,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
+                name="chevron.right" 
                 size={20} 
                 color={colors.textSecondary} 
               />
@@ -705,8 +689,7 @@ export default function ProfileScreen() {
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
-                    ios_icon_name="globe" 
-                    android_material_icon_name="language" 
+                    name="globe" 
                     size={24} 
                     color={colors.primary} 
                   />
@@ -719,8 +702,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
+                name="chevron.right" 
                 size={20} 
                 color={colors.textSecondary} 
               />
@@ -734,8 +716,7 @@ export default function ProfileScreen() {
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
-                    ios_icon_name="book.fill" 
-                    android_material_icon_name="menu_book" 
+                    name="book.closed" 
                     size={24} 
                     color={colors.primary} 
                   />
@@ -748,8 +729,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
+                name="chevron.right" 
                 size={20} 
                 color={colors.textSecondary} 
               />
@@ -763,8 +743,7 @@ export default function ProfileScreen() {
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
-                    ios_icon_name="info.circle.fill" 
-                    android_material_icon_name="info" 
+                    name="info.circle.fill" 
                     size={24} 
                     color={colors.primary} 
                   />
@@ -777,8 +756,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
+                name="chevron.right" 
                 size={20} 
                 color={colors.textSecondary} 
               />
@@ -799,8 +777,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingInfo}>
                   <View style={[styles.settingIcon, { backgroundColor: colors.error + '15' }]}>
                     <IconSymbol 
-                      ios_icon_name="trash.fill" 
-                      android_material_icon_name="delete" 
+                      name="trash.fill" 
                       size={24} 
                       color={colors.error} 
                     />
@@ -815,8 +792,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
                 <IconSymbol 
-                  ios_icon_name="chevron.right" 
-                  android_material_icon_name="chevron_right" 
+                  name="chevron.right" 
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -841,8 +817,7 @@ export default function ProfileScreen() {
             ) : (
               <>
                 <IconSymbol 
-                  ios_icon_name="arrow.right.square.fill" 
-                  android_material_icon_name="logout" 
+                  name="arrow.right.square.fill" 
                   size={24} 
                   color={colors.error} 
                 />
@@ -861,8 +836,7 @@ export default function ProfileScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <IconSymbol 
-                ios_icon_name="exclamationmark.triangle.fill" 
-                android_material_icon_name="warning" 
+                name="exclamationmark.triangle.fill" 
                 size={48} 
                 color={colors.error} 
               />
