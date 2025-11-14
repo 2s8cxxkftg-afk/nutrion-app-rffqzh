@@ -120,6 +120,7 @@ export default function SubscriptionIntroScreen() {
             <Text style={styles.price}>1.99</Text>
             <Text style={styles.period}>/{t('subscription.month')}</Text>
           </View>
+          <Text style={styles.usdLabel}>USD</Text>
           <View style={styles.trialBadge}>
             <IconSymbol 
               ios_icon_name="gift.fill" 
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    marginBottom: 4,
   },
   currency: {
     fontSize: 32,
@@ -299,6 +300,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
     marginTop: 24,
+  },
+  usdLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
   },
   trialBadge: {
     flexDirection: 'row',
