@@ -175,7 +175,12 @@ export default function NotificationSettingsScreen() {
         {/* Permission Status */}
         {!permissionGranted && (
           <View style={styles.permissionBanner}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.warning} />
+            <IconSymbol 
+              ios_icon_name="exclamationmark.triangle.fill" 
+              android_material_icon_name="warning"
+              size={24} 
+              color={colors.warning} 
+            />
             <View style={styles.permissionTextContainer}>
               <Text style={styles.permissionTitle}>Notifications Disabled</Text>
               <Text style={styles.permissionDescription}>
@@ -196,7 +201,12 @@ export default function NotificationSettingsScreen() {
         <View style={styles.section}>
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="bell.fill" 
+                android_material_icon_name="notifications"
+                size={24} 
+                color={colors.primary} 
+              />
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingTitle}>Enable Notifications</Text>
                 <Text style={styles.settingDescription}>
@@ -219,7 +229,12 @@ export default function NotificationSettingsScreen() {
           <View style={styles.settingsList}>
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <IconSymbol name="clock.badge.exclamationmark.fill" size={24} color={colors.warning} />
+                <IconSymbol 
+                  ios_icon_name="clock.fill" 
+                  android_material_icon_name="schedule"
+                  size={24} 
+                  color={colors.warning} 
+                />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>Expiration Alerts</Text>
                   <Text style={styles.settingDescription}>
@@ -273,7 +288,12 @@ export default function NotificationSettingsScreen() {
           <View style={styles.settingsList}>
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <IconSymbol name="calendar.badge.clock" size={24} color={colors.accent} />
+                <IconSymbol 
+                  ios_icon_name="calendar" 
+                  android_material_icon_name="event"
+                  size={24} 
+                  color={colors.accent} 
+                />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>Daily Reminder</Text>
                   <Text style={styles.settingDescription}>
@@ -292,7 +312,12 @@ export default function NotificationSettingsScreen() {
 
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <IconSymbol name="cart.fill" size={24} color={colors.secondary} />
+                <IconSymbol 
+                  ios_icon_name="cart.fill" 
+                  android_material_icon_name="shopping_cart"
+                  size={24} 
+                  color={colors.secondary} 
+                />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>Shopping List Reminders</Text>
                   <Text style={styles.settingDescription}>
@@ -313,7 +338,12 @@ export default function NotificationSettingsScreen() {
 
         {/* Info Section */}
         <View style={styles.infoSection}>
-          <IconSymbol name="info.circle.fill" size={20} color={colors.textSecondary} />
+          <IconSymbol 
+            ios_icon_name="info.circle.fill" 
+            android_material_icon_name="info"
+            size={20} 
+            color={colors.textSecondary} 
+          />
           <Text style={styles.infoText}>
             Notifications help you reduce food waste by alerting you before items expire. 
             You can customize when and what notifications you receive.

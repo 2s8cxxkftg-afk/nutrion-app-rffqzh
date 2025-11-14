@@ -189,7 +189,12 @@ export default function AuthScreen() {
                 <Text style={styles.inputLabel}>{t('auth.firstName') || 'First Name'}</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
-                    <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
+                    <IconSymbol 
+                      ios_icon_name="person.fill" 
+                      android_material_icon_name="person"
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -211,7 +216,12 @@ export default function AuthScreen() {
                 <Text style={styles.inputLabel}>{t('auth.lastName') || 'Last Name'}</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
-                    <IconSymbol name="person.fill" size={20} color={colors.textSecondary} />
+                    <IconSymbol 
+                      ios_icon_name="person.fill" 
+                      android_material_icon_name="person"
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -232,7 +242,12 @@ export default function AuthScreen() {
               <Text style={styles.inputLabel}>{t('auth.emailAddress') || 'Email Address'}</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
-                  <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+                  <IconSymbol 
+                    ios_icon_name="envelope.fill" 
+                    android_material_icon_name="email"
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
                 </View>
                 <TextInput
                   style={styles.input}
@@ -253,7 +268,12 @@ export default function AuthScreen() {
               <Text style={styles.inputLabel}>{t('auth.password') || 'Password'}</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
-                  <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
+                  <IconSymbol 
+                    ios_icon_name="lock.fill" 
+                    android_material_icon_name="lock"
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
                 </View>
                 <TextInput
                   style={styles.input}
@@ -271,7 +291,8 @@ export default function AuthScreen() {
                   onPress={() => setShowPassword(!showPassword)}
                 >
                   <IconSymbol
-                    name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
+                    ios_icon_name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
+                    android_material_icon_name={showPassword ? 'visibility_off' : 'visibility'}
                     size={20}
                     color={colors.textSecondary}
                   />
@@ -285,7 +306,12 @@ export default function AuthScreen() {
                 <Text style={styles.inputLabel}>{t('auth.confirmPassword') || 'Confirm Password'}</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
-                    <IconSymbol name="lock.fill" size={20} color={colors.textSecondary} />
+                    <IconSymbol 
+                      ios_icon_name="lock.fill" 
+                      android_material_icon_name="lock"
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -303,7 +329,8 @@ export default function AuthScreen() {
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     <IconSymbol
-                      name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
+                      ios_icon_name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
+                      android_material_icon_name={showConfirmPassword ? 'visibility_off' : 'visibility'}
                       size={20}
                       color={colors.textSecondary}
                     />
@@ -338,7 +365,12 @@ export default function AuthScreen() {
                   <Text style={styles.submitButtonText}>
                     {isLogin ? (t('auth.signIn') || 'Sign In') : (t('auth.signUp') || 'Create Account')}
                   </Text>
-                  <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+                  <IconSymbol 
+                    ios_icon_name="arrow.right" 
+                    android_material_icon_name="arrow_forward"
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
                 </React.Fragment>
               )}
             </TouchableOpacity>

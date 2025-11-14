@@ -205,7 +205,12 @@ export default function FoodSearchScreen() {
           </Text>
         </View>
       </View>
-      <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+      <IconSymbol 
+        ios_icon_name="chevron.right" 
+        android_material_icon_name="chevron_right"
+        size={20} 
+        color={colors.textSecondary} 
+      />
     </TouchableOpacity>
   );
 
@@ -229,7 +234,12 @@ export default function FoodSearchScreen() {
         <View style={styles.container}>
           <View style={styles.searchContainer}>
             <View style={styles.searchInputContainer}>
-              <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="magnifyingglass" 
+                android_material_icon_name="search"
+                size={20} 
+                color={colors.textSecondary} 
+              />
               <TextInput
                 style={styles.searchInput}
                 placeholder={t('searchPlaceholder')}
@@ -249,7 +259,12 @@ export default function FoodSearchScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+                  <IconSymbol 
+                    ios_icon_name="xmark.circle.fill" 
+                    android_material_icon_name="cancel"
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -257,7 +272,12 @@ export default function FoodSearchScreen() {
 
           {searchQuery.length < 2 && (
             <View style={styles.hintContainer}>
-              <IconSymbol name="info.circle" size={24} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="info.circle" 
+                android_material_icon_name="info"
+                size={24} 
+                color={colors.textSecondary} 
+              />
               <Text style={styles.hintText}>{t('searchHint')}</Text>
             </View>
           )}
@@ -283,7 +303,12 @@ export default function FoodSearchScreen() {
             ) : searchQuery.length >= 2 ? (
               <View style={commonStyles.emptyState}>
                 <View style={commonStyles.emptyStateIcon}>
-                  <IconSymbol name="magnifyingglass" size={64} color={colors.textTertiary} />
+                  <IconSymbol 
+                    ios_icon_name="magnifyingglass" 
+                    android_material_icon_name="search"
+                    size={64} 
+                    color={colors.textTertiary} 
+                  />
                 </View>
                 <Text style={commonStyles.emptyStateTitle}>{t('noResults')}</Text>
                 <Text style={commonStyles.emptyStateDescription}>

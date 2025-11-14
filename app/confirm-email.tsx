@@ -182,7 +182,12 @@ export default function ConfirmEmailScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <IconSymbol name="envelope.badge.fill" size={60} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="envelope.fill" 
+                android_material_icon_name="email"
+                size={60} 
+                color={colors.primary} 
+              />
             </View>
             <Text style={styles.title}>
               {t('confirmEmail.title') || 'Verify Your Email'}
@@ -230,7 +235,12 @@ export default function ConfirmEmailScreen() {
                 <Text style={styles.verifyButtonText}>
                   {t('confirmEmail.verify') || 'Verify Email'}
                 </Text>
-                <IconSymbol name="checkmark.circle.fill" size={20} color="#FFFFFF" />
+                <IconSymbol 
+                  ios_icon_name="checkmark.circle.fill" 
+                  android_material_icon_name="check_circle"
+                  size={20} 
+                  color="#FFFFFF" 
+                />
               </>
             )}
           </TouchableOpacity>
@@ -259,7 +269,12 @@ export default function ConfirmEmailScreen() {
             onPress={handleBackToSignIn}
             disabled={loading}
           >
-            <IconSymbol name="arrow.left" size={16} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="arrow.left" 
+              android_material_icon_name="arrow_back"
+              size={16} 
+              color={colors.textSecondary} 
+            />
             <Text style={styles.backButtonText}>
               {t('auth.backToLogin') || 'Back to Sign In'}
             </Text>
@@ -267,7 +282,12 @@ export default function ConfirmEmailScreen() {
 
           {/* Info Box */}
           <View style={styles.infoBox}>
-            <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+            <IconSymbol 
+              ios_icon_name="info.circle.fill" 
+              android_material_icon_name="info"
+              size={20} 
+              color={colors.primary} 
+            />
             <Text style={styles.infoText}>
               {t('confirmEmail.info') || 'The verification code expires in 24 hours. Make sure to check your spam folder if you don\'t see the email.'}
             </Text>
