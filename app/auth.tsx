@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Image,
 } from 'react-native';
@@ -80,6 +79,7 @@ export default function AuthScreen() {
   const allRequirementsMet = !isLogin && passwordRequirements.every(req => req.met);
 
   const handleEmailAuth = async () => {
+    // Validate inputs
     if (!email || !password) {
       Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
       return;
@@ -124,13 +124,14 @@ export default function AuthScreen() {
 
     try {
       if (isLogin) {
+        console.log('🔐 Attempting sign in with email:', email);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) {
-          console.error('Sign in error:', error);
+          console.error('❌ Sign in error:', error);
           
           // Provide specific error messages
           let errorMessage = error.message;
@@ -141,7 +142,7 @@ export default function AuthScreen() {
             errorMessage = t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.';
           } else if (error.message.includes('Email not confirmed')) {
             errorMessage = t('auth.emailNotConfirmed') || 'Please verify your email address before signing in.';
-          } else if (error.message.includes('rate limit')) {
+          } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
             errorMessage = t('auth.rateLimitExceeded') || 'Too many attempts. Please wait a few minutes and try again.';
           }
           
@@ -149,10 +150,16 @@ export default function AuthScreen() {
           return;
         }
 
-        console.log('Sign in successful:', data);
+        console.log('✅ Sign in successful:', data.user?.email);
         Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
-        router.replace('/subscription-intro');
+        
+        // Navigate to subscription intro
+        setTimeout(() => {
+          router.replace('/subscription-intro');
+        }, 500);
       } else {
+        console.log('📝 Attempting sign up with email:', email);
+        
         // Sign up with OTP verification
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -168,7 +175,7 @@ export default function AuthScreen() {
         });
 
         if (error) {
-          console.error('Sign up error:', error);
+          console.error('❌ Sign up error:', error);
           
           // Provide specific error messages for sign up
           let errorMessage = error.message;
@@ -176,7 +183,7 @@ export default function AuthScreen() {
           if (error.message.includes('rate limit') || error.message.includes('email rate limit exceeded')) {
             errorMessage = t('auth.emailRateLimitExceeded') || 
               'Email rate limit exceeded. Please wait a few minutes before trying again. This helps us prevent spam and protect your account.';
-          } else if (error.message.includes('User already registered')) {
+          } else if (error.message.includes('User already registered') || error.message.includes('already registered')) {
             errorMessage = t('auth.userAlreadyExists') || 'An account with this email already exists. Please sign in instead.';
           } else if (error.message.includes('Password')) {
             errorMessage = t('auth.passwordRequirementsNotMet') || 'Password does not meet security requirements.';
@@ -186,7 +193,7 @@ export default function AuthScreen() {
           return;
         }
 
-        console.log('Sign up successful:', data);
+        console.log('✅ Sign up successful:', data.user?.email);
 
         // Create profile entry with first and last name
         if (data.user) {
@@ -201,12 +208,12 @@ export default function AuthScreen() {
               });
 
             if (profileError) {
-              console.error('Profile creation error:', profileError);
+              console.error('⚠️ Profile creation error:', profileError);
             } else {
-              console.log('Profile created successfully');
+              console.log('✅ Profile created successfully');
             }
           } catch (profileError) {
-            console.error('Error creating profile:', profileError);
+            console.error('⚠️ Error creating profile:', profileError);
           }
         }
         
@@ -217,18 +224,24 @@ export default function AuthScreen() {
             type: 'success', 
             message: t('auth.verificationCodeSent') || 'Verification code sent to your email!' 
           });
-          router.push({
-            pathname: '/confirm-email',
-            params: { email }
-          });
+          
+          setTimeout(() => {
+            router.push({
+              pathname: '/confirm-email',
+              params: { email }
+            });
+          }, 500);
         } else {
           // Auto-confirmed, proceed to subscription intro
           Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
-          router.replace('/subscription-intro');
+          
+          setTimeout(() => {
+            router.replace('/subscription-intro');
+          }, 500);
         }
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error('❌ Auth error:', error);
       Toast.show({ type: 'error', message: t('auth.unexpectedError') || 'An unexpected error occurred' });
     } finally {
       setLoading(false);
@@ -259,7 +272,7 @@ export default function AuthScreen() {
             />
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
-              {isLogin ? 'Welcome!' : 'Create your account'}
+              {isLogin ? 'Welcome back!' : 'Create your account'}
             </Text>
           </View>
 
