@@ -21,6 +21,12 @@ import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+  key: string;
+}
+
 export default function AuthScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -38,6 +44,40 @@ export default function AuthScreen() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
+  // Password validation requirements
+  const getPasswordRequirements = (pwd: string): PasswordRequirement[] => {
+    return [
+      {
+        key: 'length',
+        label: t('auth.passwordMinLength') || 'At least 8 characters',
+        met: pwd.length >= 8,
+      },
+      {
+        key: 'uppercase',
+        label: t('auth.passwordUppercase') || 'One uppercase letter (A-Z)',
+        met: /[A-Z]/.test(pwd),
+      },
+      {
+        key: 'lowercase',
+        label: t('auth.passwordLowercase') || 'One lowercase letter (a-z)',
+        met: /[a-z]/.test(pwd),
+      },
+      {
+        key: 'number',
+        label: t('auth.passwordNumber') || 'One number (0-9)',
+        met: /[0-9]/.test(pwd),
+      },
+      {
+        key: 'special',
+        label: t('auth.passwordSpecial') || 'One special character (!@#$%^&*)',
+        met: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
+      },
+    ];
+  };
+
+  const passwordRequirements = getPasswordRequirements(password);
+  const allRequirementsMet = !isLogin && passwordRequirements.every(req => req.met);
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
@@ -60,9 +100,24 @@ export default function AuthScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      Toast.show({ type: 'error', message: t('auth.passwordTooShort') || 'Password must be at least 6 characters' });
-      return;
+    // Enhanced password validation for sign up
+    if (!isLogin) {
+      if (!allRequirementsMet) {
+        Toast.show({ 
+          type: 'error', 
+          message: t('auth.passwordRequirementsNotMet') || 'Please meet all password requirements' 
+        });
+        return;
+      }
+    } else {
+      // Minimum length check for login
+      if (password.length < 6) {
+        Toast.show({ 
+          type: 'error', 
+          message: t('auth.passwordTooShort') || 'Password must be at least 6 characters' 
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -76,12 +131,26 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign in error:', error);
-          Toast.show({ type: 'error', message: error.message || t('auth.signInFailed') || 'Sign in failed' });
+          
+          // Provide specific error messages
+          let errorMessage = error.message;
+          
+          if (error.message.includes('Invalid login credentials') || 
+              error.message.includes('invalid') || 
+              error.message.includes('credentials')) {
+            errorMessage = t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.';
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage = t('auth.emailNotConfirmed') || 'Please verify your email address before signing in.';
+          } else if (error.message.includes('rate limit')) {
+            errorMessage = t('auth.rateLimitExceeded') || 'Too many attempts. Please wait a few minutes and try again.';
+          }
+          
+          Toast.show({ type: 'error', message: errorMessage });
           return;
         }
 
         console.log('Sign in successful:', data);
-        Toast.show({ type: 'success', message: 'Welcome!' });
+        Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
         router.replace('/subscription-intro');
       } else {
         // Sign up with OTP verification
@@ -100,7 +169,20 @@ export default function AuthScreen() {
 
         if (error) {
           console.error('Sign up error:', error);
-          Toast.show({ type: 'error', message: error.message || t('auth.signUpFailed') || 'Sign up failed' });
+          
+          // Provide specific error messages for sign up
+          let errorMessage = error.message;
+          
+          if (error.message.includes('rate limit') || error.message.includes('email rate limit exceeded')) {
+            errorMessage = t('auth.emailRateLimitExceeded') || 
+              'Email rate limit exceeded. Please wait a few minutes before trying again. This helps us prevent spam and protect your account.';
+          } else if (error.message.includes('User already registered')) {
+            errorMessage = t('auth.userAlreadyExists') || 'An account with this email already exists. Please sign in instead.';
+          } else if (error.message.includes('Password')) {
+            errorMessage = t('auth.passwordRequirementsNotMet') || 'Password does not meet security requirements.';
+          }
+          
+          Toast.show({ type: 'error', message: errorMessage });
           return;
         }
 
@@ -300,6 +382,31 @@ export default function AuthScreen() {
               </View>
             </View>
 
+            {/* Password Requirements (Sign Up only) */}
+            {!isLogin && password.length > 0 && (
+              <View style={styles.passwordRequirementsContainer}>
+                <Text style={styles.passwordRequirementsTitle}>
+                  {t('auth.passwordRequirements') || 'Password Requirements:'}
+                </Text>
+                {passwordRequirements.map((req) => (
+                  <View key={req.key} style={styles.requirementRow}>
+                    <IconSymbol
+                      ios_icon_name={req.met ? 'checkmark.circle.fill' : 'circle'}
+                      android_material_icon_name={req.met ? 'check_circle' : 'radio_button_unchecked'}
+                      size={16}
+                      color={req.met ? '#4CAF50' : colors.textSecondary}
+                    />
+                    <Text style={[
+                      styles.requirementText,
+                      req.met && styles.requirementTextMet
+                    ]}>
+                      {req.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Confirm Password Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
@@ -457,6 +564,35 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: spacing.sm,
+  },
+  passwordRequirementsContainer: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  passwordRequirementsTitle: {
+    ...typography.bodySmall,
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+    gap: spacing.sm,
+  },
+  requirementText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  requirementTextMet: {
+    color: '#4CAF50',
+    fontWeight: '500',
   },
   forgotPasswordButton: {
     alignSelf: 'flex-end',
