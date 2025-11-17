@@ -51,16 +51,14 @@ export default function EditProfileScreen() {
 
       setUser(user);
 
-      // Load profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error loading profile:', profileError);
-        throw profileError;
       }
 
       if (profileData) {
@@ -69,7 +67,7 @@ export default function EditProfileScreen() {
         setAvatarUrl(profileData.avatar_url || '');
       }
 
-      console.log('Profile loaded successfully:', profileData);
+      console.log('Profile loaded successfully');
     } catch (error: any) {
       console.error('Error loading profile:', error);
       Toast.show({
@@ -85,50 +83,24 @@ export default function EditProfileScreen() {
   const pickImage = async () => {
     try {
       console.log('Starting image picker...');
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Check current permission status
-      const { status: currentStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
-      console.log('Current permission status:', currentStatus);
-
-      let finalStatus = currentStatus;
-
-      // Request permission if not granted
-      if (currentStatus !== 'granted') {
-        console.log('Requesting media library permission...');
-        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        finalStatus = newStatus;
-        console.log('Permission request result:', newStatus);
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.log('Haptics not available');
       }
 
-      // Check if permission was granted
-      if (finalStatus !== 'granted') {
-        console.log('Permission denied by user');
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
         Alert.alert(
           t('profile.permissionRequired'),
-          t('profile.photoPermissionMessage'),
-          [
-            { text: t('cancel'), style: 'cancel' },
-            {
-              text: t('notifications.openSettings'),
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  // On iOS, we can't directly open settings, but we can show a message
-                  Alert.alert(
-                    t('profile.permissionRequired'),
-                    t('profile.photoPermissionMessage')
-                  );
-                }
-              }
-            }
-          ]
+          t('profile.photoPermissionMessage')
         );
         return;
       }
 
       console.log('Permission granted, launching image picker...');
 
-      // Launch image picker with proper configuration for Expo SDK 54
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -138,13 +110,11 @@ export default function EditProfileScreen() {
 
       console.log('Image picker result:', result);
 
-      // Check if user cancelled the picker
       if (result.canceled) {
         console.log('User cancelled image picker');
         return;
       }
 
-      // Check if we have a valid asset
       if (!result.assets || result.assets.length === 0) {
         console.error('No assets returned from image picker');
         Toast.show({
@@ -158,7 +128,6 @@ export default function EditProfileScreen() {
       const selectedAsset = result.assets[0];
       console.log('Selected image URI:', selectedAsset.uri);
 
-      // Validate the URI
       if (!selectedAsset.uri) {
         console.error('Invalid image URI');
         Toast.show({
@@ -169,7 +138,6 @@ export default function EditProfileScreen() {
         return;
       }
 
-      // Upload the selected image
       await uploadImage(selectedAsset.uri);
     } catch (error: any) {
       console.error('Error in pickImage:', error);
@@ -190,36 +158,28 @@ export default function EditProfileScreen() {
         throw new Error('No user found');
       }
 
-      // Determine file extension
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${Date.now()}.${fileExt}`;
-      // FIXED: Use the correct path format with user_id folder for RLS policies
       const filePath = `avatars/${user.id}/${fileName}`;
 
       console.log('Preparing to upload to:', filePath);
 
-      // For React Native, we need to fetch the file as ArrayBuffer
-      console.log('Fetching image data...');
       const response = await fetch(uri);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch image: ${response.status}`);
       }
 
-      // Convert to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
       console.log('Image data loaded, size:', arrayBuffer.byteLength);
 
-      // Validate data
       if (arrayBuffer.byteLength === 0) {
         throw new Error('Image file is empty');
       }
 
-      // Determine content type
       const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
       console.log('Content type:', contentType);
 
-      // Upload to Supabase Storage using ArrayBuffer
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, arrayBuffer, {
@@ -230,12 +190,11 @@ export default function EditProfileScreen() {
 
       if (uploadError) {
         console.error('Supabase upload error:', uploadError);
-        throw new Error(uploadError.message || 'Failed to upload image to storage');
+        throw new Error(uploadError.message || 'Failed to upload image');
       }
 
       console.log('Image uploaded successfully:', uploadData);
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('profile-images')
         .getPublicUrl(filePath);
@@ -243,11 +202,8 @@ export default function EditProfileScreen() {
       const publicUrl = urlData.publicUrl;
       console.log('Public URL generated:', publicUrl);
 
-      // Update local state immediately for instant UI feedback
       setAvatarUrl(publicUrl);
 
-      // Update profile in database
-      console.log('Updating profile with new avatar URL...');
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -258,8 +214,6 @@ export default function EditProfileScreen() {
 
       if (updateError) {
         console.error('Error updating profile with avatar URL:', updateError);
-        // Don't throw here - the image is uploaded, just log the error
-        console.log('Image uploaded but profile update failed, will retry on save');
       } else {
         console.log('Profile updated with new avatar URL');
       }
@@ -270,30 +224,25 @@ export default function EditProfileScreen() {
         duration: 2000,
       });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptics not available');
+      }
     } catch (error: any) {
       console.error('Error uploading image:', error);
       
-      // Provide more specific error messages
-      let errorMessage = t('profile.imageUploadError');
-      
-      if (error.message) {
-        if (error.message.includes('fetch')) {
-          errorMessage = t('profile.imageUploadError');
-        } else if (error.message.includes('storage')) {
-          errorMessage = t('profile.imageUploadError');
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
       Toast.show({
         type: 'error',
-        message: errorMessage,
+        message: error.message || t('profile.imageUploadError'),
         duration: 3000,
       });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } catch (error) {
+        console.log('Haptics not available');
+      }
     } finally {
       setUploading(false);
     }
@@ -311,7 +260,11 @@ export default function EditProfileScreen() {
       }
 
       setSaving(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.log('Haptics not available');
+      }
 
       if (!user) {
         throw new Error('No user found');
@@ -319,17 +272,15 @@ export default function EditProfileScreen() {
 
       console.log('Saving profile changes...');
 
-      // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       let result;
 
       if (existingProfile) {
-        // Update existing profile
         console.log('Updating existing profile...');
         result = await supabase
           .from('profiles')
@@ -342,7 +293,6 @@ export default function EditProfileScreen() {
           })
           .eq('user_id', user.id);
       } else {
-        // Insert new profile
         console.log('Creating new profile...');
         result = await supabase
           .from('profiles')
@@ -368,9 +318,12 @@ export default function EditProfileScreen() {
         duration: 2000,
       });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        console.log('Haptics not available');
+      }
 
-      // Navigate back after a short delay
       setTimeout(() => {
         router.back();
       }, 500);
@@ -381,7 +334,11 @@ export default function EditProfileScreen() {
         message: error.message || t('profile.saveError'),
         duration: 3000,
       });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } catch (error) {
+        console.log('Haptics not available');
+      }
     } finally {
       setSaving(false);
     }
@@ -390,11 +347,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-        <Stack.Screen
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{t('profile.loading')}</Text>
@@ -405,11 +358,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -421,13 +370,8 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
               <IconSymbol 
                 ios_icon_name="chevron.left" 
                 android_material_icon_name="arrow_back"
@@ -439,17 +383,13 @@ export default function EditProfileScreen() {
             <View style={styles.backButton} />
           </View>
 
-          {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
               {avatarUrl ? (
                 <Image 
                   source={{ uri: avatarUrl }} 
                   style={styles.avatar}
-                  onError={(error) => {
-                    console.error('Error loading avatar image:', error);
-                    setAvatarUrl(''); // Reset to placeholder on error
-                  }}
+                  onError={() => setAvatarUrl('')}
                 />
               ) : (
                 <View style={styles.avatarPlaceholder}>
@@ -492,7 +432,6 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Form Section */}
           <View style={styles.formSection}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>{t('auth.firstName')}</Text>
@@ -530,13 +469,10 @@ export default function EditProfileScreen() {
                 size={20} 
                 color={colors.primary} 
               />
-              <Text style={styles.infoText}>
-                {t('profile.editProfileInfo')}
-              </Text>
+              <Text style={styles.infoText}>{t('profile.editProfileInfo')}</Text>
             </View>
           </View>
 
-          {/* Save Button */}
           <TouchableOpacity
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
             onPress={handleSave}
@@ -544,12 +480,12 @@ export default function EditProfileScreen() {
             disabled={saving}
           >
             {saving ? (
-              <>
+              <React.Fragment>
                 <ActivityIndicator color="#FFFFFF" size="small" />
                 <Text style={styles.saveButtonText}>{t('profile.saving')}</Text>
-              </>
+              </React.Fragment>
             ) : (
-              <>
+              <React.Fragment>
                 <IconSymbol 
                   ios_icon_name="checkmark.circle.fill" 
                   android_material_icon_name="check_circle"
@@ -557,7 +493,7 @@ export default function EditProfileScreen() {
                   color="#FFFFFF" 
                 />
                 <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
-              </>
+              </React.Fragment>
             )}
           </TouchableOpacity>
 
@@ -681,8 +617,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: `0px 2px 4px ${colors.shadow}`,
-    elevation: 1,
   },
   infoBox: {
     flexDirection: 'row',
@@ -708,8 +642,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.lg,
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
   },
   saveButtonDisabled: {
     opacity: 0.6,

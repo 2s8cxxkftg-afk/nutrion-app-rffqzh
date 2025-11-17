@@ -41,11 +41,8 @@ export default function ProfileScreen() {
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  
-  // Add loading states to prevent UI flickering
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -54,21 +51,13 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  // Load all data in sequence to prevent race conditions
   const loadAllData = async () => {
     try {
-      // Set all loading states to true
       setIsLoadingAuth(true);
       setIsLoadingSubscription(true);
-      setIsLoadingStats(true);
 
-      // Load user info first (most critical)
       await loadUserInfo();
-      
-      // Then load subscription info
       await loadSubscriptionInfo();
-      
-      // Finally load stats
       await loadStats();
       
       console.log('✅ All profile data loaded successfully');
@@ -95,8 +84,6 @@ export default function ProfileScreen() {
       setExpired(expiredCount);
     } catch (error) {
       console.error('Error loading stats:', error);
-    } finally {
-      setIsLoadingStats(false);
     }
   };
 
@@ -104,11 +91,9 @@ export default function ProfileScreen() {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
-      // Update user state
       setUser(currentUser);
       console.log('User loaded:', currentUser?.email || 'No user');
 
-      // Load profile data if user exists
       if (currentUser) {
         try {
           const { data: profileData, error: profileError } = await supabase
@@ -117,30 +102,16 @@ export default function ProfileScreen() {
             .eq('user_id', currentUser.id)
             .maybeSingle();
 
-          if (profileError) {
-            // Only log error if it's not a 406 (Not Acceptable) error
-            if (profileError.code !== 'PGRST116' && !profileError.message?.includes('406')) {
-              console.error('Error loading profile:', profileError);
-            } else {
-              console.log('Profile not found or not acceptable, will create on edit');
-            }
-            setProfile(null);
-          } else if (profileData) {
-            setProfile(profileData);
-            console.log('Profile loaded:', profileData);
-          } else {
-            console.log('No profile found for user');
-            setProfile(null);
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error loading profile:', profileError);
           }
+          
+          setProfile(profileData || null);
         } catch (error: any) {
-          // Silently handle 406 errors
-          if (!error.message?.includes('406')) {
-            console.error('Error fetching profile:', error);
-          }
+          console.error('Error fetching profile:', error);
           setProfile(null);
         }
       } else {
-        // No user logged in - clear profile
         setProfile(null);
       }
     } catch (error) {
@@ -154,7 +125,6 @@ export default function ProfileScreen() {
 
   const loadSubscriptionInfo = async () => {
     try {
-      // Only load subscription if user is logged in
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (currentUser) {
@@ -162,9 +132,7 @@ export default function ProfileScreen() {
         setSubscription(sub);
         console.log('Subscription loaded:', sub?.status, 'Plan:', sub?.plan_type);
       } else {
-        // No user - clear subscription
         setSubscription(null);
-        console.log('No user logged in - clearing subscription');
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
@@ -179,7 +147,11 @@ export default function ProfileScreen() {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available');
+    }
     router.push('/edit-profile');
   };
 
@@ -216,7 +188,6 @@ export default function ProfileScreen() {
     setIsDeleting(true);
 
     try {
-      // First, verify the password by attempting to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: deletePassword,
@@ -234,8 +205,6 @@ export default function ProfileScreen() {
 
       console.log('Password verified, proceeding with account deletion...');
 
-      // Use the RPC function to delete the user and all associated data
-      // This will automatically cascade and delete all related records
       const { error: deleteError } = await supabase.rpc('delete_user');
 
       if (deleteError) {
@@ -245,7 +214,6 @@ export default function ProfileScreen() {
 
       console.log('✅ User account and all data deleted successfully');
 
-      // Clear local storage
       await AsyncStorage.clear();
 
       Toast.show({
@@ -254,7 +222,6 @@ export default function ProfileScreen() {
         duration: 3000,
       });
 
-      // Sign out and redirect to auth page
       await supabase.auth.signOut();
       setShowDeleteModal(false);
       setDeletePassword('');
@@ -276,7 +243,11 @@ export default function ProfileScreen() {
       Alert.alert(t('error'), t('profile.pleaseSignIn'));
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available');
+    }
     router.push('/subscription-management');
   };
 
@@ -320,7 +291,6 @@ export default function ProfileScreen() {
             try {
               console.log('🔓 Starting sign out process...');
               
-              // Step 1: Sign out from Supabase (this clears the session on the server)
               const { error: signOutError } = await supabase.auth.signOut();
               
               if (signOutError) {
@@ -330,7 +300,6 @@ export default function ProfileScreen() {
 
               console.log('✅ Supabase session cleared successfully');
 
-              // Step 2: Clear local state immediately
               setUser(null);
               setProfile(null);
               setSubscription(null);
@@ -338,17 +307,15 @@ export default function ProfileScreen() {
               setExpiringSoon(0);
               setExpired(0);
 
-              // Step 3: Clear AsyncStorage selectively (keep language and notification settings)
               const keysToKeep = ['@nutrion_language', '@nutrion_language_selected', '@nutrion_notification_settings'];
               const allKeys = await AsyncStorage.getAllKeys();
               const keysToRemove = allKeys.filter(key => !keysToKeep.includes(key));
               
               if (keysToRemove.length > 0) {
                 await AsyncStorage.multiRemove(keysToRemove);
-                console.log('✅ Local storage cleared (kept language and notification settings)');
+                console.log('✅ Local storage cleared');
               }
 
-              // Step 4: Show success message
               Toast.show({
                 type: 'success',
                 message: t('profile.signedOut'),
@@ -357,8 +324,6 @@ export default function ProfileScreen() {
 
               console.log('✅ Sign out completed successfully');
 
-              // Step 5: Navigate to index which will redirect to auth
-              // Using a small delay to ensure state is cleared and toast is visible
               setTimeout(() => {
                 console.log('🔄 Navigating to index for redirect...');
                 router.replace('/');
@@ -403,17 +368,12 @@ export default function ProfileScreen() {
 
   const isPremiumUser = subscription?.plan_type === 'premium' && (subscription?.status === 'active' || subscription?.status === 'trial');
 
-  // Show loading indicator while data is being loaded
   const isLoading = isLoadingAuth || isLoadingSubscription;
 
   if (isLoading) {
     return (
       <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-        <Stack.Screen
-          options={{
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{t('profile.loading') || 'Loading profile...'}</Text>
@@ -424,35 +384,23 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
         style={commonStyles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('profile.title') || 'Profile'}</Text>
         </View>
 
-        {/* User Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             {profile?.avatar_url ? (
-              <Image
-                source={{ uri: profile.avatar_url }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
             ) : user?.user_metadata?.avatar_url ? (
-              <Image
-                source={{ uri: user.user_metadata.avatar_url }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: user.user_metadata.avatar_url }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <IconSymbol 
@@ -473,7 +421,6 @@ export default function ProfileScreen() {
             <Text style={styles.userEmail}>{user.email}</Text>
           )}
 
-          {/* Subscription Badge - Only show if user is logged in */}
           {user && (
             <View style={[styles.subscriptionBadge, { backgroundColor: getSubscriptionBadgeColor() + '20' }]}>
               <IconSymbol 
@@ -488,13 +435,8 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Edit Profile Button - Only show if user is logged in */}
           {user && (
-            <TouchableOpacity
-              style={styles.editProfileButton}
-              onPress={handleEditProfile}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile} activeOpacity={0.8}>
               <IconSymbol 
                 ios_icon_name="pencil" 
                 android_material_icon_name="edit"
@@ -505,13 +447,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Sign In Button - Only show if user is NOT logged in */}
           {!user && (
-            <TouchableOpacity
-              style={styles.signInButton}
-              onPress={handleSignIn}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.signInButton} onPress={handleSignIn} activeOpacity={0.8}>
               <IconSymbol 
                 ios_icon_name="person.badge.key.fill" 
                 android_material_icon_name="vpn_key"
@@ -523,13 +460,8 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Premium Subscription Card - Only show for logged in non-premium users */}
         {user && !isPremiumUser && (
-          <TouchableOpacity
-            style={styles.premiumCard}
-            onPress={handleSubscriptionManagement}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.premiumCard} onPress={handleSubscriptionManagement} activeOpacity={0.85}>
             <View style={styles.premiumGradient}>
               <View style={styles.premiumCardContent}>
                 <View style={styles.premiumIconContainer}>
@@ -539,28 +471,10 @@ export default function ProfileScreen() {
                     size={48} 
                     color="#FFD700" 
                   />
-                  <View style={styles.sparkle1}>
-                    <IconSymbol 
-                      ios_icon_name="sparkles" 
-                      android_material_icon_name="auto_awesome"
-                      size={16} 
-                      color="#FFD700" 
-                    />
-                  </View>
-                  <View style={styles.sparkle2}>
-                    <IconSymbol 
-                      ios_icon_name="sparkles" 
-                      android_material_icon_name="auto_awesome"
-                      size={12} 
-                      color="#FFD700" 
-                    />
-                  </View>
                 </View>
                 <View style={styles.premiumTextContainer}>
                   <Text style={styles.premiumTitle}>{t('subscription.upgradeToPremium')}</Text>
-                  <Text style={styles.premiumDescription}>
-                    {t('profile.premiumCardDesc')}
-                  </Text>
+                  <Text style={styles.premiumDescription}>{t('profile.premiumCardDesc')}</Text>
                   <View style={styles.premiumPriceRow}>
                     <View style={styles.premiumPriceContainer}>
                       <Text style={styles.premiumPrice}>$1.99</Text>
@@ -590,7 +504,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Statistics */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.statistics')}</Text>
           <View style={styles.statsGrid}>
@@ -627,16 +540,11 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Subscription Section - Only show if user is logged in */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.subscription')}</Text>
             <View style={styles.settingsList}>
-              <TouchableOpacity
-                style={styles.settingItem}
-                onPress={handleSubscriptionManagement}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.settingItem} onPress={handleSubscriptionManagement} activeOpacity={0.7}>
                 <View style={styles.settingInfo}>
                   <View style={styles.settingIcon}>
                     <IconSymbol 
@@ -648,9 +556,7 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>{t('subscription.manageSub')}</Text>
-                    <Text style={styles.settingDescription}>
-                      {t('profile.subscriptionDesc')}
-                    </Text>
+                    <Text style={styles.settingDescription}>{t('profile.subscriptionDesc')}</Text>
                   </View>
                 </View>
                 <IconSymbol 
@@ -664,15 +570,10 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
           <View style={styles.settingsList}>
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={handleNotificationSettings}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.settingItem} onPress={handleNotificationSettings} activeOpacity={0.7}>
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
@@ -684,9 +585,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.notifications')}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('profile.notificationsDesc')}
-                  </Text>
+                  <Text style={styles.settingDescription}>{t('profile.notificationsDesc')}</Text>
                 </View>
               </View>
               <IconSymbol 
@@ -697,11 +596,7 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={handleLanguageSettings}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.settingItem} onPress={handleLanguageSettings} activeOpacity={0.7}>
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
@@ -713,9 +608,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.language')}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('profile.languageDesc')}
-                  </Text>
+                  <Text style={styles.settingDescription}>{t('profile.languageDesc')}</Text>
                 </View>
               </View>
               <IconSymbol 
@@ -726,11 +619,7 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={handleViewOnboarding}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.settingItem} onPress={handleViewOnboarding} activeOpacity={0.7}>
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
@@ -742,9 +631,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.tutorial')}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('profile.tutorialDesc')}
-                  </Text>
+                  <Text style={styles.settingDescription}>{t('profile.tutorialDesc')}</Text>
                 </View>
               </View>
               <IconSymbol 
@@ -755,11 +642,7 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={handleAbout}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.settingItem} onPress={handleAbout} activeOpacity={0.7}>
               <View style={styles.settingInfo}>
                 <View style={styles.settingIcon}>
                   <IconSymbol 
@@ -771,9 +654,7 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t('profile.about')}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('profile.aboutDesc')}
-                  </Text>
+                  <Text style={styles.settingDescription}>{t('profile.aboutDesc')}</Text>
                 </View>
               </View>
               <IconSymbol 
@@ -786,16 +667,11 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Account Management Section - Only show if user is logged in */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('profile.accountManagement')}</Text>
             <View style={styles.settingsList}>
-              <TouchableOpacity
-                style={styles.settingItem}
-                onPress={handleDeleteAccount}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.settingItem} onPress={handleDeleteAccount} activeOpacity={0.7}>
                 <View style={styles.settingInfo}>
                   <View style={[styles.settingIcon, { backgroundColor: colors.error + '15' }]}>
                     <IconSymbol 
@@ -806,12 +682,8 @@ export default function ProfileScreen() {
                     />
                   </View>
                   <View style={styles.settingTextContainer}>
-                    <Text style={[styles.settingTitle, { color: colors.error }]}>
-                      {t('profile.deleteAccount')}
-                    </Text>
-                    <Text style={styles.settingDescription}>
-                      {t('profile.deleteAccountDesc')}
-                    </Text>
+                    <Text style={[styles.settingTitle, { color: colors.error }]}>{t('profile.deleteAccount')}</Text>
+                    <Text style={styles.settingDescription}>{t('profile.deleteAccountDesc')}</Text>
                   </View>
                 </View>
                 <IconSymbol 
@@ -825,7 +697,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Sign Out - Only show if user is logged in */}
         {user && (
           <TouchableOpacity
             style={[styles.signOutButton, isSigningOut && styles.signOutButtonDisabled]}
@@ -834,12 +705,12 @@ export default function ProfileScreen() {
             disabled={isSigningOut}
           >
             {isSigningOut ? (
-              <>
+              <React.Fragment>
                 <ActivityIndicator color={colors.error} size="small" />
                 <Text style={styles.signOutText}>{t('profile.signingOut') || 'Signing out...'}</Text>
-              </>
+              </React.Fragment>
             ) : (
-              <>
+              <React.Fragment>
                 <IconSymbol 
                   ios_icon_name="arrow.right.square.fill" 
                   android_material_icon_name="logout"
@@ -847,7 +718,7 @@ export default function ProfileScreen() {
                   color={colors.error} 
                 />
                 <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
-              </>
+              </React.Fragment>
             )}
           </TouchableOpacity>
         )}
@@ -855,7 +726,6 @@ export default function ProfileScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Delete Account Modal */}
       {showDeleteModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -867,9 +737,7 @@ export default function ProfileScreen() {
                 color={colors.error} 
               />
               <Text style={styles.modalTitle}>{t('profile.deleteAccount')}</Text>
-              <Text style={styles.modalDescription}>
-                {t('profile.deleteAccountConfirm')}
-              </Text>
+              <Text style={styles.modalDescription}>{t('profile.deleteAccountConfirm')}</Text>
             </View>
 
             <View style={styles.modalBody}>
@@ -945,8 +813,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     marginBottom: spacing.xxl,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 2,
   },
   avatarContainer: {
     marginBottom: spacing.lg,
@@ -954,12 +820,12 @@ const styles = StyleSheet.create({
   avatar: {
     width: 100,
     height: 100,
-    borderRadius: borderRadius.full,
+    borderRadius: 50,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: borderRadius.full,
+    borderRadius: 50,
     backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
@@ -979,7 +845,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
     gap: spacing.xs,
     marginBottom: spacing.md,
   },
@@ -1012,8 +878,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.lg,
     marginTop: spacing.xl,
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
   },
   signInButtonText: {
     ...typography.h4,
@@ -1023,12 +887,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     marginBottom: spacing.xxl,
     overflow: 'hidden',
-    boxShadow: `0px 12px 32px rgba(102, 126, 234, 0.5)`,
-    elevation: 12,
   },
   premiumGradient: {
     backgroundColor: '#667eea',
-    backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     padding: spacing.xl,
     borderWidth: 3,
     borderColor: '#FFD700',
@@ -1042,23 +903,10 @@ const styles = StyleSheet.create({
   premiumIconContainer: {
     width: 80,
     height: 80,
-    borderRadius: borderRadius.full,
+    borderRadius: 40,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    boxShadow: '0px 4px 16px rgba(255, 215, 0, 0.4)',
-    elevation: 6,
-  },
-  sparkle1: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-  },
-  sparkle2: {
-    position: 'absolute',
-    bottom: 4,
-    left: -4,
   },
   premiumTextContainer: {
     flex: 1,
@@ -1103,7 +951,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
     gap: spacing.xs,
   },
   trialBadgeText: {
@@ -1115,7 +963,7 @@ const styles = StyleSheet.create({
   premiumArrow: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1152,8 +1000,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 2,
   },
   settingItem: {
     flexDirection: 'row',
@@ -1224,8 +1070,6 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     width: '100%',
     maxWidth: 400,
-    boxShadow: '0px 20px 60px rgba(0, 0, 0, 0.3)',
-    elevation: 10,
   },
   modalHeader: {
     alignItems: 'center',

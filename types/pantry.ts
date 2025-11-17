@@ -5,13 +5,16 @@ export interface PantryItem {
   category: string;
   quantity: number;
   unit: string;
-  dateAdded: string;
+  dateAdded?: string;
   expirationDate: string;
   barcode?: string;
   notes?: string;
   brandName?: string;
+  brand_name?: string;
   calories?: number;
   photo?: string;
+  food_name?: string;
+  createdAt?: string;
 }
 
 export interface ShoppingItem {
@@ -21,6 +24,7 @@ export interface ShoppingItem {
   unit: string;
   category: string;
   checked: boolean;
+  createdAt?: string;
 }
 
 export interface NutritionixFood {
@@ -43,6 +47,17 @@ export interface OpenFoodFactsProduct {
     'energy-kcal'?: number;
   };
   image_url?: string;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  ingredients: string[];
+  instructions: string;
+  prepTime: number;
+  servings: number;
+  category: string;
+  matchPercentage?: number;
 }
 
 export type ExpirationStatus = 'fresh' | 'nearExpiry' | 'expired';
