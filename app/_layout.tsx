@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import 'react-native-reanimated';
 import { ToastComponent } from '@/components/Toast';
+import { initializeNotifications } from '@/utils/notificationScheduler';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,6 +22,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      
+      // Initialize notification system
+      initializeNotifications().catch(error => {
+        console.error('Failed to initialize notifications:', error);
+      });
     }
   }, [loaded]);
 

@@ -8,6 +8,11 @@ import {
   deleteShoppingItemFromSupabase,
   isAuthenticated,
 } from './supabaseSync';
+import {
+  scheduleExpirationNotification,
+  cancelNotificationForItem,
+  checkAndNotifyExpiringItems,
+} from './notificationScheduler';
 
 const PANTRY_KEY = '@nutrion_pantry';
 const SHOPPING_KEY = '@nutrion_shopping';
@@ -31,6 +36,10 @@ export const loadPantryItems = async (): Promise<PantryItem[]> => {
     if (jsonValue !== null) {
       const items = JSON.parse(jsonValue);
       console.log('Loaded pantry items:', items.length, 'items');
+      
+      // Check for expiring items and send notifications
+      await checkAndNotifyExpiringItems(items);
+      
       return items;
     }
     console.log('No pantry items found, returning empty array');
@@ -48,6 +57,9 @@ export const addPantryItem = async (item: PantryItem): Promise<void> => {
     items.push(item);
     await savePantryItems(items);
     console.log('Item added to local pantry:', item.name);
+
+    // Schedule expiration notification
+    await scheduleExpirationNotification(item);
 
     // Sync to Supabase if authenticated
     const authenticated = await isAuthenticated();
@@ -74,6 +86,10 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
       items[index] = updatedItem;
       await savePantryItems(items);
       console.log('Item updated in local pantry:', updatedItem.name);
+
+      // Reschedule expiration notification
+      await cancelNotificationForItem(updatedItem.id);
+      await scheduleExpirationNotification(updatedItem);
 
       // Sync to Supabase if authenticated
       const authenticated = await isAuthenticated();
@@ -119,6 +135,9 @@ export const deletePantryItem = async (itemId: string): Promise<void> => {
     
     await savePantryItems(filteredItems);
     console.log('Item deleted from local storage successfully');
+
+    // Cancel notification for this item
+    await cancelNotificationForItem(itemId);
 
     // Delete from Supabase if authenticated
     const authenticated = await isAuthenticated();
