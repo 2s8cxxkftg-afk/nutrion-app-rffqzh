@@ -128,9 +128,9 @@ export default function EditProfileScreen() {
 
       console.log('Permission granted, launching image picker...');
 
-      // Launch image picker with proper configuration
+      // Launch image picker with proper configuration for Expo SDK 54
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Use the new array format instead of MediaTypeOptions
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -192,13 +192,13 @@ export default function EditProfileScreen() {
 
       // Determine file extension
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      // FIXED: Use the correct path format with user_id folder for RLS policies
+      const filePath = `avatars/${user.id}/${fileName}`;
 
       console.log('Preparing to upload to:', filePath);
 
-      // For React Native, we need to use FormData or ArrayBuffer
-      // The best approach is to use fetch to get the file as ArrayBuffer
+      // For React Native, we need to fetch the file as ArrayBuffer
       console.log('Fetching image data...');
       const response = await fetch(uri);
       
@@ -206,7 +206,7 @@ export default function EditProfileScreen() {
         throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       }
 
-      // Convert to ArrayBuffer instead of blob
+      // Convert to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
       console.log('Image data loaded, size:', arrayBuffer.byteLength);
 
