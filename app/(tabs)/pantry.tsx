@@ -80,9 +80,13 @@ export default function PantryScreen() {
       console.log('Haptics not available:', error);
     }
 
+    // Find the item to get its name for the confirmation dialog
+    const itemToDelete = items.find(item => item.id === itemId);
+    const itemName = itemToDelete?.name || 'this item';
+
     Alert.alert(
       t('delete') || 'Delete',
-      t('pantry.deleteConfirm') || 'Are you sure you want to delete this item?',
+      `${t('pantry.deleteConfirm') || 'Are you sure you want to delete'} "${itemName}"?`,
       [
         {
           text: t('cancel') || 'Cancel',
@@ -93,18 +97,33 @@ export default function PantryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deleting item:', itemId);
+              console.log('Deleting item with ID:', itemId);
+              console.log('Item name:', itemName);
+              
+              // Optimistically update UI
+              const updatedItems = items.filter(item => item.id !== itemId);
+              setItems(updatedItems);
+              
+              // Delete from storage
               await deletePantryItem(itemId);
-              await loadItems();
+              
+              console.log('Item deleted successfully');
+              
               Toast.show({
                 type: 'success',
                 message: t('pantry.itemDeleted') || 'Item deleted',
               });
-            } catch (error) {
+            } catch (error: any) {
               console.error('Error deleting item:', error);
+              console.error('Error message:', error?.message);
+              console.error('Error stack:', error?.stack);
+              
+              // Reload items to restore state if deletion failed
+              await loadItems();
+              
               Toast.show({
                 type: 'error',
-                message: t('error') || 'Error deleting item',
+                message: error?.message || t('error') || 'Error deleting item',
               });
             }
           },
@@ -135,7 +154,10 @@ export default function PantryScreen() {
           </View>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDeleteItem(item.id)}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteItem(item.id);
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <IconSymbol

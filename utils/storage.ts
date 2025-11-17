@@ -103,6 +103,7 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
       }
     } else {
       console.warn('Item not found for update:', updatedItem.id);
+      throw new Error('Item not found');
     }
   } catch (error) {
     console.error('Error updating pantry item:', error);
@@ -112,45 +113,55 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
 
 export const deletePantryItem = async (itemId: string): Promise<void> => {
   try {
-    console.log('Attempting to delete item with ID:', itemId);
+    console.log('=== Starting pantry item deletion ===');
+    console.log('Item ID to delete:', itemId);
     
     // Delete from local storage
     const items = await loadPantryItems();
     console.log('Current items count:', items.length);
+    console.log('All item IDs:', items.map(i => i.id));
     
-    const filteredItems = items.filter(item => {
-      const shouldKeep = item.id !== itemId;
-      if (!shouldKeep) {
-        console.log('Found item to delete:', item.name);
-      }
-      return shouldKeep;
-    });
-    
-    console.log('Items after filter:', filteredItems.length);
-    
-    if (filteredItems.length === items.length) {
-      console.warn('Item not found for deletion:', itemId);
+    const itemToDelete = items.find(item => item.id === itemId);
+    if (!itemToDelete) {
+      console.error('Item not found in local storage:', itemId);
       throw new Error('Item not found');
     }
     
+    console.log('Found item to delete:', itemToDelete.name);
+    
+    const filteredItems = items.filter(item => item.id !== itemId);
+    console.log('Items after filter:', filteredItems.length);
+    
     await savePantryItems(filteredItems);
-    console.log('Item deleted from local storage successfully');
+    console.log('✅ Item deleted from local storage successfully');
 
     // Cancel notification for this item
-    await cancelNotificationForItem(itemId);
+    try {
+      await cancelNotificationForItem(itemId);
+      console.log('✅ Notification cancelled for item');
+    } catch (notifError) {
+      console.warn('Failed to cancel notification:', notifError);
+    }
 
     // Delete from Supabase if authenticated
     const authenticated = await isAuthenticated();
     if (authenticated) {
       try {
         await deletePantryItemFromSupabase(itemId);
-        console.log('Item deleted from Supabase successfully');
+        console.log('✅ Item deleted from Supabase successfully');
       } catch (supabaseError) {
         console.warn('Failed to delete from Supabase, but deleted locally:', supabaseError);
       }
+    } else {
+      console.log('User not authenticated, skipping Supabase deletion');
     }
-  } catch (error) {
-    console.error('Error deleting pantry item:', error);
+    
+    console.log('=== Pantry item deletion completed ===');
+  } catch (error: any) {
+    console.error('=== Error in deletePantryItem ===');
+    console.error('Error:', error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
     throw error;
   }
 };
@@ -161,6 +172,20 @@ export const saveShoppingItems = async (items: ShoppingItem[]): Promise<void> =>
   try {
     await AsyncStorage.setItem(SHOPPING_KEY, JSON.stringify(items));
     console.log('Shopping items saved successfully');
+    
+    // Sync to Supabase if authenticated
+    const authenticated = await isAuthenticated();
+    if (authenticated) {
+      try {
+        // Sync all items
+        for (const item of items) {
+          await syncShoppingItemToSupabase(item);
+        }
+        console.log('Shopping items synced to Supabase');
+      } catch (supabaseError) {
+        console.warn('Failed to sync shopping items to Supabase:', supabaseError);
+      }
+    }
   } catch (error) {
     console.error('Error saving shopping items:', error);
     throw error;
