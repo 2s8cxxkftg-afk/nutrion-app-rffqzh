@@ -11,7 +11,6 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -20,7 +19,6 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 
 export default function EditProfileScreen() {
@@ -29,10 +27,8 @@ export default function EditProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -64,7 +60,6 @@ export default function EditProfileScreen() {
       if (profileData) {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
-        setAvatarUrl(profileData.avatar_url || '');
       }
 
       console.log('Profile loaded successfully');
@@ -77,174 +72,6 @@ export default function EditProfileScreen() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const pickImage = async () => {
-    try {
-      console.log('Starting image picker...');
-      try {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      } catch (error) {
-        console.log('Haptics not available');
-      }
-
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          t('profile.permissionRequired'),
-          t('profile.photoPermissionMessage')
-        );
-        return;
-      }
-
-      console.log('Permission granted, launching image picker...');
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      console.log('Image picker result:', result);
-
-      if (result.canceled) {
-        console.log('User cancelled image picker');
-        return;
-      }
-
-      if (!result.assets || result.assets.length === 0) {
-        console.error('No assets returned from image picker');
-        Toast.show({
-          type: 'error',
-          message: t('profile.imagePickError'),
-          duration: 2000,
-        });
-        return;
-      }
-
-      const selectedAsset = result.assets[0];
-      console.log('Selected image URI:', selectedAsset.uri);
-
-      if (!selectedAsset.uri) {
-        console.error('Invalid image URI');
-        Toast.show({
-          type: 'error',
-          message: t('profile.imagePickError'),
-          duration: 2000,
-        });
-        return;
-      }
-
-      await uploadImage(selectedAsset.uri);
-    } catch (error: any) {
-      console.error('Error in pickImage:', error);
-      Toast.show({
-        type: 'error',
-        message: error.message || t('profile.imagePickError'),
-        duration: 3000,
-      });
-    }
-  };
-
-  const uploadImage = async (uri: string) => {
-    try {
-      console.log('Starting image upload for URI:', uri);
-      setUploading(true);
-
-      if (!user) {
-        throw new Error('No user found');
-      }
-
-      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${user.id}/${fileName}`;
-
-      console.log('Preparing to upload to:', filePath);
-
-      const response = await fetch(uri);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      console.log('Image data loaded, size:', arrayBuffer.byteLength);
-
-      if (arrayBuffer.byteLength === 0) {
-        throw new Error('Image file is empty');
-      }
-
-      const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
-      console.log('Content type:', contentType);
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(filePath, arrayBuffer, {
-          contentType: contentType,
-          upsert: true,
-          cacheControl: '3600',
-        });
-
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw new Error(uploadError.message || 'Failed to upload image');
-      }
-
-      console.log('Image uploaded successfully:', uploadData);
-
-      const { data: urlData } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
-      console.log('Public URL generated:', publicUrl);
-
-      setAvatarUrl(publicUrl);
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Error updating profile with avatar URL:', updateError);
-      } else {
-        console.log('Profile updated with new avatar URL');
-      }
-
-      Toast.show({
-        type: 'success',
-        message: t('profile.imageUploaded'),
-        duration: 2000,
-      });
-
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.log('Haptics not available');
-      }
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      
-      Toast.show({
-        type: 'error',
-        message: error.message || t('profile.imageUploadError'),
-        duration: 3000,
-      });
-
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      } catch (error) {
-        console.log('Haptics not available');
-      }
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -288,7 +115,6 @@ export default function EditProfileScreen() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             full_name: `${firstName.trim()} ${lastName.trim()}`,
-            avatar_url: avatarUrl || null,
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', user.id);
@@ -301,7 +127,6 @@ export default function EditProfileScreen() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             full_name: `${firstName.trim()} ${lastName.trim()}`,
-            avatar_url: avatarUrl || null,
           });
       }
 
@@ -381,55 +206,6 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('profile.editProfile')}</Text>
             <View style={styles.backButton} />
-          </View>
-
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarContainer}>
-              {avatarUrl ? (
-                <Image 
-                  source={{ uri: avatarUrl }} 
-                  style={styles.avatar}
-                  onError={() => setAvatarUrl('')}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <IconSymbol 
-                    ios_icon_name="person.fill" 
-                    android_material_icon_name="person"
-                    size={64} 
-                    color={colors.primary} 
-                  />
-                </View>
-              )}
-              {uploading && (
-                <View style={styles.uploadingOverlay}>
-                  <ActivityIndicator size="large" color="#FFFFFF" />
-                  <Text style={styles.uploadingText}>{t('profile.uploading')}</Text>
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.changePhotoButton, uploading && styles.changePhotoButtonDisabled]}
-              onPress={pickImage}
-              activeOpacity={0.7}
-              disabled={uploading}
-            >
-              <IconSymbol 
-                ios_icon_name="camera.fill" 
-                android_material_icon_name="photo_camera"
-                size={20} 
-                color={uploading ? colors.textSecondary : colors.primary} 
-              />
-              <Text style={[styles.changePhotoText, uploading && styles.changePhotoTextDisabled]}>
-                {uploading 
-                  ? t('profile.uploading')
-                  : avatarUrl 
-                    ? t('profile.changePhoto')
-                    : t('profile.addPhoto')
-                }
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.formSection}>
@@ -534,68 +310,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.h1,
     color: colors.text,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxl,
-    marginBottom: spacing.xl,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: spacing.lg,
-  },
-  avatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 4,
-    borderColor: colors.primary + '30',
-  },
-  avatarPlaceholder: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: colors.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: colors.primary + '30',
-  },
-  uploadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 70,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  uploadingText: {
-    ...typography.bodySmall,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  changePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.primary + '15',
-    borderRadius: borderRadius.lg,
-  },
-  changePhotoButtonDisabled: {
-    opacity: 0.5,
-  },
-  changePhotoText: {
-    ...typography.h4,
-    color: colors.primary,
-  },
-  changePhotoTextDisabled: {
-    color: colors.textSecondary,
   },
   formSection: {
     gap: spacing.xl,
