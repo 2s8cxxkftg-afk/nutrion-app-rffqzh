@@ -147,27 +147,27 @@ export default function AddItemScreen() {
     console.log('Expiration Date:', expirationDateText);
     
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter an item name');
+      Alert.alert(t('error'), t('pantry.enterItemName'));
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+      Alert.alert(t('error'), t('addItem.enterValidQuantity'));
       return;
     }
 
     // Validate expiration date
     if (!expirationDateText.trim()) {
-      setDateError('Please enter an expiration date');
-      Alert.alert('Error', 'Please enter an expiration date in MM/DD/YYYY format');
+      setDateError(t('addItem.enterExpirationDate'));
+      Alert.alert(t('error'), t('addItem.enterExpirationDateAlert'));
       return;
     }
 
     const parsedDate = validateAndParseDate(expirationDateText);
     if (!parsedDate) {
-      setDateError('Invalid date format. Use MM/DD/YYYY');
-      Alert.alert('Error', 'Invalid date format. Please use MM/DD/YYYY (e.g., 10/25/2025)');
+      setDateError(t('addItem.invalidDateFormat'));
+      Alert.alert(t('error'), t('addItem.invalidDateFormatAlert'));
       return;
     }
 
@@ -175,8 +175,8 @@ export default function AddItemScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (parsedDate < today) {
-      setDateError('Date cannot be in the past');
-      Alert.alert('Error', 'Expiration date cannot be in the past');
+      setDateError(t('addItem.dateCannotBePast'));
+      Alert.alert(t('error'), t('addItem.dateCannotBePastAlert'));
       return;
     }
 
@@ -191,7 +191,7 @@ export default function AddItemScreen() {
       unit,
       dateAdded: new Date().toISOString(),
       expirationDate: formattedDate,
-      notes: notes.trim() || (aiEstimation ? `AI Prediction: ${aiEstimation}` : ''),
+      notes: notes.trim() || (aiEstimation ? `${t('addItem.aiPrediction')}: ${aiEstimation}` : ''),
     };
 
     try {
@@ -200,7 +200,7 @@ export default function AddItemScreen() {
       console.log('Item added successfully');
       
       Toast.show({
-        message: `${name} added to pantry! 🎉`,
+        message: t('addItem.itemAddedSuccess', { name }),
         type: 'success',
       });
       
@@ -210,7 +210,7 @@ export default function AddItemScreen() {
       }, 1000);
     } catch (error) {
       console.error('Error adding item:', error);
-      Alert.alert('Error', 'Failed to add item');
+      Alert.alert(t('error'), t('addItem.failedToAddItem'));
     }
   };
 
@@ -255,7 +255,7 @@ export default function AddItemScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Add Item',
+          title: t('pantry.addItem'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerBackTitleVisible: false,
@@ -277,11 +277,11 @@ export default function AddItemScreen() {
           keyboardDismissMode="on-drag"
           scrollEventThrottle={16}
         >
-          <Text style={styles.label}>Item Name *</Text>
+          <Text style={styles.label}>{t('addItem.itemNameRequired')}</Text>
           <TextInput
             ref={nameInputRef}
             style={commonStyles.input}
-            placeholder="e.g., Milk, Eggs, Bread, Butter"
+            placeholder={t('addItem.itemNamePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={handleNameChange}
@@ -308,10 +308,10 @@ export default function AddItemScreen() {
                 />
               </View>
               <View style={styles.aiEstimationContent}>
-                <Text style={styles.aiEstimationTitle}>✨ AI Prediction</Text>
+                <Text style={styles.aiEstimationTitle}>{t('addItem.aiPredictionTitle')}</Text>
                 {autoCategory && (
                   <Text style={styles.aiEstimationText}>
-                    Category: {autoCategory}
+                    {t('addItem.categoryDetected')}: {t(autoCategory.toLowerCase())}
                   </Text>
                 )}
                 {aiEstimation && (
@@ -320,19 +320,21 @@ export default function AddItemScreen() {
                   </Text>
                 )}
                 <Text style={styles.aiEstimationSubtext}>
-                  Earliest expiration date auto-filled
+                  {t('addItem.earliestExpirationAutoFilled')}
                 </Text>
               </View>
             </View>
           )}
 
-          <Text style={styles.label}>Category * {autoCategory && '(Auto-detected)'}</Text>
+          <Text style={styles.label}>
+            {t('addItem.categoryRequired')} {autoCategory && t('addItem.autoDetected')}
+          </Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openCategoryPicker}
             activeOpacity={0.7}
           >
-            <Text style={{ color: colors.text }}>{category}</Text>
+            <Text style={{ color: colors.text }}>{t(category.toLowerCase())}</Text>
             <IconSymbol 
               ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
               android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
@@ -363,7 +365,7 @@ export default function AddItemScreen() {
                       styles.pickerOptionText,
                       category === cat && styles.pickerOptionTextSelected
                     ]}>
-                      {cat}
+                      {t(cat.toLowerCase())}
                     </Text>
                     {category === cat && (
                       <IconSymbol 
@@ -381,7 +383,7 @@ export default function AddItemScreen() {
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Quantity *</Text>
+              <Text style={styles.label}>{t('addItem.quantityRequired')}</Text>
               <View style={styles.quantityContainer}>
                 <TextInput
                   ref={quantityInputRef}
@@ -416,13 +418,13 @@ export default function AddItemScreen() {
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>Unit *</Text>
+              <Text style={styles.label}>{t('addItem.unitRequired')}</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
                 onPress={openUnitPicker}
                 activeOpacity={0.7}
               >
-                <Text style={{ color: colors.text }}>{unit}</Text>
+                <Text style={{ color: colors.text }}>{t(unit.toLowerCase())}</Text>
                 <IconSymbol 
                   ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
                   android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
@@ -486,7 +488,7 @@ export default function AddItemScreen() {
                       styles.pickerOptionText,
                       unit === u && styles.pickerOptionTextSelected
                     ]}>
-                      {u}
+                      {t(u.toLowerCase())}
                     </Text>
                     {unit === u && (
                       <IconSymbol 
@@ -502,7 +504,7 @@ export default function AddItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Expiration Date * (Earliest Predicted)</Text>
+          <Text style={styles.label}>{t('addItem.expirationDateRequired')}</Text>
           <View>
             <TextInput
               ref={dateInputRef}
@@ -510,7 +512,7 @@ export default function AddItemScreen() {
                 commonStyles.input,
                 dateError ? styles.inputError : null
               ]}
-              placeholder="MM/DD/YYYY (e.g., 10/25/2025)"
+              placeholder={t('addItem.expirationDatePlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={expirationDateText}
               onChangeText={handleDateChange}
@@ -530,17 +532,17 @@ export default function AddItemScreen() {
             ) : (
               <Text style={styles.helperText}>
                 {aiEstimation 
-                  ? '✨ AI predicted the earliest expiration date. You can edit if needed.'
-                  : 'Enter date in MM/DD/YYYY format (e.g., 10/25/2025)'}
+                  ? t('addItem.aiPredictedDate')
+                  : t('addItem.dateFormatHelper')}
               </Text>
             )}
           </View>
 
-          <Text style={styles.label}>Notes (Optional)</Text>
+          <Text style={styles.label}>{t('addItem.notesOptional')}</Text>
           <TextInput
             ref={notesInputRef}
             style={[commonStyles.input, styles.notesInput]}
-            placeholder="Add any additional notes..."
+            placeholder={t('addItem.notesPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={notes}
             onChangeText={setNotes}
@@ -559,7 +561,7 @@ export default function AddItemScreen() {
             onPress={handleSave}
             activeOpacity={0.7}
           >
-            <Text style={buttonStyles.primaryText}>Add to Pantry</Text>
+            <Text style={buttonStyles.primaryText}>{t('pantry.addToPantry')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
