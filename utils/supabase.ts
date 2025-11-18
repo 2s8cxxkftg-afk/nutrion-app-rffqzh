@@ -32,11 +32,11 @@ export const supabaseConfigured = true;
 console.log('✅ Supabase configured successfully for Nutrion app');
 console.log('📍 Project URL:', SUPABASE_URL);
 
-// Test Supabase connection with timeout
+// Test Supabase connection with timeout - wrapped in try-catch to prevent crashes
 const testConnection = async () => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for initial connection
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const { data, error } = await supabase.auth.getSession();
     clearTimeout(timeoutId);
@@ -60,7 +60,10 @@ const testConnection = async () => {
   }
 };
 
-testConnection();
+// Run connection test but don't block app initialization
+testConnection().catch(err => {
+  console.error('❌ Failed to test Supabase connection:', err);
+});
 
 // Helper function for retry logic with exponential backoff
 async function retryWithBackoff<T>(

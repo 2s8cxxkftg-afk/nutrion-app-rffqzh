@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, Text } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
@@ -18,6 +18,7 @@ export default function Index() {
   const [hasSeenSubscriptionIntro, setHasSeenSubscriptionIntro] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasPremium, setHasPremium] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAppStatus();
@@ -41,22 +42,38 @@ export default function Index() {
       console.log('Has completed onboarding:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
 
-      // Check authentication status
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Auth session exists:', !!session);
-      setIsAuthenticated(!!session);
-
-      // Check subscription status if authenticated
-      let premiumAccess = false;
-      if (session) {
-        try {
-          const subscription = await getSubscription();
-          premiumAccess = hasPremiumAccess(subscription);
-          console.log('Has premium access:', premiumAccess);
-          setHasPremium(premiumAccess);
-        } catch (error) {
-          console.error('Error checking subscription:', error);
+      // Check authentication status with timeout
+      try {
+        const { data: { session }, error: sessionError } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<any>((_, reject) => 
+            setTimeout(() => reject(new Error('Session check timeout')), 5000)
+          )
+        ]);
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
         }
+        
+        console.log('Auth session exists:', !!session);
+        setIsAuthenticated(!!session);
+
+        // Check subscription status if authenticated
+        let premiumAccess = false;
+        if (session) {
+          try {
+            const subscription = await getSubscription();
+            premiumAccess = hasPremiumAccess(subscription);
+            console.log('Has premium access:', premiumAccess);
+            setHasPremium(premiumAccess);
+          } catch (error) {
+            console.error('Error checking subscription:', error);
+          }
+        }
+      } catch (authError) {
+        console.error('Auth check error:', authError);
+        setIsAuthenticated(false);
+        setHasPremium(false);
       }
 
       // Check subscription intro status
@@ -71,8 +88,9 @@ export default function Index() {
         console.log('Splash screen complete, navigating...');
         setIsLoading(false);
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking app status:', error);
+      setError(error.message || 'Failed to initialize app');
       // On error, assume nothing completed
       setHasSelectedLanguage(false);
       setHasCompletedOnboarding(false);
@@ -93,6 +111,9 @@ export default function Index() {
           style={styles.logo}
           resizeMode="contain"
         />
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
       </View>
     );
   }
@@ -145,5 +166,12 @@ const styles = StyleSheet.create({
   logo: {
     width: 200,
     height: 200,
+  },
+  errorText: {
+    marginTop: 20,
+    color: '#dc3545',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
