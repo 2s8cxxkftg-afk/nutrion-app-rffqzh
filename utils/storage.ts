@@ -171,21 +171,7 @@ export const deletePantryItem = async (itemId: string): Promise<void> => {
 export const saveShoppingItems = async (items: ShoppingItem[]): Promise<void> => {
   try {
     await AsyncStorage.setItem(SHOPPING_KEY, JSON.stringify(items));
-    console.log('Shopping items saved successfully');
-    
-    // Sync to Supabase if authenticated
-    const authenticated = await isAuthenticated();
-    if (authenticated) {
-      try {
-        // Sync all items
-        for (const item of items) {
-          await syncShoppingItemToSupabase(item);
-        }
-        console.log('Shopping items synced to Supabase');
-      } catch (supabaseError) {
-        console.warn('Failed to sync shopping items to Supabase:', supabaseError);
-      }
-    }
+    console.log('Shopping items saved successfully:', items.length, 'items');
   } catch (error) {
     console.error('Error saving shopping items:', error);
     throw error;
@@ -195,7 +181,9 @@ export const saveShoppingItems = async (items: ShoppingItem[]): Promise<void> =>
 export const loadShoppingItems = async (): Promise<ShoppingItem[]> => {
   try {
     const data = await AsyncStorage.getItem(SHOPPING_KEY);
-    return data ? JSON.parse(data) : [];
+    const items = data ? JSON.parse(data) : [];
+    console.log('Loaded shopping items:', items.length, 'items');
+    return items;
   } catch (error) {
     console.error('Error loading shopping items:', error);
     return [];
@@ -246,6 +234,9 @@ export const updateShoppingItem = async (updatedItem: ShoppingItem): Promise<voi
           console.warn('Failed to sync shopping item update to Supabase:', supabaseError);
         }
       }
+    } else {
+      console.warn('Shopping item not found for update:', updatedItem.id);
+      throw new Error('Item not found');
     }
   } catch (error) {
     console.error('Error updating shopping item:', error);
@@ -255,24 +246,45 @@ export const updateShoppingItem = async (updatedItem: ShoppingItem): Promise<voi
 
 export const deleteShoppingItem = async (itemId: string): Promise<void> => {
   try {
+    console.log('=== Starting shopping item deletion ===');
+    console.log('Item ID to delete:', itemId);
+    
     // Delete from local storage
     const items = await loadShoppingItems();
+    console.log('Current items count:', items.length);
+    
+    const itemToDelete = items.find(item => item.id === itemId);
+    if (!itemToDelete) {
+      console.error('Shopping item not found in local storage:', itemId);
+      throw new Error('Item not found');
+    }
+    
+    console.log('Found shopping item to delete:', itemToDelete.name);
+    
     const filteredItems = items.filter(item => item.id !== itemId);
+    console.log('Items after filter:', filteredItems.length);
+    
     await saveShoppingItems(filteredItems);
-    console.log('Shopping item deleted from local storage');
+    console.log('✅ Shopping item deleted from local storage successfully');
 
     // Delete from Supabase if authenticated
     const authenticated = await isAuthenticated();
     if (authenticated) {
       try {
         await deleteShoppingItemFromSupabase(itemId);
-        console.log('Shopping item deleted from Supabase');
+        console.log('✅ Shopping item deleted from Supabase successfully');
       } catch (supabaseError) {
         console.warn('Failed to delete shopping item from Supabase:', supabaseError);
       }
+    } else {
+      console.log('User not authenticated, skipping Supabase deletion');
     }
-  } catch (error) {
-    console.error('Error deleting shopping item:', error);
+    
+    console.log('=== Shopping item deletion completed ===');
+  } catch (error: any) {
+    console.error('=== Error in deleteShoppingItem ===');
+    console.error('Error:', error);
+    console.error('Error message:', error?.message);
     throw error;
   }
 };

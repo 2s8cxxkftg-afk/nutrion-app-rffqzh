@@ -15,7 +15,7 @@ import {
   Modal,
 } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
-import { loadShoppingItems, saveShoppingItems } from '@/utils/storage';
+import { loadShoppingItems, saveShoppingItems, deleteShoppingItem } from '@/utils/storage';
 import { IconSymbol } from '@/components/IconSymbol';
 import React, { useState } from 'react';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
@@ -109,9 +109,12 @@ export default function ShoppingScreen() {
       console.log('Haptics not available:', error);
     }
 
+    const itemToDelete = items.find(item => item.id === itemId);
+    const itemName = itemToDelete?.name || 'this item';
+
     Alert.alert(
       t('delete'),
-      t('shopping.deleteConfirm'),
+      `${t('shopping.deleteConfirm')} "${itemName}"?`,
       [
         {
           text: t('cancel'),
@@ -121,9 +124,28 @@ export default function ShoppingScreen() {
           text: t('delete'),
           style: 'destructive',
           onPress: async () => {
-            const updatedItems = items.filter(item => item.id !== itemId);
-            await saveShoppingItems(updatedItems);
-            setItems(updatedItems);
+            try {
+              console.log('Deleting shopping item:', itemId);
+              
+              // Optimistically update UI
+              const updatedItems = items.filter(item => item.id !== itemId);
+              setItems(updatedItems);
+              
+              // Delete from storage
+              await deleteShoppingItem(itemId);
+              
+              console.log('Shopping item deleted successfully');
+            } catch (error: any) {
+              console.error('Error deleting shopping item:', error);
+              
+              // Reload items to restore state if deletion failed
+              await loadItems();
+              
+              Alert.alert(
+                t('error'),
+                error?.message || t('shopping.deleteItemError') || 'Failed to delete item'
+              );
+            }
           },
         },
       ]
@@ -160,15 +182,22 @@ export default function ShoppingScreen() {
   };
 
   const handleClearCompleted = async () => {
-    const completedCount = items.filter(item => item.checked).length;
+    const completedItems = items.filter(item => item.checked);
+    const completedCount = completedItems.length;
     
     if (completedCount === 0) {
       return;
     }
 
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
     Alert.alert(
       t('shopping.clearCompleted'),
-      t('shopping.clearCompletedConfirm', { count: completedCount }),
+      t('shopping.clearCompletedConfirm') || `Remove ${completedCount} completed items?`,
       [
         {
           text: t('cancel'),
@@ -178,9 +207,31 @@ export default function ShoppingScreen() {
           text: t('shopping.clear'),
           style: 'destructive',
           onPress: async () => {
-            const updatedItems = items.filter(item => !item.checked);
-            await saveShoppingItems(updatedItems);
-            setItems(updatedItems);
+            try {
+              console.log('Clearing completed items, count:', completedCount);
+              
+              // Filter out checked items
+              const updatedItems = items.filter(item => !item.checked);
+              
+              // Update state
+              setItems(updatedItems);
+              
+              // Save to storage
+              await saveShoppingItems(updatedItems);
+              
+              console.log('✅ Completed items cleared successfully');
+              console.log('Remaining items:', updatedItems.length);
+            } catch (error: any) {
+              console.error('Error clearing completed items:', error);
+              
+              // Reload items to restore state if clearing failed
+              await loadItems();
+              
+              Alert.alert(
+                t('error'),
+                error?.message || t('shopping.clearCompletedError') || 'Failed to clear completed items'
+              );
+            }
           },
         },
       ]
