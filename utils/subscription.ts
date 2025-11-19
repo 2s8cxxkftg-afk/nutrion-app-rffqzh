@@ -116,7 +116,7 @@ export async function startFreeTrial(): Promise<boolean> {
 
     const trialStartDate = new Date();
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
+    trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days trial
 
     console.log('📅 Trial dates:', {
       start: trialStartDate.toISOString(),

@@ -61,7 +61,7 @@ export default function SubscriptionIntroScreen() {
       if (result) {
         Toast.show({
           type: 'success',
-          message: 'Free trial started! Enjoy 7 days of premium features.',
+          message: 'Free trial started! Enjoy 15 days of premium features.',
           duration: 3000,
         });
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
