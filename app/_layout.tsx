@@ -6,7 +6,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { useColorScheme, View, Text, StyleSheet } from 'react-native';
+import { useColorScheme, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import 'react-native-reanimated';
 import { ToastComponent } from '@/components/Toast';
 import { initializeNotifications } from '@/utils/notificationScheduler';
@@ -18,10 +18,13 @@ SplashScreen.preventAutoHideAsync();
 function ErrorFallback({ error, resetErrorBoundary }: any) {
   return (
     <View style={styles.errorContainer}>
-      <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+      <Text style={styles.errorTitle}>⚠️ Something went wrong</Text>
       <Text style={styles.errorMessage}>{error.message}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={resetErrorBoundary}>
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
       <Text style={styles.errorHint}>
-        Please restart the app. If the problem persists, try clearing the app cache.
+        If the problem persists, try restarting the app.
       </Text>
     </View>
   );
@@ -55,6 +58,10 @@ export default function RootLayout() {
         console.error('App Error:', error);
         console.error('Error Info:', errorInfo);
       }}
+      onReset={() => {
+        // Reset app state if needed
+        console.log('Error boundary reset');
+      }}
     >
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
@@ -77,6 +84,7 @@ export default function RootLayout() {
           <Stack.Screen name="about" options={{ headerShown: false }} />
           <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
           <Stack.Screen name="change-password" options={{ headerShown: false }} />
+          <Stack.Screen name="test-connection" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />
           <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
@@ -106,8 +114,20 @@ const styles = StyleSheet.create({
   errorMessage: {
     fontSize: 16,
     color: '#6c757d',
-    marginBottom: 12,
+    marginBottom: 24,
     textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorHint: {
     fontSize: 14,

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Text } from 'react-native';
+import { View, Image, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
@@ -30,67 +30,70 @@ export default function Index() {
       
       // Check language selection status
       const languageValue = await AsyncStorage.getItem(LANGUAGE_SELECTED_KEY);
-      console.log('Language selected value from AsyncStorage:', languageValue);
       const selectedLanguage = languageValue === 'true';
-      console.log('Has selected language:', selectedLanguage);
+      console.log('Language selected:', selectedLanguage);
       setHasSelectedLanguage(selectedLanguage);
 
       // Check onboarding status
       const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
-      console.log('Onboarding value from AsyncStorage:', onboardingValue);
       const completedOnboarding = onboardingValue === 'true';
-      console.log('Has completed onboarding:', completedOnboarding);
+      console.log('Onboarding completed:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
 
       // Check authentication status with timeout
+      let authenticated = false;
+      let premiumAccess = false;
+      
       try {
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 3000)
+        );
+        
         const { data: { session }, error: sessionError } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<any>((_, reject) => 
-            setTimeout(() => reject(new Error('Session check timeout')), 5000)
-          )
+          sessionPromise,
+          timeoutPromise
         ]);
         
         if (sessionError) {
           console.error('Session error:', sessionError);
         }
         
-        console.log('Auth session exists:', !!session);
-        setIsAuthenticated(!!session);
+        authenticated = !!session;
+        console.log('Authenticated:', authenticated);
+        setIsAuthenticated(authenticated);
 
         // Check subscription status if authenticated
-        let premiumAccess = false;
         if (session) {
           try {
             const subscription = await getSubscription();
             premiumAccess = hasPremiumAccess(subscription);
-            console.log('Has premium access:', premiumAccess);
+            console.log('Premium access:', premiumAccess);
             setHasPremium(premiumAccess);
           } catch (error) {
             console.error('Error checking subscription:', error);
           }
         }
-      } catch (authError) {
-        console.error('Auth check error:', authError);
+      } catch (authError: any) {
+        console.error('Auth check error:', authError.message);
         setIsAuthenticated(false);
         setHasPremium(false);
       }
 
       // Check subscription intro status
       const subscriptionIntroValue = await AsyncStorage.getItem(SUBSCRIPTION_INTRO_KEY);
-      console.log('Subscription intro value from AsyncStorage:', subscriptionIntroValue);
       const seenSubscriptionIntro = subscriptionIntroValue === 'true';
-      console.log('Has seen subscription intro:', seenSubscriptionIntro);
+      console.log('Seen subscription intro:', seenSubscriptionIntro);
       setHasSeenSubscriptionIntro(seenSubscriptionIntro);
       
-      // Show splash screen with logo for 1.5 seconds
+      // Show splash screen for 1 second
       setTimeout(() => {
-        console.log('Splash screen complete, navigating...');
+        console.log('Navigation ready');
         setIsLoading(false);
-      }, 1500);
+      }, 1000);
     } catch (error: any) {
       console.error('Error checking app status:', error);
-      setError(error.message || 'Failed to initialize app');
+      setError(error.message || 'Failed to initialize');
       // On error, assume nothing completed
       setHasSelectedLanguage(false);
       setHasCompletedOnboarding(false);
@@ -99,7 +102,7 @@ export default function Index() {
       setHasPremium(false);
       setTimeout(() => {
         setIsLoading(false);
-      }, 1500);
+      }, 1000);
     }
   };
 
@@ -111,6 +114,7 @@ export default function Index() {
           style={styles.logo}
           resizeMode="contain"
         />
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
         {error && (
           <Text style={styles.errorText}>{error}</Text>
         )}
@@ -118,41 +122,36 @@ export default function Index() {
     );
   }
 
-  // Navigation logic:
-  // 1. If language not selected -> go to language selection
-  // 2. If language selected but onboarding not completed -> go to onboarding
-  // 3. If onboarding completed but not authenticated -> go to auth
-  // 4. If authenticated but hasn't seen subscription intro AND doesn't have premium -> go to subscription intro
-  // 5. If all completed OR has premium -> go to app
+  // Navigation logic
   console.log('=== Navigation Decision ===');
-  console.log('Language selected:', hasSelectedLanguage);
-  console.log('Onboarding completed:', hasCompletedOnboarding);
+  console.log('Language:', hasSelectedLanguage);
+  console.log('Onboarding:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
-  console.log('Has premium:', hasPremium);
-  console.log('Seen subscription intro:', hasSeenSubscriptionIntro);
+  console.log('Premium:', hasPremium);
+  console.log('Seen intro:', hasSeenSubscriptionIntro);
   
   if (!hasSelectedLanguage) {
-    console.log('Redirecting to: /language-selection');
+    console.log('→ /language-selection');
     return <Redirect href="/language-selection" />;
   }
 
   if (!hasCompletedOnboarding) {
-    console.log('Redirecting to: /onboarding');
+    console.log('→ /onboarding');
     return <Redirect href="/onboarding" />;
   }
 
   if (!isAuthenticated) {
-    console.log('Redirecting to: /auth');
+    console.log('→ /auth');
     return <Redirect href="/auth" />;
   }
 
   // Only show subscription intro if user doesn't have premium and hasn't seen it
   if (!hasSeenSubscriptionIntro && !hasPremium) {
-    console.log('Redirecting to: /subscription-intro (user needs to see subscription offer)');
+    console.log('→ /subscription-intro');
     return <Redirect href="/subscription-intro" />;
   }
 
-  console.log('Redirecting to: /(tabs)/pantry');
+  console.log('→ /(tabs)/pantry');
   return <Redirect href="/(tabs)/pantry" />;
 }
 
@@ -166,6 +165,9 @@ const styles = StyleSheet.create({
   logo: {
     width: 200,
     height: 200,
+  },
+  loader: {
+    marginTop: 20,
   },
   errorText: {
     marginTop: 20,

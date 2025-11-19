@@ -23,7 +23,7 @@ export const savePantryItems = async (items: PantryItem[]): Promise<void> => {
   try {
     const jsonValue = JSON.stringify(items);
     await AsyncStorage.setItem(PANTRY_KEY, jsonValue);
-    console.log('✅ Pantry items saved successfully:', items.length, 'items');
+    console.log('✅ Pantry items saved:', items.length);
   } catch (error) {
     console.error('❌ Error saving pantry items:', error);
     throw error;
@@ -35,16 +35,16 @@ export const loadPantryItems = async (): Promise<PantryItem[]> => {
     const jsonValue = await AsyncStorage.getItem(PANTRY_KEY);
     if (jsonValue !== null) {
       const items = JSON.parse(jsonValue);
-      console.log('✅ Loaded pantry items:', items.length, 'items');
+      console.log('✅ Loaded pantry items:', items.length);
       
       // Check for expiring items and send notifications
-      await checkAndNotifyExpiringItems(items).catch(err => {
+      checkAndNotifyExpiringItems(items).catch(err => {
         console.warn('Failed to check expiring items:', err);
       });
       
       return items;
     }
-    console.log('ℹ️ No pantry items found, returning empty array');
+    console.log('ℹ️ No pantry items found');
     return [];
   } catch (error) {
     console.error('❌ Error loading pantry items:', error);
@@ -60,26 +60,23 @@ export const addPantryItem = async (item: PantryItem): Promise<void> => {
     const items = await loadPantryItems();
     items.push(item);
     await savePantryItems(items);
-    console.log('✅ Item added to local pantry:', item.name);
+    console.log('✅ Item added locally:', item.name);
 
     // Schedule expiration notification
-    try {
-      await scheduleExpirationNotification(item);
-      console.log('✅ Notification scheduled for item:', item.name);
-    } catch (notifError) {
-      console.warn('⚠️ Failed to schedule notification:', notifError);
-    }
+    scheduleExpirationNotification(item).catch(err => {
+      console.warn('⚠️ Failed to schedule notification:', err);
+    });
 
-    // Sync to Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Sync to Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await syncPantryItemToSupabase(item);
-        console.log('✅ Item synced to Supabase:', item.name);
+        syncPantryItemToSupabase(item).catch(err => {
+          console.warn('⚠️ Failed to sync to Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to sync to Supabase, but saved locally:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
   } catch (error) {
     console.error('❌ Error adding pantry item:', error);
     throw error;
@@ -95,33 +92,32 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
     const index = items.findIndex(item => item.id === updatedItem.id);
     
     if (index === -1) {
-      console.error('❌ Item not found for update:', updatedItem.id);
+      console.error('❌ Item not found:', updatedItem.id);
       throw new Error('Item not found');
     }
     
     items[index] = updatedItem;
     await savePantryItems(items);
-    console.log('✅ Item updated in local pantry:', updatedItem.name);
+    console.log('✅ Item updated locally:', updatedItem.name);
 
     // Reschedule expiration notification
-    try {
-      await cancelNotificationForItem(updatedItem.id);
-      await scheduleExpirationNotification(updatedItem);
-      console.log('✅ Notification rescheduled for item:', updatedItem.name);
-    } catch (notifError) {
-      console.warn('⚠️ Failed to reschedule notification:', notifError);
-    }
+    cancelNotificationForItem(updatedItem.id).catch(err => {
+      console.warn('⚠️ Failed to cancel notification:', err);
+    });
+    scheduleExpirationNotification(updatedItem).catch(err => {
+      console.warn('⚠️ Failed to reschedule notification:', err);
+    });
 
-    // Sync to Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Sync to Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await syncPantryItemToSupabase(updatedItem);
-        console.log('✅ Item update synced to Supabase:', updatedItem.name);
+        syncPantryItemToSupabase(updatedItem).catch(err => {
+          console.warn('⚠️ Failed to sync update to Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to sync update to Supabase:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
   } catch (error) {
     console.error('❌ Error updating pantry item:', error);
     throw error;
@@ -130,16 +126,15 @@ export const updatePantryItem = async (updatedItem: PantryItem): Promise<void> =
 
 export const deletePantryItem = async (itemId: string): Promise<void> => {
   try {
-    console.log('🗑️ Starting pantry item deletion for ID:', itemId);
+    console.log('🗑️ Deleting pantry item:', itemId);
     
     // Load current items
     const items = await loadPantryItems();
-    console.log('📦 Current items count:', items.length);
     
     // Find the item to delete
     const itemToDelete = items.find(item => item.id === itemId);
     if (!itemToDelete) {
-      console.error('❌ Item not found in local storage:', itemId);
+      console.error('❌ Item not found:', itemId);
       throw new Error('Item not found');
     }
     
@@ -147,38 +142,30 @@ export const deletePantryItem = async (itemId: string): Promise<void> => {
     
     // Filter out the item
     const filteredItems = items.filter(item => item.id !== itemId);
-    console.log('📦 Items after filter:', filteredItems.length);
     
     // Save the updated list
     await savePantryItems(filteredItems);
-    console.log('✅ Item deleted from local storage successfully');
+    console.log('✅ Item deleted locally');
 
     // Cancel notification for this item
-    try {
-      await cancelNotificationForItem(itemId);
-      console.log('✅ Notification cancelled for item');
-    } catch (notifError) {
-      console.warn('⚠️ Failed to cancel notification:', notifError);
-    }
+    cancelNotificationForItem(itemId).catch(err => {
+      console.warn('⚠️ Failed to cancel notification:', err);
+    });
 
-    // Delete from Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Delete from Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await deletePantryItemFromSupabase(itemId);
-        console.log('✅ Item deleted from Supabase successfully');
-      } else {
-        console.log('ℹ️ User not authenticated, skipping Supabase deletion');
+        deletePantryItemFromSupabase(itemId).catch(err => {
+          console.warn('⚠️ Failed to delete from Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to delete from Supabase, but deleted locally:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
     
-    console.log('✅ Pantry item deletion completed successfully');
+    console.log('✅ Pantry item deletion completed');
   } catch (error: any) {
     console.error('❌ Error in deletePantryItem:', error);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
     throw error;
   }
 };
@@ -189,7 +176,7 @@ export const saveShoppingItems = async (items: ShoppingItem[]): Promise<void> =>
   try {
     const jsonValue = JSON.stringify(items);
     await AsyncStorage.setItem(SHOPPING_KEY, jsonValue);
-    console.log('✅ Shopping items saved successfully:', items.length, 'items');
+    console.log('✅ Shopping items saved:', items.length);
   } catch (error) {
     console.error('❌ Error saving shopping items:', error);
     throw error;
@@ -201,10 +188,10 @@ export const loadShoppingItems = async (): Promise<ShoppingItem[]> => {
     const jsonValue = await AsyncStorage.getItem(SHOPPING_KEY);
     if (jsonValue !== null) {
       const items = JSON.parse(jsonValue);
-      console.log('✅ Loaded shopping items:', items.length, 'items');
+      console.log('✅ Loaded shopping items:', items.length);
       return items;
     }
-    console.log('ℹ️ No shopping items found, returning empty array');
+    console.log('ℹ️ No shopping items found');
     return [];
   } catch (error) {
     console.error('❌ Error loading shopping items:', error);
@@ -220,18 +207,18 @@ export const addShoppingItem = async (item: ShoppingItem): Promise<void> => {
     const items = await loadShoppingItems();
     items.push(item);
     await saveShoppingItems(items);
-    console.log('✅ Shopping item added to local storage:', item.name);
+    console.log('✅ Shopping item added locally:', item.name);
 
-    // Sync to Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Sync to Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await syncShoppingItemToSupabase(item);
-        console.log('✅ Shopping item synced to Supabase:', item.name);
+        syncShoppingItemToSupabase(item).catch(err => {
+          console.warn('⚠️ Failed to sync shopping item to Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to sync shopping item to Supabase:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
   } catch (error) {
     console.error('❌ Error adding shopping item:', error);
     throw error;
@@ -247,24 +234,24 @@ export const updateShoppingItem = async (updatedItem: ShoppingItem): Promise<voi
     const index = items.findIndex(item => item.id === updatedItem.id);
     
     if (index === -1) {
-      console.error('❌ Shopping item not found for update:', updatedItem.id);
+      console.error('❌ Shopping item not found:', updatedItem.id);
       throw new Error('Item not found');
     }
     
     items[index] = updatedItem;
     await saveShoppingItems(items);
-    console.log('✅ Shopping item updated in local storage:', updatedItem.name);
+    console.log('✅ Shopping item updated locally:', updatedItem.name);
 
-    // Sync to Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Sync to Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await syncShoppingItemToSupabase(updatedItem);
-        console.log('✅ Shopping item update synced to Supabase:', updatedItem.name);
+        syncShoppingItemToSupabase(updatedItem).catch(err => {
+          console.warn('⚠️ Failed to sync shopping item update to Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to sync shopping item update to Supabase:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
   } catch (error) {
     console.error('❌ Error updating shopping item:', error);
     throw error;
@@ -273,16 +260,15 @@ export const updateShoppingItem = async (updatedItem: ShoppingItem): Promise<voi
 
 export const deleteShoppingItem = async (itemId: string): Promise<void> => {
   try {
-    console.log('🗑️ Starting shopping item deletion for ID:', itemId);
+    console.log('🗑️ Deleting shopping item:', itemId);
     
     // Load current items
     const items = await loadShoppingItems();
-    console.log('📦 Current shopping items count:', items.length);
     
     // Find the item to delete
     const itemToDelete = items.find(item => item.id === itemId);
     if (!itemToDelete) {
-      console.error('❌ Shopping item not found in local storage:', itemId);
+      console.error('❌ Shopping item not found:', itemId);
       throw new Error('Item not found');
     }
     
@@ -290,30 +276,25 @@ export const deleteShoppingItem = async (itemId: string): Promise<void> => {
     
     // Filter out the item
     const filteredItems = items.filter(item => item.id !== itemId);
-    console.log('📦 Shopping items after filter:', filteredItems.length);
     
     // Save the updated list
     await saveShoppingItems(filteredItems);
-    console.log('✅ Shopping item deleted from local storage successfully');
+    console.log('✅ Shopping item deleted locally');
 
-    // Delete from Supabase if authenticated
-    try {
-      const authenticated = await isAuthenticated();
+    // Delete from Supabase if authenticated (non-blocking)
+    isAuthenticated().then(authenticated => {
       if (authenticated) {
-        await deleteShoppingItemFromSupabase(itemId);
-        console.log('✅ Shopping item deleted from Supabase successfully');
-      } else {
-        console.log('ℹ️ User not authenticated, skipping Supabase deletion');
+        deleteShoppingItemFromSupabase(itemId).catch(err => {
+          console.warn('⚠️ Failed to delete shopping item from Supabase:', err);
+        });
       }
-    } catch (supabaseError) {
-      console.warn('⚠️ Failed to delete shopping item from Supabase:', supabaseError);
-    }
+    }).catch(err => {
+      console.warn('⚠️ Auth check failed:', err);
+    });
     
-    console.log('✅ Shopping item deletion completed successfully');
+    console.log('✅ Shopping item deletion completed');
   } catch (error: any) {
     console.error('❌ Error in deleteShoppingItem:', error);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
     throw error;
   }
 };
