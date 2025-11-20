@@ -31,7 +31,8 @@ const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 interface OnboardingPage {
   titleKey: string;
   descriptionKey: string;
-  icon: string;
+  iconName: string;
+  androidIconName: string;
   color: string;
 }
 
@@ -39,25 +40,29 @@ const pages: OnboardingPage[] = [
   {
     titleKey: 'onboarding.welcome',
     descriptionKey: 'onboarding.welcomeDesc',
-    icon: 'leaf.fill',
+    iconName: 'leaf.fill',
+    androidIconName: 'eco',
     color: '#4CAF50',
   },
   {
     titleKey: 'onboarding.pantryTitle',
     descriptionKey: 'onboarding.pantryDesc',
-    icon: 'archivebox.fill',
+    iconName: 'archivebox.fill',
+    androidIconName: 'inventory',
     color: '#2196F3',
   },
   {
     titleKey: 'onboarding.expirationTitle',
     descriptionKey: 'onboarding.expirationDesc',
-    icon: 'clock.badge.checkmark.fill',
+    iconName: 'clock.badge.checkmark.fill',
+    androidIconName: 'schedule',
     color: '#FF9800',
   },
   {
     titleKey: 'onboarding.shoppingTitle',
     descriptionKey: 'onboarding.shoppingDesc',
-    icon: 'cart.fill',
+    iconName: 'cart.fill',
+    androidIconName: 'shopping_cart',
     color: '#9C27B0',
   },
 ];
@@ -161,7 +166,12 @@ export default function OnboardingScreen() {
           <View key={index} style={styles.page}>
             <View style={[styles.iconContainer, { backgroundColor: page.color + '20' }]}>
               <View style={[styles.iconCircle, { backgroundColor: page.color }]}>
-                <IconSymbol name={page.icon} size={64} color="#FFFFFF" />
+                <IconSymbol 
+                  ios_icon_name={page.iconName}
+                  android_material_icon_name={page.androidIconName}
+                  size={64} 
+                  color="#FFFFFF" 
+                />
               </View>
             </View>
 
@@ -190,7 +200,12 @@ export default function OnboardingScreen() {
         <Text style={styles.nextButtonText}>
           {currentPage === pages.length - 1 ? t('getStarted') : t('next')}
         </Text>
-        <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+        <IconSymbol 
+          ios_icon_name="arrow.right" 
+          android_material_icon_name="arrow_forward"
+          size={20} 
+          color="#FFFFFF" 
+        />
       </TouchableOpacity>
     </SafeAreaView>
   );

@@ -72,12 +72,12 @@ export default function EditItemScreen() {
           
           console.log('Loaded item for editing:', item.name);
         } else {
-          Alert.alert('Error', 'Item not found');
+          Alert.alert(t('error'), t('editItem.itemNotFound'));
           router.back();
         }
       } catch (error) {
         console.error('Error loading item:', error);
-        Alert.alert('Error', 'Failed to load item');
+        Alert.alert(t('error'), t('editItem.failedToLoad'));
         router.back();
       } finally {
         setLoading(false);
@@ -177,27 +177,27 @@ export default function EditItemScreen() {
     console.log('Expiration Date:', expirationDateText);
     
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter an item name');
+      Alert.alert(t('error'), t('pantry.enterItemName'));
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+      Alert.alert(t('error'), t('addItem.enterValidQuantity'));
       return;
     }
 
     // Validate expiration date
     if (!expirationDateText.trim()) {
-      setDateError('Please enter an expiration date');
-      Alert.alert('Error', 'Please enter an expiration date in MM/DD/YYYY format');
+      setDateError(t('addItem.enterExpirationDate'));
+      Alert.alert(t('error'), t('addItem.enterExpirationDateAlert'));
       return;
     }
 
     const parsedDate = validateAndParseDate(expirationDateText);
     if (!parsedDate) {
-      setDateError('Invalid date format. Use MM/DD/YYYY');
-      Alert.alert('Error', 'Invalid date format. Please use MM/DD/YYYY (e.g., 10/25/2025)');
+      setDateError(t('addItem.invalidDateFormat'));
+      Alert.alert(t('error'), t('addItem.invalidDateFormatAlert'));
       return;
     }
 
@@ -205,8 +205,8 @@ export default function EditItemScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (parsedDate < today) {
-      setDateError('Date cannot be in the past');
-      Alert.alert('Error', 'Expiration date cannot be in the past');
+      setDateError(t('addItem.dateCannotBePast'));
+      Alert.alert(t('error'), t('addItem.dateCannotBePastAlert'));
       return;
     }
 
@@ -228,7 +228,7 @@ export default function EditItemScreen() {
       console.log('Item updated successfully');
       
       Toast.show({
-        message: `${name} updated successfully! ✓`,
+        message: t('editItem.itemUpdatedSuccess', { name }),
         type: 'success',
       });
       
@@ -238,7 +238,7 @@ export default function EditItemScreen() {
       }, 1000);
     } catch (error) {
       console.error('Error updating item:', error);
-      Alert.alert('Error', 'Failed to update item');
+      Alert.alert(t('error'), t('editItem.failedToUpdate'));
     }
   };
 
@@ -278,13 +278,25 @@ export default function EditItemScreen() {
     }, 150);
   };
 
+  // Helper function to get translated category name
+  const getCategoryTranslation = (cat: string) => {
+    const key = cat.toLowerCase().replace(/\s+/g, '');
+    return t(key, cat);
+  };
+
+  // Helper function to get translated unit name
+  const getUnitTranslation = (unitValue: string) => {
+    const key = unitValue.toLowerCase().replace(/\s+/g, '');
+    return t(key, unitValue);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
         <Stack.Screen
           options={{
             headerShown: true,
-            title: 'Edit Item',
+            title: t('editItem.title'),
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
             headerBackTitleVisible: false,
@@ -292,7 +304,7 @@ export default function EditItemScreen() {
           }}
         />
         <View style={[commonStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ color: colors.text }}>Loading...</Text>
+          <Text style={{ color: colors.text }}>{t('editItem.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -303,7 +315,7 @@ export default function EditItemScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Edit Item',
+          title: t('editItem.title'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerBackTitleVisible: false,
@@ -325,11 +337,11 @@ export default function EditItemScreen() {
           keyboardDismissMode="on-drag"
           scrollEventThrottle={16}
         >
-          <Text style={styles.label}>Item Name *</Text>
+          <Text style={styles.label}>{t('addItem.itemNameRequired')}</Text>
           <TextInput
             ref={nameInputRef}
             style={commonStyles.input}
-            placeholder="e.g., Milk, Eggs, Bread, Butter"
+            placeholder={t('addItem.itemNamePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={handleNameChange}
@@ -348,13 +360,18 @@ export default function EditItemScreen() {
           {(aiEstimation || autoCategory) && (
             <View style={styles.aiEstimationBanner}>
               <View style={styles.aiEstimationIcon}>
-                <IconSymbol ios_icon_name="sparkles" android_material_icon_name="auto_awesome" size={16} color={colors.primary} />
+                <IconSymbol 
+                  ios_icon_name="sparkles" 
+                  android_material_icon_name="auto_awesome"
+                  size={16} 
+                  color={colors.primary} 
+                />
               </View>
               <View style={styles.aiEstimationContent}>
-                <Text style={styles.aiEstimationTitle}>✨ AI Suggestion</Text>
+                <Text style={styles.aiEstimationTitle}>{t('addItem.aiSuggestion')}</Text>
                 {autoCategory && (
                   <Text style={styles.aiEstimationText}>
-                    Suggested Category: {autoCategory}
+                    {t('addItem.suggestedCategory')}: {getCategoryTranslation(autoCategory)}
                   </Text>
                 )}
                 {aiEstimation && (
@@ -366,13 +383,13 @@ export default function EditItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Category *</Text>
+          <Text style={styles.label}>{t('addItem.categoryRequired')}</Text>
           <TouchableOpacity
             style={[commonStyles.input, styles.picker]}
             onPress={openCategoryPicker}
             activeOpacity={0.7}
           >
-            <Text style={{ color: colors.text }}>{category}</Text>
+            <Text style={{ color: colors.text }}>{getCategoryTranslation(category)}</Text>
             <IconSymbol 
               ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
               android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
@@ -403,10 +420,15 @@ export default function EditItemScreen() {
                       styles.pickerOptionText,
                       category === cat && styles.pickerOptionTextSelected
                     ]}>
-                      {cat}
+                      {getCategoryTranslation(cat)}
                     </Text>
                     {category === cat && (
-                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
+                      <IconSymbol 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
+                        size={20} 
+                        color={colors.primary} 
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -416,7 +438,7 @@ export default function EditItemScreen() {
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Quantity *</Text>
+              <Text style={styles.label}>{t('addItem.quantityRequired')}</Text>
               <View style={styles.quantityContainer}>
                 <TextInput
                   ref={quantityInputRef}
@@ -440,19 +462,24 @@ export default function EditItemScreen() {
                   onPress={openQuantityPicker}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol ios_icon_name="list.bullet" android_material_icon_name="format_list_bulleted" size={20} color={colors.text} />
+                  <IconSymbol 
+                    ios_icon_name="list.bullet" 
+                    android_material_icon_name="format_list_bulleted"
+                    size={20} 
+                    color={colors.text} 
+                  />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>Unit *</Text>
+              <Text style={styles.label}>{t('addItem.unitRequired')}</Text>
               <TouchableOpacity
                 style={[commonStyles.input, styles.picker]}
                 onPress={openUnitPicker}
                 activeOpacity={0.7}
               >
-                <Text style={{ color: colors.text }}>{unit}</Text>
+                <Text style={{ color: colors.text }}>{getUnitTranslation(unit)}</Text>
                 <IconSymbol 
                   ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
                   android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
@@ -481,7 +508,12 @@ export default function EditItemScreen() {
                       {preset.label}
                     </Text>
                     {parseFloat(quantity) === preset.value && (
-                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
+                      <IconSymbol 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
+                        size={20} 
+                        color={colors.primary} 
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -511,10 +543,15 @@ export default function EditItemScreen() {
                       styles.pickerOptionText,
                       unit === u && styles.pickerOptionTextSelected
                     ]}>
-                      {u}
+                      {getUnitTranslation(u)}
                     </Text>
                     {unit === u && (
-                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
+                      <IconSymbol 
+                        ios_icon_name="checkmark" 
+                        android_material_icon_name="check"
+                        size={20} 
+                        color={colors.primary} 
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -522,7 +559,7 @@ export default function EditItemScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Expiration Date *</Text>
+          <Text style={styles.label}>{t('addItem.expirationDateRequired')}</Text>
           <View>
             <TextInput
               ref={dateInputRef}
@@ -530,7 +567,7 @@ export default function EditItemScreen() {
                 commonStyles.input,
                 dateError ? styles.inputError : null
               ]}
-              placeholder="MM/DD/YYYY (e.g., 10/25/2025)"
+              placeholder={t('addItem.expirationDatePlaceholder')}
               placeholderTextColor={colors.textSecondary}
               value={expirationDateText}
               onChangeText={handleDateChange}
@@ -549,16 +586,16 @@ export default function EditItemScreen() {
               <Text style={styles.errorText}>{dateError}</Text>
             ) : (
               <Text style={styles.helperText}>
-                Enter date in MM/DD/YYYY format (e.g., 10/25/2025)
+                {t('addItem.dateFormatHelper')}
               </Text>
             )}
           </View>
 
-          <Text style={styles.label}>Notes (Optional)</Text>
+          <Text style={styles.label}>{t('addItem.notesOptional')}</Text>
           <TextInput
             ref={notesInputRef}
             style={[commonStyles.input, styles.notesInput]}
-            placeholder="Add any additional notes..."
+            placeholder={t('addItem.notesPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={notes}
             onChangeText={setNotes}
@@ -577,7 +614,7 @@ export default function EditItemScreen() {
             onPress={handleSave}
             activeOpacity={0.7}
           >
-            <Text style={buttonStyles.primaryText}>Save Changes</Text>
+            <Text style={buttonStyles.primaryText}>{t('editItem.saveChanges')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

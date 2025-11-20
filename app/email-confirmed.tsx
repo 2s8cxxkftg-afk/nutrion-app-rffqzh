@@ -11,9 +11,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import { useTranslation } from 'react-i18next';
 
 export default function EmailConfirmedScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Auto-redirect after 3 seconds
@@ -34,7 +36,12 @@ export default function EmailConfirmedScreen() {
         {/* Success Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
-            <IconSymbol name="checkmark.circle.fill" size={80} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={80} 
+              color={colors.success} 
+            />
           </View>
         </View>
 
@@ -46,22 +53,27 @@ export default function EmailConfirmedScreen() {
         />
 
         {/* Title */}
-        <Text style={styles.title}>Email Verified!</Text>
+        <Text style={styles.title}>{t('emailConfirmed.title')}</Text>
 
         {/* Description */}
         <Text style={styles.description}>
-          Your email has been successfully verified. You can now sign in to your Nutrion account.
+          {t('emailConfirmed.description')}
         </Text>
 
         {/* Continue Button */}
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue to Sign In</Text>
-          <IconSymbol name="arrow_forward" size={20} color="#FFFFFF" />
+          <Text style={styles.continueButtonText}>{t('emailConfirmed.continueToSignIn')}</Text>
+          <IconSymbol 
+            ios_icon_name="arrow.right" 
+            android_material_icon_name="arrow_forward"
+            size={20} 
+            color="#FFFFFF" 
+          />
         </TouchableOpacity>
 
         {/* Auto-redirect message */}
         <Text style={styles.autoRedirectText}>
-          Redirecting automatically in a moment...
+          {t('emailConfirmed.redirecting')}
         </Text>
       </View>
     </SafeAreaView>
