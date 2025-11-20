@@ -250,6 +250,18 @@ export default function AddItemScreen() {
     }, 150);
   };
 
+  // Helper function to get translated category name
+  const getCategoryTranslation = (cat: string) => {
+    const key = cat.toLowerCase().replace(/\s+/g, '');
+    return t(key, cat);
+  };
+
+  // Helper function to get translated unit name
+  const getUnitTranslation = (unitValue: string) => {
+    const key = unitValue.toLowerCase().replace(/\s+/g, '');
+    return t(key, unitValue);
+  };
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
       <Stack.Screen
@@ -311,7 +323,7 @@ export default function AddItemScreen() {
                 <Text style={styles.aiEstimationTitle}>{t('addItem.aiPredictionTitle')}</Text>
                 {autoCategory && (
                   <Text style={styles.aiEstimationText}>
-                    {t('addItem.categoryDetected')}: {t(autoCategory.toLowerCase())}
+                    {t('addItem.categoryDetected')}: {getCategoryTranslation(autoCategory)}
                   </Text>
                 )}
                 {aiEstimation && (
@@ -334,7 +346,7 @@ export default function AddItemScreen() {
             onPress={openCategoryPicker}
             activeOpacity={0.7}
           >
-            <Text style={{ color: colors.text }}>{t(category.toLowerCase())}</Text>
+            <Text style={{ color: colors.text }}>{getCategoryTranslation(category)}</Text>
             <IconSymbol 
               ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
               android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
@@ -365,7 +377,7 @@ export default function AddItemScreen() {
                       styles.pickerOptionText,
                       category === cat && styles.pickerOptionTextSelected
                     ]}>
-                      {t(cat.toLowerCase())}
+                      {getCategoryTranslation(cat)}
                     </Text>
                     {category === cat && (
                       <IconSymbol 
@@ -424,7 +436,7 @@ export default function AddItemScreen() {
                 onPress={openUnitPicker}
                 activeOpacity={0.7}
               >
-                <Text style={{ color: colors.text }}>{t(unit.toLowerCase())}</Text>
+                <Text style={{ color: colors.text }}>{getUnitTranslation(unit)}</Text>
                 <IconSymbol 
                   ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
                   android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
@@ -488,7 +500,7 @@ export default function AddItemScreen() {
                       styles.pickerOptionText,
                       unit === u && styles.pickerOptionTextSelected
                     ]}>
-                      {t(u.toLowerCase())}
+                      {getUnitTranslation(u)}
                     </Text>
                     {unit === u && (
                       <IconSymbol 
