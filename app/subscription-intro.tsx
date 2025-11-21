@@ -35,7 +35,7 @@ export default function SubscriptionIntroScreen() {
       if (!user) {
         Toast.show({
           type: 'error',
-          message: 'Please sign in to start your free trial',
+          message: t('subscription.pleaseSignIn'),
           duration: 3000,
         });
         router.replace('/auth');
@@ -61,7 +61,7 @@ export default function SubscriptionIntroScreen() {
       if (result) {
         Toast.show({
           type: 'success',
-          message: 'Free trial started! Enjoy 15 days of premium features.',
+          message: t('subscription.freeTrialMessage'),
           duration: 3000,
         });
         await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
@@ -69,7 +69,7 @@ export default function SubscriptionIntroScreen() {
       } else {
         Toast.show({
           type: 'error',
-          message: 'Failed to start trial',
+          message: t('subscription.failedToStart'),
           duration: 3000,
         });
       }
@@ -77,7 +77,7 @@ export default function SubscriptionIntroScreen() {
       console.error('Error starting trial:', error);
       Toast.show({
         type: 'error',
-        message: error.message || 'An error occurred',
+        message: error.message || t('subscription.anErrorOccurred'),
         duration: 3000,
       });
     } finally {
