@@ -127,12 +127,12 @@ export default function ShoppingScreen() {
             try {
               console.log('Deleting shopping item:', itemId);
               
-              // Optimistically update UI
+              // Delete from storage first
+              await deleteShoppingItem(itemId);
+              
+              // Then update UI
               const updatedItems = items.filter(item => item.id !== itemId);
               setItems(updatedItems);
-              
-              // Delete from storage
-              await deleteShoppingItem(itemId);
               
               console.log('Shopping item deleted successfully');
             } catch (error: any) {
@@ -204,7 +204,7 @@ export default function ShoppingScreen() {
           style: 'cancel',
         },
         {
-          text: t('shopping.clear'),
+          text: t('shopping.clear') || 'Clear',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -213,11 +213,11 @@ export default function ShoppingScreen() {
               // Filter out checked items
               const updatedItems = items.filter(item => !item.checked);
               
-              // Update state
-              setItems(updatedItems);
-              
-              // Save to storage
+              // Save to storage first
               await saveShoppingItems(updatedItems);
+              
+              // Then update UI
+              setItems(updatedItems);
               
               console.log('✅ Completed items cleared successfully');
               console.log('Remaining items:', updatedItems.length);
@@ -278,7 +278,10 @@ export default function ShoppingScreen() {
       </View>
 
       <TouchableOpacity
-        onPress={() => handleDeleteItem(item.id)}
+        onPress={(e) => {
+          e?.stopPropagation?.();
+          handleDeleteItem(item.id);
+        }}
         style={styles.deleteButton}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >

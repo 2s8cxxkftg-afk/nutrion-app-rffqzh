@@ -100,12 +100,12 @@ export default function PantryScreen() {
               console.log('Deleting item with ID:', itemId);
               console.log('Item name:', itemName);
               
-              // Optimistically update UI
+              // Delete from storage first
+              await deletePantryItem(itemId);
+              
+              // Then update UI
               const updatedItems = items.filter(item => item.id !== itemId);
               setItems(updatedItems);
-              
-              // Delete from storage
-              await deletePantryItem(itemId);
               
               console.log('Item deleted successfully');
               
@@ -155,7 +155,7 @@ export default function PantryScreen() {
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={(e) => {
-              e.stopPropagation();
+              e?.stopPropagation?.();
               handleDeleteItem(item.id);
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
