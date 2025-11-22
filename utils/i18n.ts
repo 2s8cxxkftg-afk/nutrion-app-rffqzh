@@ -41,8 +41,8 @@ const resources = {
   ar: {
     translation: require('./translations/ar.json'),
   },
-  hi: {
-    translation: require('./translations/hi.json'),
+  is: {
+    translation: require('./translations/is.json'),
   },
   nl: {
     translation: require('./translations/nl.json'),
@@ -153,7 +153,7 @@ export const getAvailableLanguages = () => {
     { code: 'ja', name: 'Japanese', nativeName: '日本語' },
     { code: 'ko', name: 'Korean', nativeName: '한국어' },
     { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
-    { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
+    { code: 'is', name: 'Icelandic', nativeName: 'Íslenska' },
     { code: 'nl', name: 'Dutch', nativeName: 'Nederlands' },
     { code: 'sv', name: 'Swedish', nativeName: 'Svenska' },
     { code: 'no', name: 'Norwegian', nativeName: 'Norsk' },
