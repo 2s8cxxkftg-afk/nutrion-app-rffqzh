@@ -13,6 +13,7 @@ export interface Subscription {
   trial_end_date?: string;
   subscription_start_date?: string;
   subscription_end_date?: string;
+  current_period_end?: string;
   price_usd: number;
   payment_method?: string;
   last_payment_date?: string;
@@ -40,6 +41,16 @@ async function ensureAuthenticated() {
   }
   
   return session;
+}
+
+// Clear subscription cache
+export async function clearSubscriptionCache(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SUBSCRIPTION_KEY);
+    console.log('✅ Subscription cache cleared');
+  } catch (error) {
+    console.error('❌ Error clearing subscription cache:', error);
+  }
 }
 
 // Get subscription from Supabase or local storage
@@ -258,6 +269,7 @@ export async function activatePremiumSubscription(
           payment_method: paymentMethod,
           last_payment_date: subscriptionStartDate.toISOString(),
           next_payment_date: nextPaymentDate.toISOString(),
+          current_period_end: nextPaymentDate.toISOString(),
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
           updated_at: new Date().toISOString(),
@@ -285,6 +297,7 @@ export async function activatePremiumSubscription(
           payment_method: paymentMethod,
           last_payment_date: subscriptionStartDate.toISOString(),
           next_payment_date: nextPaymentDate.toISOString(),
+          current_period_end: nextPaymentDate.toISOString(),
           price_usd: 1.99,
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
@@ -312,7 +325,7 @@ export async function activatePremiumSubscription(
 }
 
 // Cancel subscription
-export async function cancelSubscription(): Promise<void> {
+export async function cancelSubscription(): Promise<{ success: boolean; error?: string }> {
   try {
     console.log('🚫 Cancelling subscription...');
     
@@ -333,7 +346,7 @@ export async function cancelSubscription(): Promise<void> {
 
     if (error) {
       console.error('❌ Error cancelling subscription:', error);
-      throw error;
+      return { success: false, error: error.message };
     }
 
     // Update local storage
@@ -345,9 +358,10 @@ export async function cancelSubscription(): Promise<void> {
     }
 
     console.log('✅ Subscription cancelled');
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('❌ Error cancelling subscription:', error);
-    throw error;
+    return { success: false, error: error.message || 'Failed to cancel subscription' };
   }
 }
 

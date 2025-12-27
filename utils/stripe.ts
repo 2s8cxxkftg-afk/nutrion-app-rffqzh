@@ -2,10 +2,13 @@
 import { supabase } from './supabase';
 
 // Stripe configuration
-// Note: Replace with your actual Stripe publishable key
+// IMPORTANT: Replace these with your actual Stripe keys from your Stripe Dashboard
+// Get your keys from: https://dashboard.stripe.com/apikeys
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_YOUR_PUBLISHABLE_KEY_HERE';
 
 // Price IDs for subscriptions
+// IMPORTANT: Replace with your actual Price ID from Stripe Dashboard
+// Create a product and price at: https://dashboard.stripe.com/products
 const STRIPE_PRICE_ID = 'price_YOUR_PRICE_ID_HERE'; // $1.99/month
 
 export interface StripePaymentResult {
@@ -88,13 +91,15 @@ export async function processStripePayment(paymentMethodId: string): Promise<Str
  * Create Stripe checkout session
  * This function creates a checkout session for subscription
  */
-export async function createStripeCheckoutSession(): Promise<{ url: string; error?: string }> {
+export async function createStripeCheckoutSession(): Promise<string> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error('User not authenticated');
     }
+
+    console.log('Creating Stripe checkout session for user:', user.email);
 
     // Call Supabase Edge Function to create checkout session
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
@@ -112,10 +117,15 @@ export async function createStripeCheckoutSession(): Promise<{ url: string; erro
       throw error;
     }
 
-    return { url: data.url };
+    if (!data || !data.url) {
+      throw new Error('No checkout URL returned from server');
+    }
+
+    console.log('Checkout session created successfully');
+    return data.url;
   } catch (error: any) {
     console.error('Error creating Stripe checkout session:', error);
-    return { url: '', error: error.message };
+    throw error;
   }
 }
 
@@ -151,4 +161,4 @@ export async function cancelStripeSubscription(subscriptionId: string): Promise<
   }
 }
 
-export { STRIPE_PUBLISHABLE_KEY };
+export { STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID };

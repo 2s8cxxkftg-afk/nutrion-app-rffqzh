@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,7 +40,12 @@ export default function SubscriptionSuccessScreen() {
         {/* Success Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.successCircle}>
-            <IconSymbol name="checkmark.circle.fill" size={100} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={100} 
+              color={colors.success} 
+            />
           </View>
         </View>
 
@@ -58,31 +62,56 @@ export default function SubscriptionSuccessScreen() {
         {/* Features List */}
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={24} 
+              color={colors.success} 
+            />
             <Text style={styles.featureText}>Smart Pantry Management</Text>
           </View>
           
           <View style={styles.featureItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={24} 
+              color={colors.success} 
+            />
             <Text style={styles.featureText}>AI Recipe Suggestions</Text>
           </View>
           
           <View style={styles.featureItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={24} 
+              color={colors.success} 
+            />
             <Text style={styles.featureText}>Expiration Date Tracking</Text>
           </View>
           
           <View style={styles.featureItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+            <IconSymbol 
+              ios_icon_name="checkmark.circle.fill" 
+              android_material_icon_name="check_circle"
+              size={24} 
+              color={colors.success} 
+            />
             <Text style={styles.featureText}>Shopping List Sync</Text>
           </View>
         </View>
 
         {/* Info Box */}
         <View style={styles.infoBox}>
-          <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
+          <IconSymbol 
+            ios_icon_name="info.circle.fill" 
+            android_material_icon_name="info"
+            size={20} 
+            color={colors.primary} 
+          />
           <Text style={styles.infoText}>
-            Your subscription is now active. You'll be charged $1.99 USD monthly. You can manage or cancel your subscription anytime from your profile.
+            Your subscription is now active. You&apos;ll be charged $1.99 USD monthly. You can manage or cancel your subscription anytime from your profile.
           </Text>
         </View>
 
@@ -94,7 +123,12 @@ export default function SubscriptionSuccessScreen() {
           <Text style={styles.continueButtonText}>
             {t('continue') || 'Continue to App'}
           </Text>
-          <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
+          <IconSymbol 
+            ios_icon_name="arrow.right" 
+            android_material_icon_name="arrow_forward"
+            size={20} 
+            color="#FFFFFF" 
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
