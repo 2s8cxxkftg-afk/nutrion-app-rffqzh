@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -39,29 +39,7 @@ export default function ProfileScreen() {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('Profile screen focused - loading all data');
-      loadAllData();
-    }, [])
-  );
-
-  const loadAllData = async () => {
-    try {
-      setIsLoadingAuth(true);
-      setIsLoadingSubscription(true);
-
-      await loadUserInfo();
-      await loadSubscriptionInfo();
-      await loadStats();
-      
-      console.log('✅ All profile data loaded successfully');
-    } catch (error) {
-      console.error('❌ Error loading profile data:', error);
-    }
-  };
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const items = await loadPantryItems();
       setTotalItems(items.length);
@@ -80,9 +58,9 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Error loading stats:', error);
     }
-  };
+  }, []);
 
-  const loadUserInfo = async () => {
+  const loadUserInfo = useCallback(async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
@@ -116,9 +94,9 @@ export default function ProfileScreen() {
     } finally {
       setIsLoadingAuth(false);
     }
-  };
+  }, []);
 
-  const loadSubscriptionInfo = async () => {
+  const loadSubscriptionInfo = useCallback(async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
@@ -135,7 +113,29 @@ export default function ProfileScreen() {
     } finally {
       setIsLoadingSubscription(false);
     }
-  };
+  }, []);
+
+  const loadAllData = useCallback(async () => {
+    try {
+      setIsLoadingAuth(true);
+      setIsLoadingSubscription(true);
+
+      await loadUserInfo();
+      await loadSubscriptionInfo();
+      await loadStats();
+      
+      console.log('✅ All profile data loaded successfully');
+    } catch (error) {
+      console.error('❌ Error loading profile data:', error);
+    }
+  }, [loadUserInfo, loadSubscriptionInfo, loadStats]);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Profile screen focused - loading all data');
+      loadAllData();
+    }, [loadAllData])
+  );
 
   const handleEditProfile = () => {
     if (!user) {

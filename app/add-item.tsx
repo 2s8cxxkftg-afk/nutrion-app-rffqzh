@@ -83,7 +83,7 @@ export default function AddItemScreen() {
       const estimation = getExpirationEstimation(name, true);
       setAiEstimation(estimation);
     }
-  }, [category]);
+  }, [category, name]);
 
   // Format date input as user types (MM/DD/YYYY)
   const handleDateChange = (text: string) => {
