@@ -85,8 +85,23 @@ export default function SubscriptionIntroScreen() {
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
+      router.replace('/(tabs)/pantry');
+    } catch (error) {
+      console.error('Error skipping subscription intro:', error);
+      router.replace('/(tabs)/pantry');
+    }
+  };
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+      {/* Skip Button */}
+      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+        <Text style={styles.skipButtonText}>{t('skip')}</Text>
+      </TouchableOpacity>
+
       <ScrollView
         style={commonStyles.container}
         contentContainerStyle={styles.content}
@@ -227,6 +242,21 @@ export default function SubscriptionIntroScreen() {
 }
 
 const styles = StyleSheet.create({
+  skipButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 20,
+    right: 20,
+    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.card,
+    borderRadius: 20,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   content: {
     paddingBottom: 40,
   },
