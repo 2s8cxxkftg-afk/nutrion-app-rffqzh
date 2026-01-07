@@ -4,7 +4,7 @@
  * 
  * Handles subscription status, trial periods, and user exemptions.
  * - 15-day free trial for new users
- * - $2/month subscription after trial
+ * - $1.99/month subscription after trial
  * - Exemption system for whitelisted users
  */
 
@@ -13,7 +13,7 @@ import { supabase } from './supabase';
 
 const SUBSCRIPTION_KEY = '@nutrion_subscription';
 const TRIAL_DAYS = 15;
-const MONTHLY_PRICE = 2.00;
+const MONTHLY_PRICE = 1.99;
 
 export interface Subscription {
   status: 'trial' | 'active' | 'expired' | 'exempted';
