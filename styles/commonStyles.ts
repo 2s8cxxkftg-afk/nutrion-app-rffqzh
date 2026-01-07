@@ -1,518 +1,121 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Nutrion App Colors - Clean, minimalist design with vibrant accents
 export const colors = {
-  // Backgrounds
-  background: '#F8F9FA',
-  backgroundSecondary: '#FFFFFF',
-  
-  // Text
-  text: '#1A1A1A',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  
-  // Brand Colors
-  primary: '#10B981',
-  primaryLight: '#6EE7B7',
-  primaryDark: '#059669',
-  
-  secondary: '#F59E0B',
-  secondaryLight: '#FCD34D',
-  
-  accent: '#3B82F6',
-  accentLight: '#93C5FD',
-  
-  // Status Colors
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
-  
-  // UI Elements
-  card: '#FFFFFF',
-  cardHover: '#F9FAFB',
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
-  divider: '#E5E7EB',
-  
-  // Shadows
-  shadow: 'rgba(0, 0, 0, 0.08)',
-  shadowDark: 'rgba(0, 0, 0, 0.12)',
-  
-  // Overlays
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  overlayLight: 'rgba(0, 0, 0, 0.3)',
+  primary: '#162456',    // Material Blue
+  secondary: '#193cb8',  // Darker Blue
+  accent: '#64B5F6',     // Light Blue
+  background: '#101824',  // Keeping dark background
+  backgroundAlt: '#162133',  // Keeping dark background
+  text: '#e3e3e3',       // Keeping light text
+  grey: '#90CAF9',       // Light Blue Grey
+  card: '#193cb8',       // Keeping dark card background
 };
 
-// Typography Scale
-export const typography = {
-  // Display
-  displayLarge: {
-    fontSize: 40,
-    fontWeight: '800' as const,
-    lineHeight: 48,
-    letterSpacing: -1,
-  },
-  displayMedium: {
-    fontSize: 32,
-    fontWeight: '800' as const,
-    lineHeight: 40,
-    letterSpacing: -0.5,
-  },
-  displaySmall: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    lineHeight: 36,
-    letterSpacing: -0.3,
-  },
-  
-  // Headings
-  h1: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    lineHeight: 32,
-    letterSpacing: -0.3,
-  },
-  h2: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    lineHeight: 28,
-    letterSpacing: -0.2,
-  },
-  h3: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    lineHeight: 26,
-    letterSpacing: -0.1,
-  },
-  h4: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    lineHeight: 24,
-  },
-  
-  // Body
-  bodyLarge: {
-    fontSize: 17,
-    fontWeight: '400' as const,
-    lineHeight: 26,
-  },
-  body: {
-    fontSize: 15,
-    fontWeight: '400' as const,
-    lineHeight: 22,
-  },
-  bodySmall: {
-    fontSize: 14,
-    fontWeight: '400' as const,
-    lineHeight: 20,
-  },
-  
-  // Labels
-  label: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    lineHeight: 18,
-    letterSpacing: 0.2,
-  },
-  labelSmall: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    lineHeight: 16,
-    letterSpacing: 0.3,
-  },
-  
-  // Captions
-  caption: {
-    fontSize: 12,
-    fontWeight: '400' as const,
-    lineHeight: 16,
-  },
-};
-
-// Spacing Scale
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 40,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
 };
 
-// Border Radius Scale
 export const borderRadius = {
-  xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 20,
-  xxl: 24,
-  full: 9999,
+  xl: 24,
 };
 
-// Button Styles
+export const typography = {
+  h1: 32,
+  h2: 24,
+  h3: 20,
+  body: 16,
+  small: 14,
+  tiny: 12,
+};
+
+export const expirationColors = {
+  fresh: '#4CAF50',
+  warning: '#FF9800',
+  expired: '#F44336',
+};
+
 export const buttonStyles = StyleSheet.create({
-  primary: {
+  instructionsButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
+    alignSelf: 'center',
+    width: '100%',
   },
-  primaryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  
-  secondary: {
-    backgroundColor: colors.secondary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    boxShadow: `0px 4px 12px ${colors.secondary}40`,
-    elevation: 4,
-  },
-  secondaryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  outlineText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  
-  ghost: {
-    backgroundColor: colors.primary + '15',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  ghostText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  
-  text: {
-    backgroundColor: 'transparent',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textButtonText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 4px 12px ${colors.primary}40`,
-    elevation: 4,
-  },
-  
-  iconSecondary: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+  backButton: {
+    backgroundColor: colors.backgroundAlt,
+    alignSelf: 'center',
+    width: '100%',
   },
 });
 
-// Common Styles
 export const commonStyles = StyleSheet.create({
-  // Containers
+  wrapper: {
+    backgroundColor: colors.background,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: 800,
+    width: '100%',
   },
-  contentPadded: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-  },
-  
-  // Typography
-  displayLarge: {
-    ...typography.displayLarge,
-    color: colors.text,
-  },
-  displayMedium: {
-    ...typography.displayMedium,
-    color: colors.text,
-  },
-  displaySmall: {
-    ...typography.displaySmall,
-    color: colors.text,
-  },
-  
   title: {
-    ...typography.h1,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
     color: colors.text,
+    marginBottom: 10
   },
-  subtitle: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  heading: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  subheading: {
-    ...typography.h4,
-    color: colors.text,
-  },
-  
   text: {
-    ...typography.body,
+    fontSize: 16,
+    fontWeight: '500',
     color: colors.text,
+    marginBottom: 8,
+    lineHeight: 24,
+    textAlign: 'center',
   },
-  textLarge: {
-    ...typography.bodyLarge,
-    color: colors.text,
+  section: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  textSmall: {
-    ...typography.bodySmall,
-    color: colors.text,
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  
-  textSecondary: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  textTertiary: {
-    ...typography.body,
-    color: colors.textTertiary,
-  },
-  
-  label: {
-    ...typography.label,
-    color: colors.text,
-  },
-  labelSecondary: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  
-  caption: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  
-  // Cards
   card: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    backgroundColor: colors.backgroundAlt,
+    borderColor: colors.grey,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 8,
+    width: '100%',
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
-  cardCompact: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    boxShadow: `0px 2px 6px ${colors.shadow}`,
-    elevation: 1,
-  },
-  cardElevated: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    boxShadow: `0px 8px 24px ${colors.shadowDark}`,
-    elevation: 6,
-  },
-  
-  // Layout
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rowSpaced: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  spaceBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  // Badges
-  badge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    ...typography.labelSmall,
-    color: '#FFFFFF',
-  },
-  
-  // Inputs
-  input: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    fontWeight: '500',
-  },
-  inputFocused: {
-    borderColor: colors.primary,
-    boxShadow: `0px 0px 0px 3px ${colors.primary}20`,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  
-  // Dividers
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginVertical: spacing.xl,
-  },
-  dividerVertical: {
-    width: 1,
-    backgroundColor: colors.divider,
-    marginHorizontal: spacing.lg,
-  },
-  
-  // Section Headers
-  sectionHeader: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.lg,
-    marginTop: spacing.md,
-  },
-  sectionHeaderLarge: {
-    ...typography.h2,
-    color: colors.text,
-    marginBottom: spacing.xl,
-    marginTop: spacing.lg,
-  },
-  
-  // Chips
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    ...typography.label,
-    color: colors.text,
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
-  },
-  
-  // Empty States
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.huge,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyStateIcon: {
-    marginBottom: spacing.xl,
-    opacity: 0.5,
-  },
-  emptyStateTitle: {
-    ...typography.h2,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyStateDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
+  icon: {
+    width: 60,
+    height: 60,
+    tintColor: "white",
   },
 });
-
-// Expiration status colors
-export const expirationColors = {
-  fresh: colors.success,
-  nearExpiry: colors.warning,
-  expired: colors.error,
-};
-
-// Animation Durations
-export const animations = {
-  fast: 150,
-  normal: 250,
-  slow: 350,
-};
