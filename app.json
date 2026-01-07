@@ -1,14 +1,15 @@
+
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "Nutrion",
+    "slug": "nutrion",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png",
+    "icon": "./assets/images/natively-dark.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png",
+      "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -17,26 +18,23 @@
       "bundleIdentifier": "com.nutrion.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "This app uses the camera to scan barcodes for adding food items to your pantry.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images.",
-        "NSMicrophoneUsageDescription": "This app does not use the microphone."
+        "NSCameraUsageDescription": "We need camera access to scan product barcodes",
+        "NSPhotoLibraryUsageDescription": "We need photo library access to save and share meal plans"
       },
-      "deploymentTarget": "13.0"
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png",
+        "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.nutrion.app",
-      "minSdkVersion": 21,
-      "targetSdkVersion": 34,
+      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "NOTIFICATIONS"
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -48,16 +46,10 @@
       "expo-router",
       "expo-web-browser",
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow Nutrion to access your camera to scan barcodes."
-        }
-      ],
-      [
         "expo-notifications",
         {
-          "icon": "./assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png",
-          "color": "#4CAF50"
+          "icon": "./assets/images/natively-dark.png",
+          "color": "#ffffff"
         }
       ]
     ],
@@ -68,9 +60,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "YOUR_EAS_PROJECT_ID"
       }
     }
-  },
-  "scheme": "Nutrion"
+  }
 }

@@ -5,7 +5,7 @@ import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
-import { getSubscription, hasPremiumAccess } from '@/utils/subscription';
+import { getSubscription, hasActiveAccess } from '@/utils/subscription';
 
 const LANGUAGE_SELECTED_KEY = '@nutrion_language_selected';
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
@@ -66,8 +66,7 @@ export default function Index() {
         // Check subscription status if authenticated
         if (session) {
           try {
-            const subscription = await getSubscription();
-            premiumAccess = hasPremiumAccess(subscription);
+            premiumAccess = await hasActiveAccess();
             console.log('Premium access:', premiumAccess);
             setHasPremium(premiumAccess);
           } catch (error) {

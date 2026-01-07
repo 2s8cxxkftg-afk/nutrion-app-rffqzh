@@ -22,8 +22,17 @@ import Toast from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
+import { SubscriptionGate } from '@/components/SubscriptionGate';
 
 export default function PantryScreen() {
+  return (
+    <SubscriptionGate>
+      <PantryScreenContent />
+    </SubscriptionGate>
+  );
+}
+
+function PantryScreenContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const [items, setItems] = useState<PantryItem[]>([]);

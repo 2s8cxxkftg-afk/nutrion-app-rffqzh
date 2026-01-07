@@ -1,167 +1,224 @@
 
+/**
+ * Subscription Management Utility
+ * 
+ * Handles subscription status, trial periods, and user exemptions.
+ * - 15-day free trial for new users
+ * - $2/month subscription after trial
+ * - Exemption system for whitelisted users
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
 
 const SUBSCRIPTION_KEY = '@nutrion_subscription';
-const TRIAL_START_KEY = '@nutrion_trial_start';
-const SUBSCRIPTION_CACHE_KEY = '@nutrion_subscription_cache';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const TRIAL_DAYS = 15;
+const MONTHLY_PRICE = 2.00;
 
 export interface Subscription {
-  plan_type: 'free' | 'premium';
-  status: 'active' | 'trial' | 'cancelled' | 'expired';
-  trial_end_date?: string;
-  subscription_end_date?: string;
-  stripe_subscription_id?: string;
-  stripe_customer_id?: string;
+  status: 'trial' | 'active' | 'expired' | 'exempted';
+  trialStartDate: string | null;
+  trialEndDate: string | null;
+  subscriptionEndDate: string | null;
+  isExempted: boolean;
+  userId?: string;
 }
 
 /**
- * Clear the subscription cache to force a reload
+ * Get current subscription status
  */
-export async function clearSubscriptionCache(): Promise<void> {
+export async function getSubscription(): Promise<Subscription> {
   try {
-    await AsyncStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
-    console.log('✅ Subscription cache cleared');
-  } catch (error) {
-    console.error('Error clearing subscription cache:', error);
-  }
-}
+    const stored = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
+    const local: Subscription = stored ? JSON.parse(stored) : null;
 
-/**
- * Get the current subscription status
- */
-export async function getSubscription(): Promise<Subscription | null> {
-  try {
-    // Check cache first
-    const cachedData = await AsyncStorage.getItem(SUBSCRIPTION_CACHE_KEY);
-    if (cachedData) {
-      const { subscription, timestamp } = JSON.parse(cachedData);
-      const now = Date.now();
-      
-      // Return cached data if it's still fresh
-      if (now - timestamp < CACHE_DURATION) {
-        console.log('📦 Returning cached subscription data');
+    // Check if user is authenticated and fetch from Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (subData) {
+        const subscription: Subscription = {
+          status: subData.is_exempted ? 'exempted' : subData.status,
+          trialStartDate: subData.trial_start_date,
+          trialEndDate: subData.trial_end_date,
+          subscriptionEndDate: subData.subscription_end_date,
+          isExempted: subData.is_exempted || false,
+          userId: user.id,
+        };
+
+        await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
         return subscription;
       }
     }
 
-    // Fetch fresh data
-    const subscriptionData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
-    if (!subscriptionData) {
-      return null;
+    // Return local subscription if no server data
+    if (local) {
+      return local;
     }
 
-    const subscription: Subscription = JSON.parse(subscriptionData);
-    
-    // Cache the fresh data
-    await AsyncStorage.setItem(
-      SUBSCRIPTION_CACHE_KEY,
-      JSON.stringify({
-        subscription,
-        timestamp: Date.now(),
-      })
-    );
-
-    return subscription;
+    // Default: no subscription
+    return {
+      status: 'expired',
+      trialStartDate: null,
+      trialEndDate: null,
+      subscriptionEndDate: null,
+      isExempted: false,
+    };
   } catch (error) {
     console.error('Error getting subscription:', error);
-    return null;
+    return {
+      status: 'expired',
+      trialStartDate: null,
+      trialEndDate: null,
+      subscriptionEndDate: null,
+      isExempted: false,
+    };
   }
 }
 
 /**
- * Start a free trial
+ * Start free trial for new user
  */
 export async function startFreeTrial(): Promise<void> {
-  try {
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
+  const now = new Date();
+  const endDate = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 
-    const subscription: Subscription = {
-      plan_type: 'premium',
+  const subscription: Subscription = {
+    status: 'trial',
+    trialStartDate: now.toISOString(),
+    trialEndDate: endDate.toISOString(),
+    subscriptionEndDate: null,
+    isExempted: false,
+  };
+
+  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+
+  // Sync to Supabase if authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.from('subscriptions').upsert({
+      user_id: user.id,
       status: 'trial',
-      trial_end_date: trialEndDate.toISOString(),
-    };
-
-    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-    await AsyncStorage.setItem(TRIAL_START_KEY, new Date().toISOString());
-    await clearSubscriptionCache();
-    
-    console.log('✅ Free trial started');
-  } catch (error) {
-    console.error('Error starting free trial:', error);
-    throw error;
+      trial_start_date: now.toISOString(),
+      trial_end_date: endDate.toISOString(),
+      is_exempted: false,
+    });
   }
 }
 
 /**
  * Activate premium subscription
  */
-export async function activatePremiumSubscription(
-  stripeSubscriptionId: string,
-  stripeCustomerId: string
-): Promise<void> {
-  try {
-    const subscription: Subscription = {
-      plan_type: 'premium',
-      status: 'active',
-      stripe_subscription_id: stripeSubscriptionId,
-      stripe_customer_id: stripeCustomerId,
-    };
+export async function activatePremiumSubscription(stripeSubscriptionId?: string): Promise<void> {
+  const now = new Date();
+  const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-    await clearSubscriptionCache();
-    
-    console.log('✅ Premium subscription activated');
-  } catch (error) {
-    console.error('Error activating premium subscription:', error);
-    throw error;
+  const subscription: Subscription = {
+    status: 'active',
+    trialStartDate: null,
+    trialEndDate: null,
+    subscriptionEndDate: endDate.toISOString(),
+    isExempted: false,
+  };
+
+  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+
+  // Sync to Supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.from('subscriptions').upsert({
+      user_id: user.id,
+      status: 'active',
+      subscription_end_date: endDate.toISOString(),
+      stripe_subscription_id: stripeSubscriptionId,
+      is_exempted: false,
+    });
   }
+}
+
+/**
+ * Check if user has active access (trial, active, or exempted)
+ */
+export async function hasActiveAccess(): Promise<boolean> {
+  const subscription = await getSubscription();
+  
+  if (subscription.isExempted) {
+    return true;
+  }
+
+  if (subscription.status === 'active') {
+    const now = new Date();
+    const endDate = subscription.subscriptionEndDate ? new Date(subscription.subscriptionEndDate) : null;
+    return endDate ? now < endDate : false;
+  }
+
+  if (subscription.status === 'trial') {
+    const now = new Date();
+    const endDate = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
+    return endDate ? now < endDate : false;
+  }
+
+  return false;
+}
+
+/**
+ * Get days remaining in trial
+ */
+export function getTrialDaysRemaining(subscription: Subscription): number {
+  if (subscription.status !== 'trial' || !subscription.trialEndDate) {
+    return 0;
+  }
+
+  const now = new Date();
+  const endDate = new Date(subscription.trialEndDate);
+  const diffTime = endDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffDays);
 }
 
 /**
  * Cancel subscription
  */
 export async function cancelSubscription(): Promise<void> {
-  try {
-    const currentSubscription = await getSubscription();
-    if (!currentSubscription) {
-      return;
-    }
+  const subscription: Subscription = {
+    status: 'expired',
+    trialStartDate: null,
+    trialEndDate: null,
+    subscriptionEndDate: null,
+    isExempted: false,
+  };
 
-    const subscription: Subscription = {
-      ...currentSubscription,
-      status: 'cancelled',
-    };
+  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
 
-    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-    await clearSubscriptionCache();
-    
-    console.log('✅ Subscription cancelled');
-  } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    throw error;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.from('subscriptions').update({
+      status: 'expired',
+    }).eq('user_id', user.id);
   }
 }
 
 /**
- * Get remaining trial days
+ * Get subscription price
  */
-export async function getTrialDaysRemaining(): Promise<number> {
-  try {
-    const subscription = await getSubscription();
-    if (!subscription || subscription.status !== 'trial' || !subscription.trial_end_date) {
-      return 0;
-    }
+export function getSubscriptionPrice(): number {
+  return MONTHLY_PRICE;
+}
 
-    const trialEnd = new Date(subscription.trial_end_date);
-    const now = new Date();
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return Math.max(0, diffDays);
-  } catch (error) {
-    console.error('Error getting trial days remaining:', error);
-    return 0;
-  }
+/**
+ * Exempt user from subscription (admin function)
+ */
+export async function exemptUser(userId: string): Promise<void> {
+  await supabase.from('subscriptions').upsert({
+    user_id: userId,
+    status: 'exempted',
+    is_exempted: true,
+  });
 }

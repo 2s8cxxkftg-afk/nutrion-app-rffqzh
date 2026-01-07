@@ -22,8 +22,17 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { SubscriptionGate } from '@/components/SubscriptionGate';
 
 export default function ShoppingScreen() {
+  return (
+    <SubscriptionGate>
+      <ShoppingScreenContent />
+    </SubscriptionGate>
+  );
+}
+
+function ShoppingScreenContent() {
   const { t } = useTranslation();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');

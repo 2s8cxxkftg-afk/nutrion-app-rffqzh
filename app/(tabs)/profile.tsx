@@ -272,12 +272,13 @@ export default function ProfileScreen() {
 
   const getSubscriptionBadgeColor = () => {
     if (!subscription) return colors.textSecondary;
+    if (subscription.isExempted) return colors.success;
     switch (subscription.status) {
       case 'active':
         return colors.success;
       case 'trial':
         return colors.primary;
-      case 'cancelled':
+      case 'expired':
         return colors.error;
       default:
         return colors.textSecondary;
@@ -286,12 +287,13 @@ export default function ProfileScreen() {
 
   const getSubscriptionStatusText = () => {
     if (!subscription) return t('subscription.free');
+    if (subscription.isExempted) return t('subscription.premium') + ' (Exempted)';
     if (subscription.status === 'trial') return t('subscription.trial');
     if (subscription.status === 'active') return t('subscription.premium');
     return t('subscription.free');
   };
 
-  const isPremiumUser = subscription?.plan_type === 'premium' && (subscription?.status === 'active' || subscription?.status === 'trial');
+  const isPremiumUser = subscription && (subscription.isExempted || subscription.status === 'active' || subscription.status === 'trial');
 
   const isLoading = isLoadingAuth || isLoadingSubscription;
 
