@@ -58,7 +58,7 @@ export default function PaywallScreen() {
       
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconContainer}>
-          <IconSymbol name="lock.fill" size={80} color={colors.primary} />
+          <IconSymbol ios_icon_name="lock.fill" android_material_icon_name="lock" size={80} color={colors.primary} />
         </View>
 
         <Text style={styles.title}>
@@ -82,15 +82,13 @@ export default function PaywallScreen() {
           </Text>
           
           {[
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature1') || 'Smart Pantry Inventory' },
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature2') || 'Meal Planner & Recipes' },
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature3') || 'Expiration Alerts' },
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature4') || 'Shopping List' },
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature5') || 'Analytics Dashboard' },
-            { icon: 'checkmark.circle.fill', text: t('paywall.feature6') || 'Cloud Sync' },
+            { icon: 'check-circle', text: t('paywall.feature1') || 'Smart Pantry Inventory' },
+            { icon: 'check-circle', text: t('paywall.feature3') || 'Expiration Alerts' },
+            { icon: 'check-circle', text: t('paywall.feature4') || 'Shopping List' },
+            { icon: 'check-circle', text: t('paywall.feature5') || 'Analytics Dashboard' },
           ].map((feature, index) => (
             <View key={index} style={styles.featureRow}>
-              <IconSymbol name={feature.icon} size={24} color={colors.success} />
+              <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name={feature.icon} size={24} color={colors.success} />
               <Text style={styles.featureText}>{feature.text}</Text>
             </View>
           ))}
@@ -108,7 +106,7 @@ export default function PaywallScreen() {
               <Text style={styles.subscribeButtonText}>
                 {t('paywall.subscribe') || 'Subscribe Now'}
               </Text>
-              <IconSymbol name="arrow.right" size={20} color="#fff" />
+              <IconSymbol ios_icon_name="arrow.right" android_material_icon_name="arrow-forward" size={20} color="#fff" />
             </>
           )}
         </TouchableOpacity>
