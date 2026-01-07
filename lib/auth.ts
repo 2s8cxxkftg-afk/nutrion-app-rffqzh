@@ -1,69 +1,67 @@
 
 /**
- * BetterAuth Client Configuration
- *
- * Provides authentication client with:
- * - Platform-specific storage (localStorage for web, SecureStore for native)
- * - Bearer token handling for web
- * - Expo client plugin for deep linking
+ * Supabase Authentication Helper
+ * 
+ * This app uses Supabase for authentication.
+ * See utils/supabase.ts for the main Supabase client configuration.
  */
 
-// eslint-disable-next-line import/no-unresolved
-import { createAuthClient } from "better-auth/react";
-// eslint-disable-next-line import/no-unresolved
-import { expoClient } from "@better-auth/expo/client";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
-
-// Backend URL from app.json configuration
-const API_URL = Constants.expoConfig?.extra?.backendUrl || "";
-const BEARER_TOKEN_KEY = "nutrion_bearer_token";
-
-// Platform-specific storage adapter
-const storage = Platform.OS === "web"
-  ? {
-      getItem: (key: string) => localStorage.getItem(key),
-      setItem: (key: string, value: string) => localStorage.setItem(key, value),
-      deleteItem: (key: string) => localStorage.removeItem(key),
-    }
-  : SecureStore;
-
-// Create auth client with platform-specific configuration
-export const authClient = createAuthClient({
-  baseURL: API_URL,
-  plugins: [
-    expoClient({
-      scheme: "nutrion",
-      storagePrefix: "nutrion",
-      storage,
-    }),
-  ],
-  // Web-specific bearer token configuration
-  ...(Platform.OS === "web" && {
-    fetchOptions: {
-      auth: {
-        type: "Bearer" as const,
-        token: () => localStorage.getItem(BEARER_TOKEN_KEY) || "",
-      },
-    },
-  }),
-});
+import { supabase } from '@/utils/supabase';
 
 /**
- * Store bearer token for web authentication
+ * Get current user session
  */
-export function storeWebBearerToken(token: string) {
-  if (Platform.OS === "web") {
-    localStorage.setItem(BEARER_TOKEN_KEY, token);
+export async function getCurrentSession() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
+    return session;
+  } catch (error) {
+    console.error('Failed to get session:', error);
+    return null;
   }
 }
 
 /**
- * Clear stored authentication tokens
+ * Get current user
  */
-export function clearAuthTokens() {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(BEARER_TOKEN_KEY);
+export async function getCurrentUser() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+    return user;
+  } catch (error) {
+    console.error('Failed to get user:', error);
+    return null;
   }
+}
+
+/**
+ * Sign out current user
+ */
+export async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to sign out:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if user is authenticated
+ */
+export async function isAuthenticated() {
+  const session = await getCurrentSession();
+  return !!session;
 }

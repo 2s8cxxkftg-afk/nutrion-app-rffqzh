@@ -9,19 +9,19 @@ export default function TabLayout() {
     {
       name: 'pantry',
       route: '/(tabs)/pantry',
-      icon: 'archivebox.fill',
+      icon: 'inventory',
       label: 'Pantry',
     },
     {
       name: 'shopping',
       route: '/(tabs)/shopping',
-      icon: 'cart.fill',
+      icon: 'shopping-cart',
       label: 'Shopping',
     },
     {
       name: 'profile',
       route: '/(tabs)/profile',
-      icon: 'person.fill',
+      icon: 'person',
       label: 'Profile',
     },
   ];
