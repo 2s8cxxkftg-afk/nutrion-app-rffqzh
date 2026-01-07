@@ -1,8 +1,13 @@
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { PantryItem, ShoppingItem } from '@/types/pantry';
 
 export async function isAuthenticated(): Promise<boolean> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, skipping authentication check');
+    return false;
+  }
+
   try {
     const { data: { session } } = await supabase.auth.getSession();
     return !!session;
@@ -13,6 +18,11 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, skipping sync');
+    return;
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
@@ -56,6 +66,11 @@ export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> 
 }
 
 export async function deletePantryItemFromSupabase(itemId: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, skipping delete');
+    return;
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
@@ -80,6 +95,11 @@ export async function deletePantryItemFromSupabase(itemId: string): Promise<void
 }
 
 export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, skipping sync');
+    return;
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
@@ -121,6 +141,11 @@ export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<vo
 }
 
 export async function deleteShoppingItemFromSupabase(itemId: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, skipping delete');
+    return;
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
@@ -145,6 +170,11 @@ export async function deleteShoppingItemFromSupabase(itemId: string): Promise<vo
 }
 
 export async function loadPantryItemsFromSupabase(): Promise<PantryItem[]> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, returning empty array');
+    return [];
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
@@ -189,6 +219,11 @@ export async function loadPantryItemsFromSupabase(): Promise<PantryItem[]> {
 }
 
 export async function loadShoppingItemsFromSupabase(): Promise<ShoppingItem[]> {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️ Supabase not configured, returning empty array');
+    return [];
+  }
+
   try {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
