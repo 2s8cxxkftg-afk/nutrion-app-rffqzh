@@ -12,8 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
+const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 const onboardingData = [
   {
@@ -43,16 +45,29 @@ export default function IntroductionScreen() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(0);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentPage < onboardingData.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
-      router.replace('/auth');
+      // Mark onboarding as completed
+      try {
+        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+        router.replace('/auth');
+      } catch (error) {
+        console.error('Error saving onboarding status:', error);
+        router.replace('/auth');
+      }
     }
   };
 
-  const handleSkip = () => {
-    router.replace('/auth');
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      router.replace('/auth');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      router.replace('/auth');
+    }
   };
 
   const currentData = onboardingData[currentPage];
@@ -118,7 +133,7 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: typography.sizes.md,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: typography.weights.semibold,
   },
   content: {
     flex: 1,

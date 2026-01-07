@@ -448,5 +448,13 @@
   "can": "can",
   "jar": "jar",
   "bottle": "bottle",
-  "pack": "pack"
+  "pack": "pack",
+  "planner.title": "Meal Planner",
+  "planner.ingredientsAvailable": "ingredients available",
+  "planner.selectDay": "Select Day",
+  "planner.suggestions": "Meal Suggestions",
+  "planner.suggestionsDesc": "Based on your available ingredients",
+  "planner.addToPlan": "Add to Plan",
+  "planner.emptyTitle": "No Ingredients Available",
+  "planner.emptyDesc": "Add items to your pantry to get meal suggestions"
 }
