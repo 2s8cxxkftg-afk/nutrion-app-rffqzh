@@ -1,15 +1,32 @@
 
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  text: '#e3e3e3',       // Keeping light text
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
+  primary: '#162456',
+  secondary: '#193cb8',
+  accent: '#64B5F6',
+  background: '#101824',
+  backgroundAlt: '#162133',
+  text: '#e3e3e3',
+  grey: '#90CAF9',
+  card: '#193cb8',
+};
+
+export const typography = {
+  sizes: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 32,
+  },
+  weights: {
+    regular: '400',
+    medium: '500',
+    semibold: '600',
+    bold: '700',
+  },
 };
 
 export const spacing = {
@@ -18,23 +35,12 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
-  xxl: 48,
 };
 
 export const borderRadius = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
-};
-
-export const typography = {
-  h1: 32,
-  h2: 24,
-  h3: 20,
-  body: 16,
-  small: 14,
-  tiny: 12,
 };
 
 export const expirationColors = {
