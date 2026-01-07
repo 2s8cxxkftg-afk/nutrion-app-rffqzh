@@ -5,19 +5,17 @@ import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
-import { getSubscription, hasActiveAccess } from '@/utils/subscription';
+import { shouldShowPaywall } from '@/utils/subscription';
 
 const LANGUAGE_SELECTED_KEY = '@nutrion_language_selected';
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
-const SUBSCRIPTION_INTRO_KEY = '@nutrion_subscription_intro_completed';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-  const [hasSeenSubscriptionIntro, setHasSeenSubscriptionIntro] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasPremium, setHasPremium] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -43,7 +41,6 @@ export default function Index() {
 
       // Check authentication status with timeout
       let authenticated = false;
-      let premiumAccess = false;
       
       try {
         const sessionPromise = supabase.auth.getSession();
@@ -64,27 +61,17 @@ export default function Index() {
         console.log('Authenticated:', authenticated);
         setIsAuthenticated(authenticated);
 
-        // Check subscription status if authenticated
-        if (session) {
-          try {
-            premiumAccess = await hasActiveAccess();
-            console.log('Premium access:', premiumAccess);
-            setHasPremium(premiumAccess);
-          } catch (error) {
-            console.error('Error checking subscription:', error);
-          }
+        // Check if should show paywall
+        if (authenticated) {
+          const needsPaywall = await shouldShowPaywall();
+          console.log('Needs paywall:', needsPaywall);
+          setShowPaywall(needsPaywall);
         }
       } catch (authError: any) {
         console.error('Auth check error:', authError.message);
         setIsAuthenticated(false);
-        setHasPremium(false);
+        setShowPaywall(false);
       }
-
-      // Check subscription intro status
-      const subscriptionIntroValue = await AsyncStorage.getItem(SUBSCRIPTION_INTRO_KEY);
-      const seenSubscriptionIntro = subscriptionIntroValue === 'true';
-      console.log('Seen subscription intro:', seenSubscriptionIntro);
-      setHasSeenSubscriptionIntro(seenSubscriptionIntro);
       
       // Show splash screen for 1 second
       setTimeout(() => {
@@ -97,9 +84,8 @@ export default function Index() {
       // On error, assume nothing completed
       setHasSelectedLanguage(false);
       setHasCompletedOnboarding(false);
-      setHasSeenSubscriptionIntro(false);
       setIsAuthenticated(false);
-      setHasPremium(false);
+      setShowPaywall(false);
       setTimeout(() => {
         setIsLoading(false);
       }, 1000);
@@ -111,7 +97,6 @@ export default function Index() {
       // Mark everything as completed
       await AsyncStorage.setItem(LANGUAGE_SELECTED_KEY, 'true');
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
       
       // Reload the app state
       checkAppStatus();
@@ -125,7 +110,6 @@ export default function Index() {
       // Clear all onboarding flags
       await AsyncStorage.removeItem(LANGUAGE_SELECTED_KEY);
       await AsyncStorage.removeItem(ONBOARDING_KEY);
-      await AsyncStorage.removeItem(SUBSCRIPTION_INTRO_KEY);
       
       // Reload the app state
       checkAppStatus();
@@ -134,7 +118,7 @@ export default function Index() {
     }
   };
 
-  if (isLoading || hasSelectedLanguage === null || hasCompletedOnboarding === null || hasSeenSubscriptionIntro === null) {
+  if (isLoading || hasSelectedLanguage === null || hasCompletedOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
         <Image
@@ -175,8 +159,7 @@ export default function Index() {
   console.log('Language:', hasSelectedLanguage);
   console.log('Onboarding:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
-  console.log('Premium:', hasPremium);
-  console.log('Seen intro:', hasSeenSubscriptionIntro);
+  console.log('Show paywall:', showPaywall);
   
   if (!hasSelectedLanguage) {
     console.log('→ /language-selection');
@@ -184,8 +167,8 @@ export default function Index() {
   }
 
   if (!hasCompletedOnboarding) {
-    console.log('→ /onboarding');
-    return <Redirect href="/onboarding" />;
+    console.log('→ /introduction');
+    return <Redirect href="/introduction" />;
   }
 
   if (!isAuthenticated) {
@@ -193,10 +176,10 @@ export default function Index() {
     return <Redirect href="/auth" />;
   }
 
-  // Only show subscription intro if user doesn't have premium and hasn't seen it
-  if (!hasSeenSubscriptionIntro && !hasPremium) {
-    console.log('→ /subscription-intro');
-    return <Redirect href="/subscription-intro" />;
+  // Check if user needs to see paywall
+  if (showPaywall) {
+    console.log('→ /paywall');
+    return <Redirect href="/paywall" />;
   }
 
   console.log('→ /(tabs)/pantry');

@@ -1,207 +1,158 @@
 
-/**
- * Subscription Management Utility
- * 
- * Handles subscription status, trial periods, and user exemptions.
- * - 15-day free trial for new users
- * - $1.99/month subscription after trial
- * - Exemption system for whitelisted users
- */
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 const SUBSCRIPTION_KEY = '@nutrion_subscription';
-const TRIAL_DAYS = 15;
-const MONTHLY_PRICE = 1.99;
+const TRIAL_START_KEY = '@nutrion_trial_start';
+const TRIAL_DURATION_DAYS = 15;
 
 export interface Subscription {
-  status: 'trial' | 'active' | 'expired' | 'exempted';
-  trialStartDate: string | null;
-  trialEndDate: string | null;
-  subscriptionEndDate: string | null;
-  isExempted: boolean;
-  userId?: string;
+  status: 'trial' | 'active' | 'cancelled' | 'expired';
+  trialStartDate?: string;
+  trialEndDate?: string;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  plan: 'free' | 'premium';
 }
 
 /**
- * Get current subscription status
+ * Get the current subscription status
  */
 export async function getSubscription(): Promise<Subscription> {
   try {
-    const stored = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
-    const local: Subscription = stored ? JSON.parse(stored) : null;
-
-    // Check if user is authenticated and fetch from Supabase
-    const { data: { user } } = await supabase.auth.getUser();
+    const subscriptionData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
     
-    if (user) {
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (subData) {
-        const subscription: Subscription = {
-          status: subData.is_exempted ? 'exempted' : subData.status,
-          trialStartDate: subData.trial_start_date,
-          trialEndDate: subData.trial_end_date,
-          subscriptionEndDate: subData.subscription_end_date,
-          isExempted: subData.is_exempted || false,
-          userId: user.id,
-        };
-
-        await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-        return subscription;
+    if (subscriptionData) {
+      const subscription: Subscription = JSON.parse(subscriptionData);
+      
+      // Check if trial has expired
+      if (subscription.status === 'trial' && subscription.trialEndDate) {
+        const trialEnd = new Date(subscription.trialEndDate);
+        const now = new Date();
+        
+        if (now > trialEnd) {
+          // Trial has expired
+          subscription.status = 'expired';
+          subscription.plan = 'free';
+          await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+        }
       }
+      
+      return subscription;
     }
-
-    // Return local subscription if no server data
-    if (local) {
-      return local;
-    }
-
-    // Default: no subscription
+    
+    // No subscription found, return default
     return {
       status: 'expired',
-      trialStartDate: null,
-      trialEndDate: null,
-      subscriptionEndDate: null,
-      isExempted: false,
+      plan: 'free',
     };
   } catch (error) {
     console.error('Error getting subscription:', error);
     return {
       status: 'expired',
-      trialStartDate: null,
-      trialEndDate: null,
-      subscriptionEndDate: null,
-      isExempted: false,
+      plan: 'free',
     };
   }
 }
 
 /**
- * Start free trial for new user
+ * Start a free trial
  */
 export async function startFreeTrial(): Promise<void> {
-  const now = new Date();
-  const endDate = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-
-  const subscription: Subscription = {
-    status: 'trial',
-    trialStartDate: now.toISOString(),
-    trialEndDate: endDate.toISOString(),
-    subscriptionEndDate: null,
-    isExempted: false,
-  };
-
-  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-
-  // Sync to Supabase if authenticated
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('subscriptions').upsert({
-      user_id: user.id,
+  try {
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+    
+    const subscription: Subscription = {
       status: 'trial',
-      trial_start_date: now.toISOString(),
-      trial_end_date: endDate.toISOString(),
-      is_exempted: false,
-    });
+      plan: 'premium',
+      trialStartDate: now.toISOString(),
+      trialEndDate: trialEnd.toISOString(),
+    };
+    
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    await AsyncStorage.setItem(TRIAL_START_KEY, now.toISOString());
+    
+    console.log('Free trial started:', subscription);
+  } catch (error) {
+    console.error('Error starting free trial:', error);
+    throw error;
   }
 }
 
 /**
  * Activate premium subscription
  */
-export async function activatePremiumSubscription(stripeSubscriptionId?: string): Promise<void> {
-  const now = new Date();
-  const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-
-  const subscription: Subscription = {
-    status: 'active',
-    trialStartDate: null,
-    trialEndDate: null,
-    subscriptionEndDate: endDate.toISOString(),
-    isExempted: false,
-  };
-
-  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
-
-  // Sync to Supabase
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('subscriptions').upsert({
-      user_id: user.id,
+export async function activatePremiumSubscription(): Promise<void> {
+  try {
+    const now = new Date();
+    
+    const subscription: Subscription = {
       status: 'active',
-      subscription_end_date: endDate.toISOString(),
-      stripe_subscription_id: stripeSubscriptionId,
-      is_exempted: false,
-    });
+      plan: 'premium',
+      subscriptionStartDate: now.toISOString(),
+    };
+    
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    
+    console.log('Premium subscription activated:', subscription);
+  } catch (error) {
+    console.error('Error activating premium subscription:', error);
+    throw error;
   }
-}
-
-/**
- * Check if user has active access (trial, active, or exempted)
- */
-export async function hasActiveAccess(): Promise<boolean> {
-  const subscription = await getSubscription();
-  
-  if (subscription.isExempted) {
-    return true;
-  }
-
-  if (subscription.status === 'active') {
-    const now = new Date();
-    const endDate = subscription.subscriptionEndDate ? new Date(subscription.subscriptionEndDate) : null;
-    return endDate ? now < endDate : false;
-  }
-
-  if (subscription.status === 'trial') {
-    const now = new Date();
-    const endDate = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
-    return endDate ? now < endDate : false;
-  }
-
-  return false;
-}
-
-/**
- * Get days remaining in trial
- */
-export function getTrialDaysRemaining(subscription: Subscription): number {
-  if (subscription.status !== 'trial' || !subscription.trialEndDate) {
-    return 0;
-  }
-
-  const now = new Date();
-  const endDate = new Date(subscription.trialEndDate);
-  const diffTime = endDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  return Math.max(0, diffDays);
 }
 
 /**
  * Cancel subscription
  */
 export async function cancelSubscription(): Promise<void> {
-  const subscription: Subscription = {
-    status: 'expired',
-    trialStartDate: null,
-    trialEndDate: null,
-    subscriptionEndDate: null,
-    isExempted: false,
-  };
+  try {
+    const subscription = await getSubscription();
+    subscription.status = 'cancelled';
+    subscription.plan = 'free';
+    
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    
+    console.log('Subscription cancelled:', subscription);
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    throw error;
+  }
+}
 
-  await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+/**
+ * Check if user has active access (trial or premium)
+ */
+export async function hasActiveAccess(): Promise<boolean> {
+  try {
+    const subscription = await getSubscription();
+    return subscription.status === 'trial' || subscription.status === 'active';
+  } catch (error) {
+    console.error('Error checking active access:', error);
+    return false;
+  }
+}
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('subscriptions').update({
-      status: 'expired',
-    }).eq('user_id', user.id);
+/**
+ * Get remaining trial days
+ */
+export async function getTrialDaysRemaining(): Promise<number> {
+  try {
+    const subscription = await getSubscription();
+    
+    if (subscription.status !== 'trial' || !subscription.trialEndDate) {
+      return 0;
+    }
+    
+    const trialEnd = new Date(subscription.trialEndDate);
+    const now = new Date();
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, diffDays);
+  } catch (error) {
+    console.error('Error getting trial days remaining:', error);
+    return 0;
   }
 }
 
@@ -209,16 +160,18 @@ export async function cancelSubscription(): Promise<void> {
  * Get subscription price
  */
 export function getSubscriptionPrice(): number {
-  return MONTHLY_PRICE;
+  return 1.99;
 }
 
 /**
- * Exempt user from subscription (admin function)
+ * Check if user should see paywall
  */
-export async function exemptUser(userId: string): Promise<void> {
-  await supabase.from('subscriptions').upsert({
-    user_id: userId,
-    status: 'exempted',
-    is_exempted: true,
-  });
+export async function shouldShowPaywall(): Promise<boolean> {
+  try {
+    const subscription = await getSubscription();
+    return subscription.status === 'expired' || subscription.status === 'cancelled';
+  } catch (error) {
+    console.error('Error checking if should show paywall:', error);
+    return false;
+  }
 }

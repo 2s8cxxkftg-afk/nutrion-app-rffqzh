@@ -1,10 +1,4 @@
 
-/**
- * Paywall Screen
- * 
- * Displayed when user's trial has expired and they need to subscribe
- */
-
 import React, { useState } from 'react';
 import {
   View,
@@ -12,20 +6,17 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Linking,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { useTranslation } from 'react-i18next';
-import { createStripeCheckoutSession } from '@/utils/stripe';
-import { getSubscriptionPrice } from '@/utils/subscription';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { activatePremiumSubscription, getSubscriptionPrice } from '@/utils/subscription';
 import Toast from '@/components/Toast';
 
 export default function PaywallScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const price = getSubscriptionPrice();
@@ -33,62 +24,94 @@ export default function PaywallScreen() {
   const handleSubscribe = async () => {
     try {
       setLoading(true);
-      const checkoutUrl = await createStripeCheckoutSession();
-      await Linking.openURL(checkoutUrl);
+      
+      // In a real app, this would integrate with Stripe or another payment provider
+      // For now, we'll just activate the subscription
+      await activatePremiumSubscription();
+      
+      Toast.show('Subscription activated successfully!', 'success');
+      router.replace('/(tabs)/pantry');
     } catch (error) {
       console.error('Subscription error:', error);
-      Toast.show({
-        type: 'error',
-        text: t('subscription.error') || 'Failed to start subscription',
-      });
+      Toast.show('Failed to activate subscription', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: () => {
+            router.replace('/auth');
+          },
+        },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
-          title: t('subscription.title') || 'Subscribe',
+          title: 'Subscribe',
           headerShown: true,
           headerBackVisible: false,
+          headerRight: () => (
+            <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
       
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconContainer}>
-          <IconSymbol ios_icon_name="lock.fill" android_material_icon_name="lock" size={80} color={colors.primary} />
+          <IconSymbol 
+            ios_icon_name="star.fill" 
+            android_material_icon_name="star" 
+            size={80} 
+            color={colors.primary} 
+          />
         </View>
 
-        <Text style={styles.title}>
-          {t('paywall.title') || 'Your Free Trial Has Ended'}
-        </Text>
+        <Text style={styles.title}>Your Free Trial Has Ended</Text>
 
         <Text style={styles.subtitle}>
-          {t('paywall.subtitle') || 'Subscribe to continue using Nutrion'}
+          Subscribe to continue using Nutrion and keep tracking your pantry
         </Text>
 
         <View style={styles.priceCard}>
           <Text style={styles.priceAmount}>${price.toFixed(2)}</Text>
-          <Text style={styles.pricePeriod}>
-            {t('paywall.perMonth') || 'per month'}
-          </Text>
+          <Text style={styles.pricePeriod}>per month</Text>
         </View>
 
         <View style={styles.featuresContainer}>
-          <Text style={styles.featuresTitle}>
-            {t('paywall.featuresTitle') || 'Premium Features'}
-          </Text>
+          <Text style={styles.featuresTitle}>Premium Features</Text>
           
           {[
-            { icon: 'check-circle', text: t('paywall.feature1') || 'Smart Pantry Inventory' },
-            { icon: 'check-circle', text: t('paywall.feature3') || 'Expiration Alerts' },
-            { icon: 'check-circle', text: t('paywall.feature4') || 'Shopping List' },
-            { icon: 'check-circle', text: t('paywall.feature5') || 'Analytics Dashboard' },
+            { icon: 'check-circle', text: 'Smart Pantry Inventory' },
+            { icon: 'check-circle', text: 'Expiration Alerts' },
+            { icon: 'check-circle', text: 'Shopping List' },
+            { icon: 'check-circle', text: 'Analytics Dashboard' },
+            { icon: 'check-circle', text: 'Cloud Sync' },
           ].map((feature, index) => (
             <View key={index} style={styles.featureRow}>
-              <IconSymbol ios_icon_name="checkmark.circle.fill" android_material_icon_name={feature.icon} size={24} color={colors.success} />
+              <IconSymbol 
+                ios_icon_name="checkmark.circle.fill" 
+                android_material_icon_name={feature.icon} 
+                size={24} 
+                color={colors.success} 
+              />
               <Text style={styles.featureText}>{feature.text}</Text>
             </View>
           ))}
@@ -103,16 +126,19 @@ export default function PaywallScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Text style={styles.subscribeButtonText}>
-                {t('paywall.subscribe') || 'Subscribe Now'}
-              </Text>
-              <IconSymbol ios_icon_name="arrow.right" android_material_icon_name="arrow-forward" size={20} color="#fff" />
+              <Text style={styles.subscribeButtonText}>Subscribe Now</Text>
+              <IconSymbol 
+                ios_icon_name="arrow.right" 
+                android_material_icon_name="arrow_forward" 
+                size={20} 
+                color="#fff" 
+              />
             </>
           )}
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          {t('paywall.disclaimer') || 'Cancel anytime. No hidden fees.'}
+          Cancel anytime. No hidden fees.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -133,24 +159,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    ...typography.title1,
+    fontSize: typography.sizes.xxl,
+    fontWeight: typography.weights.bold,
     textAlign: 'center',
     marginBottom: spacing.sm,
     color: colors.text,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     textAlign: 'center',
     color: colors.textSecondary,
     marginBottom: spacing.xl,
   },
   priceCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     padding: spacing.xl,
     borderRadius: borderRadius.xl,
     alignItems: 'center',
     marginBottom: spacing.xl,
-    ...commonStyles.shadow,
+    width: '100%',
   },
   priceAmount: {
     fontSize: 48,
@@ -158,7 +185,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   pricePeriod: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
@@ -167,7 +194,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   featuresTitle: {
-    ...typography.title3,
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
     marginBottom: spacing.md,
     color: colors.text,
   },
@@ -177,7 +205,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   featureText: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     marginLeft: spacing.sm,
     color: colors.text,
     flex: 1,
@@ -190,20 +218,28 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: borderRadius.lg,
     width: '100%',
-    ...commonStyles.shadow,
   },
   subscribeButtonDisabled: {
     opacity: 0.6,
   },
   subscribeButtonText: {
-    ...typography.headline,
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
     color: '#fff',
     marginRight: spacing.sm,
   },
   disclaimer: {
-    ...typography.caption,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.md,
+  },
+  signOutButton: {
+    marginRight: spacing.md,
+  },
+  signOutText: {
+    color: colors.primary,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
   },
 });

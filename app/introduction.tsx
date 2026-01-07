@@ -33,10 +33,10 @@ const onboardingData = [
     color: '#FF9800',
   },
   {
-    title: 'Meal Planning Made Easy',
-    description: 'Auto-generate meal plans based on what you have at home',
-    iosIcon: 'fork.knife',
-    androidIcon: 'restaurant',
+    title: 'Shopping List Made Easy',
+    description: 'Create and manage your shopping lists effortlessly',
+    iosIcon: 'cart.fill',
+    androidIcon: 'shopping_cart',
     color: '#2196F3',
   },
 ];
@@ -49,7 +49,7 @@ export default function IntroductionScreen() {
     if (currentPage < onboardingData.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
-      // Mark onboarding as completed
+      // Mark onboarding as completed and navigate to auth
       try {
         await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
         router.replace('/auth');
@@ -60,24 +60,10 @@ export default function IntroductionScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      router.replace('/auth');
-    } catch (error) {
-      console.error('Error saving onboarding status:', error);
-      router.replace('/auth');
-    }
-  };
-
   const currentData = onboardingData[currentPage];
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
-
       <Animated.View 
         key={currentPage}
         entering={FadeInRight}
@@ -112,7 +98,7 @@ export default function IntroductionScreen() {
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentPage === onboardingData.length - 1 ? 'Get Started' : 'Next'}
+            {currentPage === onboardingData.length - 1 ? 'Start Free Trial' : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -124,16 +110,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  skipButton: {
-    alignSelf: 'flex-end',
-    padding: spacing.md,
-    marginRight: spacing.md,
-  },
-  skipText: {
-    fontSize: typography.sizes.md,
-    color: colors.primary,
-    fontWeight: typography.weights.semibold,
   },
   content: {
     flex: 1,

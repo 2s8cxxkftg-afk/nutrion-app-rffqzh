@@ -1,5 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadPantryItems } from '@/utils/storage';
+import { supabase } from '@/utils/supabase';
 import {
   View,
   Text,
@@ -10,97 +13,227 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { getSubscription, hasActiveAccess } from '@/utils/subscription';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '@/utils/supabase';
-import { loadPantryItems } from '@/utils/storage';
-import { getExpirationStatus } from '@/utils/expirationHelper';
-import { getSubscription, hasActiveAccess } from '@/utils/subscription';
 import Toast from '@/components/Toast';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getExpirationStatus } from '@/utils/expirationHelper';
+import React, { useState, useEffect, useCallback } from 'react';
 
-function ProfileScreen() {
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: spacing.md,
+    paddingBottom: 100,
+  },
+  header: {
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontSize: typography.sizes.xxl,
+    fontWeight: typography.weights.bold as any,
+    color: colors.text,
+  },
+  statsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statsTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold as any,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.bold as any,
+    color: colors.text,
+  },
+  statLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  section: {
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  menuItemContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  menuItemTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
+    color: colors.text,
+  },
+  menuItemDescription: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  signOutButton: {
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  signOutButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
+  },
+  premiumCard: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  premiumContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  premiumTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold as any,
+    color: '#FFFFFF',
+    marginBottom: spacing.xs,
+  },
+  premiumDescription: {
+    fontSize: typography.sizes.sm,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+export default function ProfileScreen() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
       <ProfileScreenContent />
     </>
   );
 }
 
 function ProfileScreenContent() {
-  const router = useRouter();
   const { t } = useTranslation();
-  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const [expiringSoon, setExpiringSoon] = useState(0);
+  const [expired, setExpired] = useState(0);
+  const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
-  const [stats, setStats] = useState({
-    totalItems: 0,
-    expiringSoon: 0,
-    expired: 0,
-  });
-  const [hasPremium, setHasPremium] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      loadUserData();
-      loadStats();
-      checkPremiumStatus();
-    }, [])
-  );
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Loaded user:', user?.email);
-      setUser(user);
+      if (user) {
+        setUserEmail(user.email || null);
+      }
     } catch (error) {
-      console.error('Error loading user:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading user data:', error);
     }
-  };
+  }, []);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const items = await loadPantryItems();
-      let expiringSoon = 0;
-      let expired = 0;
+      setTotalItems(items.length);
 
-      items.forEach(item => {
+      let expiringSoonCount = 0;
+      let expiredCount = 0;
+
+      items.forEach((item) => {
         const status = getExpirationStatus(item.expirationDate);
-        if (status === 'nearExpiry') expiringSoon++;
-        if (status === 'expired') expired++;
+        if (status.status === 'expiring') {
+          expiringSoonCount++;
+        } else if (status.status === 'expired') {
+          expiredCount++;
+        }
       });
 
-      setStats({
-        totalItems: items.length,
-        expiringSoon,
-        expired,
-      });
+      setExpiringSoon(expiringSoonCount);
+      setExpired(expiredCount);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
-  };
+  }, []);
 
-  const checkPremiumStatus = async () => {
+  const checkPremiumStatus = useCallback(async () => {
     try {
       const premium = await hasActiveAccess();
-      setHasPremium(premium);
+      setIsPremium(premium);
     } catch (error) {
       console.error('Error checking premium status:', error);
     }
-  };
+  }, []);
 
-  const handleSignOut = () => {
+  useFocusEffect(
+    useCallback(() => {
+      const loadData = async () => {
+        setLoading(true);
+        await Promise.all([loadUserData(), loadStats(), checkPremiumStatus()]);
+        setLoading(false);
+      };
+      loadData();
+    }, [loadUserData, loadStats, checkPremiumStatus])
+  );
+
+  const handleSignOut = async () => {
     Alert.alert(
       t('profile.signOutConfirm'),
       '',
       [
-        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
         {
           text: t('profile.signOut'),
           style: 'destructive',
@@ -117,28 +250,21 @@ function ProfileScreenContent() {
                 throw error;
               }
               
-              console.log('Supabase sign out successful');
+              console.log('Successfully signed out from Supabase');
               
-              // Clear any local session data
-              await AsyncStorage.multiRemove([
-                '@nutrion_subscription_intro_completed',
-              ]);
+              // Clear all local storage
+              await AsyncStorage.clear();
+              console.log('Cleared AsyncStorage');
               
-              console.log('Local data cleared');
-              
-              // Show success message
               Toast.show(t('profile.signedOut'), 'success');
               
-              // Small delay to ensure state is cleared
-              setTimeout(() => {
-                console.log('Redirecting to auth screen...');
-                router.replace('/auth');
-              }, 500);
-              
+              // Navigate to auth screen
+              router.replace('/auth');
             } catch (error: any) {
-              console.error('Error signing out:', error);
+              console.error('Sign out error:', error);
+              Toast.show(t('profile.signOutError'), 'error');
+            } finally {
               setSigningOut(false);
-              Toast.show(error.message || t('profile.signOutError'), 'error');
             }
           },
         },
@@ -148,129 +274,70 @@ function ProfileScreenContent() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (signingOut) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>{t('profile.signingOut')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-      </View>
-
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
       >
-        {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
-            <IconSymbol 
-              ios_icon_name="person.circle.fill" 
-              android_material_icon_name="account_circle" 
-              size={64} 
-              color={colors.primary} 
-            />
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-            </Text>
-            <Text style={styles.userEmail}>{user?.email || t('auth.notLoggedIn')}</Text>
-          </View>
-          {user && (
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => router.push('/edit-profile')}
-            >
-              <IconSymbol 
-                ios_icon_name="pencil" 
-                android_material_icon_name="edit" 
-                size={20} 
-                color={colors.primary} 
-              />
-            </TouchableOpacity>
-          )}
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('profile.title')}</Text>
         </View>
 
-        {/* Statistics */}
-        {user && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('profile.statistics')}</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <IconSymbol 
-                  ios_icon_name="archivebox.fill" 
-                  android_material_icon_name="inventory" 
-                  size={32} 
-                  color={colors.primary} 
-                />
-                <Text style={styles.statValue}>{stats.totalItems}</Text>
-                <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
-              </View>
-              <View style={styles.statCard}>
-                <IconSymbol 
-                  ios_icon_name="clock.badge.exclamationmark" 
-                  android_material_icon_name="schedule" 
-                  size={32} 
-                  color={colors.warning} 
-                />
-                <Text style={styles.statValue}>{stats.expiringSoon}</Text>
-                <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
-              </View>
-              <View style={styles.statCard}>
-                <IconSymbol 
-                  ios_icon_name="exclamationmark.triangle.fill" 
-                  android_material_icon_name="warning" 
-                  size={32} 
-                  color={colors.error} 
-                />
-                <Text style={styles.statValue}>{stats.expired}</Text>
-                <Text style={styles.statLabel}>{t('profile.expired')}</Text>
-              </View>
+        {/* Statistics Card */}
+        <View style={styles.statsCard}>
+          <Text style={styles.statsTitle}>{t('profile.statistics')}</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{totalItems}</Text>
+              <Text style={styles.statLabel}>{t('profile.totalItems')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.warning }]}>
+                {expiringSoon}
+              </Text>
+              <Text style={styles.statLabel}>{t('profile.expiringSoon')}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.error }]}>
+                {expired}
+              </Text>
+              <Text style={styles.statLabel}>{t('profile.expired')}</Text>
             </View>
           </View>
-        )}
+        </View>
 
         {/* Premium Card */}
-        {user && !hasPremium && (
-          <TouchableOpacity 
+        {!isPremium && (
+          <TouchableOpacity
             style={styles.premiumCard}
             onPress={() => router.push('/subscription-management')}
           >
-            <View style={styles.premiumIcon}>
-              <IconSymbol 
-                ios_icon_name="star.fill" 
-                android_material_icon_name="star" 
-                size={24} 
-                color="#FFD700" 
-              />
-            </View>
+            <IconSymbol
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={40}
+              color="#FFFFFF"
+            />
             <View style={styles.premiumContent}>
               <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
-              <Text style={styles.premiumDesc}>{t('profile.premiumCardDesc')}</Text>
+              <Text style={styles.premiumDescription}>
+                {t('profile.premiumCardDesc')}
+              </Text>
             </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron_right" 
-              size={20} 
-              color={colors.textSecondary} 
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="arrow_forward"
+              size={24}
+              color="#FFFFFF"
             />
           </TouchableOpacity>
         )}
@@ -278,392 +345,117 @@ function ProfileScreenContent() {
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
-          
-          {user && (
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => router.push('/subscription-management')}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <IconSymbol 
-                    ios_icon_name="star.fill" 
-                    android_material_icon_name="star" 
-                    size={20} 
-                    color={colors.primary} 
-                  />
-                </View>
-                <View>
-                  <Text style={styles.menuItemTitle}>{t('profile.subscription')}</Text>
-                  <Text style={styles.menuItemDesc}>{t('profile.subscriptionDesc')}</Text>
-                </View>
-              </View>
-              <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.textSecondary} 
-              />
-            </TouchableOpacity>
-          )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/subscription-management')}
+          >
+            <IconSymbol
+              ios_icon_name="star.circle.fill"
+              android_material_icon_name="star"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>{t('profile.subscription')}</Text>
+              <Text style={styles.menuItemDescription}>
+                {t('profile.subscriptionDesc')}
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="arrow_forward"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/language-settings')}
           >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.info + '20' }]}>
-                <IconSymbol 
-                  ios_icon_name="globe" 
-                  android_material_icon_name="language" 
-                  size={20} 
-                  color={colors.info} 
-                />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>{t('profile.language')}</Text>
-                <Text style={styles.menuItemDesc}>{t('profile.languageDesc')}</Text>
-              </View>
+            <IconSymbol
+              ios_icon_name="globe"
+              android_material_icon_name="language"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>{t('profile.language')}</Text>
+              <Text style={styles.menuItemDescription}>
+                {t('profile.languageDesc')}
+              </Text>
             </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron_right" 
-              size={20} 
-              color={colors.textSecondary} 
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="arrow_forward"
+              size={20}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/notification-settings')}
           >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.warning + '20' }]}>
-                <IconSymbol 
-                  ios_icon_name="bell.fill" 
-                  android_material_icon_name="notifications" 
-                  size={20} 
-                  color={colors.warning} 
-                />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>{t('profile.notifications')}</Text>
-                <Text style={styles.menuItemDesc}>{t('profile.notificationsDesc')}</Text>
-              </View>
+            <IconSymbol
+              ios_icon_name="bell.fill"
+              android_material_icon_name="notifications"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>{t('profile.notifications')}</Text>
+              <Text style={styles.menuItemDescription}>
+                {t('profile.notificationsDesc')}
+              </Text>
             </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron_right" 
-              size={20} 
-              color={colors.textSecondary} 
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="arrow_forward"
+              size={20}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
-        </View>
 
-        {/* Security Section */}
-        {user && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => router.push('/change-password')}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: colors.error + '20' }]}>
-                  <IconSymbol 
-                    ios_icon_name="lock.fill" 
-                    android_material_icon_name="lock" 
-                    size={20} 
-                    color={colors.error} 
-                  />
-                </View>
-                <View>
-                  <Text style={styles.menuItemTitle}>{t('profile.changePassword')}</Text>
-                  <Text style={styles.menuItemDesc}>{t('profile.changePasswordDesc')}</Text>
-                </View>
-              </View>
-              <IconSymbol 
-                ios_icon_name="chevron.right" 
-                android_material_icon_name="chevron_right" 
-                size={20} 
-                color={colors.textSecondary} 
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('profile.about')}</Text>
-          
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/about')}
           >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
-                <IconSymbol 
-                  ios_icon_name="info.circle.fill" 
-                  android_material_icon_name="info" 
-                  size={20} 
-                  color={colors.textSecondary} 
-                />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>{t('profile.about')}</Text>
-                <Text style={styles.menuItemDesc}>{t('profile.aboutDesc')}</Text>
-              </View>
+            <IconSymbol
+              ios_icon_name="info.circle.fill"
+              android_material_icon_name="info"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>{t('profile.about')}</Text>
+              <Text style={styles.menuItemDescription}>
+                {t('profile.aboutDesc')}
+              </Text>
             </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron_right" 
-              size={20} 
-              color={colors.textSecondary} 
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="arrow_forward"
+              size={20}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
         {/* Sign Out Button */}
-        {user ? (
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <IconSymbol 
-              ios_icon_name="arrow.right.square.fill" 
-              android_material_icon_name="logout" 
-              size={20} 
-              color={colors.error} 
-            />
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={handleSignOut}
+          disabled={signingOut}
+        >
+          {signingOut ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
             <Text style={styles.signOutButtonText}>{t('profile.signOut')}</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity 
-            style={styles.signInButton} 
-            onPress={() => router.push('/auth')}
-          >
-            <IconSymbol 
-              ios_icon_name="arrow.right.square.fill" 
-              android_material_icon_name="login" 
-              size={20} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.signInButtonText}>{t('profile.signIn')}</Text>
-          </TouchableOpacity>
-        )}
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing.md,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'android' ? spacing.xl : spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
-    elevation: 2,
-  },
-  avatarContainer: {
-    marginRight: spacing.md,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  section: {
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: spacing.sm,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  premiumCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary + '10',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  premiumIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  premiumContent: {
-    flex: 1,
-  },
-  premiumTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  premiumDesc: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  menuItemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  menuItemDesc: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.error,
-  },
-  signOutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.error,
-  },
-  signInButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-  },
-  signInButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-});
-
-export default ProfileScreen;

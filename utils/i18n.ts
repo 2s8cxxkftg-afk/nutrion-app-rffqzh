@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LANGUAGE_KEY = '@nutrion_language';
 
-// Complete translation resources for all languages
+// Import translation resources
 const resources = {
   en: {
     translation: require('./translations/en.json'),
@@ -113,6 +113,12 @@ const initI18n = async () => {
       react: {
         useSuspense: false,
       },
+      // Add missing key handler
+      saveMissing: true,
+      missingKeyHandler: (lng, ns, key, fallbackValue) => {
+        console.warn(`Missing translation key: ${key} for language: ${lng}`);
+        return fallbackValue || key;
+      },
     });
   
   console.log('i18n initialized with language:', initialLanguage);
@@ -120,7 +126,7 @@ const initI18n = async () => {
 
 initI18n();
 
-// Save language preference and trigger app-wide update
+// Save language preference
 export const changeLanguage = async (languageCode: string) => {
   try {
     console.log('Changing language to:', languageCode);
