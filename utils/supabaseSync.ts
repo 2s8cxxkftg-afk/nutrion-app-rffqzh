@@ -1,15 +1,10 @@
 
 import { supabase } from './supabase';
-import { PantryItem, Recipe, ShoppingItem } from '@/types/pantry';
+import { PantryItem, ShoppingItem } from '@/types/pantry';
 
-// Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error('Error checking authentication:', error);
-      return false;
-    }
+    const { data: { session } } = await supabase.auth.getSession();
     return !!session;
   } catch (error) {
     console.error('Error checking authentication:', error);
@@ -17,244 +12,220 @@ export async function isAuthenticated(): Promise<boolean> {
   }
 }
 
-// ============= PANTRY SYNC =============
-
 export async function syncPantryItemToSupabase(item: PantryItem): Promise<void> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, skipping Supabase sync');
+      return;
     }
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('Not authenticated');
+      console.log('No user found, skipping Supabase sync');
+      return;
     }
 
-    // Ensure all required fields are present and properly formatted
-    const itemData = {
-      id: item.id,
-      user_id: user.id,
-      name: item.name || item.food_name || 'Unnamed Item',
-      food_name: item.food_name || item.name || 'Unnamed Item',
-      brand_name: item.brand_name || null,
-      calories: item.calories ? Number(item.calories) : null,
-      photo: item.photo || null,
-      category: item.category || 'Other',
-      quantity: item.quantity ? Number(item.quantity) : 1,
-      unit: item.unit || 'pcs',
-      expiration_date: item.expirationDate || null,
-      notes: item.notes || null,
-      created_at: item.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    console.log('Syncing pantry item to Supabase:', itemData.name);
-
-    const { data, error } = await supabase
+    // Map the app's item structure to the database schema
+    const { error } = await supabase
       .from('pantry_items')
-      .upsert(itemData, {
-        onConflict: 'id',
-      })
-      .select()
-      .single();
+      .upsert({
+        id: item.id,
+        user_id: user.id,
+        name: item.name,
+        food_name: item.name, // Keep food_name in sync with name
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        expiration_date: item.expirationDate,
+        date_added: item.dateAdded,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id'
+      });
 
     if (error) {
-      console.error('Error syncing pantry item:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error syncing pantry item to Supabase:', error);
       throw error;
     }
-
-    console.log('✅ Pantry item synced successfully');
-  } catch (error: any) {
-    console.error('Error in syncPantryItemToSupabase:', error);
-    console.error('Error message:', error.message);
-    throw error;
+    
+    console.log('Successfully synced pantry item to Supabase:', item.id);
+  } catch (error) {
+    console.error('Error syncing pantry item to Supabase:', error);
   }
 }
 
 export async function deletePantryItemFromSupabase(itemId: string): Promise<void> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
-    
-    if (!user) {
-      throw new Error('Not authenticated');
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, skipping Supabase delete');
+      return;
     }
 
     const { error } = await supabase
       .from('pantry_items')
       .delete()
-      .eq('id', itemId)
-      .eq('user_id', user.id);
+      .eq('id', itemId);
 
     if (error) {
       console.error('Error deleting pantry item from Supabase:', error);
       throw error;
     }
-
-    console.log('✅ Pantry item deleted from Supabase');
+    
+    console.log('Successfully deleted pantry item from Supabase:', itemId);
   } catch (error) {
-    console.error('Error in deletePantryItemFromSupabase:', error);
-    throw error;
+    console.error('Error deleting pantry item from Supabase:', error);
   }
 }
-
-// ============= RECIPE SYNC =============
-
-export async function syncRecipeToSupabase(recipe: Recipe): Promise<void> {
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
-    
-    if (!user) {
-      throw new Error('Not authenticated');
-    }
-
-    const recipeData = {
-      id: recipe.id,
-      user_id: user.id,
-      name: recipe.name,
-      ingredients: recipe.ingredients,
-      instructions: recipe.instructions,
-      prep_time: recipe.prepTime,
-      servings: recipe.servings,
-      category: recipe.category,
-      match_percentage: recipe.matchPercentage || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase
-      .from('recipes')
-      .upsert(recipeData, {
-        onConflict: 'id',
-      });
-
-    if (error) {
-      console.error('Error syncing recipe:', error);
-      throw error;
-    }
-
-    console.log('✅ Recipe synced successfully');
-  } catch (error) {
-    console.error('Error in syncRecipeToSupabase:', error);
-    throw error;
-  }
-}
-
-export async function deleteRecipeFromSupabase(recipeId: string): Promise<void> {
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
-    
-    if (!user) {
-      throw new Error('Not authenticated');
-    }
-
-    const { error } = await supabase
-      .from('recipes')
-      .delete()
-      .eq('id', recipeId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error deleting recipe from Supabase:', error);
-      throw error;
-    }
-
-    console.log('✅ Recipe deleted from Supabase');
-  } catch (error) {
-    console.error('Error in deleteRecipeFromSupabase:', error);
-    throw error;
-  }
-}
-
-// ============= SHOPPING ITEM SYNC =============
 
 export async function syncShoppingItemToSupabase(item: ShoppingItem): Promise<void> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, skipping Supabase sync');
+      return;
     }
-    
+
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('Not authenticated');
+      console.log('No user found, skipping Supabase sync');
+      return;
     }
 
-    const itemData = {
-      id: item.id,
-      user_id: user.id,
-      name: item.name,
-      quantity: item.quantity ? Number(item.quantity) : 1,
-      unit: item.unit || 'pcs',
-      category: item.category || 'Other',
-      checked: item.checked || false,
-      created_at: item.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
+    // Map the app's item structure to the database schema
     const { error } = await supabase
       .from('shopping_items')
-      .upsert(itemData, {
-        onConflict: 'id',
+      .upsert({
+        id: item.id,
+        user_id: user.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        completed: item.completed,
+        checked: item.completed, // Keep checked in sync with completed
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id'
       });
 
     if (error) {
-      console.error('Error syncing shopping item:', error);
+      console.error('Error syncing shopping item to Supabase:', error);
       throw error;
     }
-
-    console.log('✅ Shopping item synced successfully');
+    
+    console.log('Successfully synced shopping item to Supabase:', item.id);
   } catch (error) {
-    console.error('Error in syncShoppingItemToSupabase:', error);
-    throw error;
+    console.error('Error syncing shopping item to Supabase:', error);
   }
 }
 
 export async function deleteShoppingItemFromSupabase(itemId: string): Promise<void> {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('Error getting user:', userError);
-      throw new Error('User authentication error');
-    }
-    
-    if (!user) {
-      throw new Error('Not authenticated');
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, skipping Supabase delete');
+      return;
     }
 
     const { error } = await supabase
       .from('shopping_items')
       .delete()
-      .eq('id', itemId)
-      .eq('user_id', user.id);
+      .eq('id', itemId);
 
     if (error) {
       console.error('Error deleting shopping item from Supabase:', error);
       throw error;
     }
-
-    console.log('✅ Shopping item deleted from Supabase');
+    
+    console.log('Successfully deleted shopping item from Supabase:', itemId);
   } catch (error) {
-    console.error('Error in deleteShoppingItemFromSupabase:', error);
-    throw error;
+    console.error('Error deleting shopping item from Supabase:', error);
+  }
+}
+
+export async function loadPantryItemsFromSupabase(): Promise<PantryItem[]> {
+  try {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, returning empty array');
+      return [];
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log('No user found, returning empty array');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('pantry_items')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading pantry items from Supabase:', error);
+      throw error;
+    }
+
+    // Map database schema to app's PantryItem structure
+    const items: PantryItem[] = (data || []).map(item => ({
+      id: item.id,
+      name: item.name || item.food_name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      expirationDate: item.expiration_date,
+      dateAdded: item.date_added || item.created_at,
+    }));
+
+    console.log(`Successfully loaded ${items.length} pantry items from Supabase`);
+    return items;
+  } catch (error) {
+    console.error('Error loading pantry items from Supabase:', error);
+    return [];
+  }
+}
+
+export async function loadShoppingItemsFromSupabase(): Promise<ShoppingItem[]> {
+  try {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.log('User not authenticated, returning empty array');
+      return [];
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.log('No user found, returning empty array');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('shopping_items')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading shopping items from Supabase:', error);
+      throw error;
+    }
+
+    // Map database schema to app's ShoppingItem structure
+    const items: ShoppingItem[] = (data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      completed: item.completed || item.checked,
+    }));
+
+    console.log(`Successfully loaded ${items.length} shopping items from Supabase`);
+    return items;
+  } catch (error) {
+    console.error('Error loading shopping items from Supabase:', error);
+    return [];
   }
 }

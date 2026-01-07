@@ -1,15 +1,42 @@
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
+// Nutrion App - Clean, minimalist pastel color palette
 export const colors = {
-  primary: '#162456',
-  secondary: '#193cb8',
-  accent: '#64B5F6',
-  background: '#101824',
-  backgroundAlt: '#162133',
-  text: '#e3e3e3',
-  grey: '#90CAF9',
-  card: '#193cb8',
+  primary: '#4CAF50',      // Fresh green
+  secondary: '#81C784',    // Light green
+  accent: '#66BB6A',       // Medium green
+  background: '#FAFAFA',   // Off-white background
+  backgroundAlt: '#FFFFFF', // Pure white
+  text: '#212121',         // Dark gray text
+  textSecondary: '#757575', // Medium gray
+  grey: '#E0E0E0',         // Light grey
+  card: '#FFFFFF',         // White cards
+  error: '#F44336',        // Red for expired
+  warning: '#FF9800',      // Orange for expiring soon
+  success: '#4CAF50',      // Green for fresh
+};
+
+export const expirationColors = {
+  fresh: '#4CAF50',        // Green
+  expiringSoon: '#FF9800', // Orange
+  expired: '#F44336',      // Red
+};
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
+
+export const borderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
 };
 
 export const typography = {
@@ -18,7 +45,7 @@ export const typography = {
     sm: 14,
     md: 16,
     lg: 18,
-    xl: 20,
+    xl: 24,
     xxl: 32,
   },
   weights: {
@@ -29,36 +56,20 @@ export const typography = {
   },
 };
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-};
-
-export const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-};
-
-export const expirationColors = {
-  fresh: '#4CAF50',
-  warning: '#FF9800',
-  expired: '#F44336',
-};
-
 export const buttonStyles = StyleSheet.create({
   instructionsButton: {
     backgroundColor: colors.primary,
     alignSelf: 'center',
     width: '100%',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
   },
   backButton: {
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.grey,
     alignSelf: 'center',
     width: '100%',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
   },
 });
 
@@ -73,55 +84,51 @@ export const commonStyles = StyleSheet.create({
     backgroundColor: colors.background,
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     maxWidth: 800,
     width: '100%',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.bold as any,
     textAlign: 'center',
     color: colors.text,
-    marginBottom: 10
+    marginBottom: spacing.sm,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium as any,
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     lineHeight: 24,
-    textAlign: 'center',
   },
   section: {
     width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.md,
   },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.md,
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.card,
     borderColor: colors.grey,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 8,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginVertical: spacing.sm,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
   icon: {
     width: 60,
     height: 60,
-    tintColor: "white",
   },
 });
