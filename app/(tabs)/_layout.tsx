@@ -34,19 +34,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="planner"
-        options={{
-          title: 'Planner',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol 
-              ios_icon_name="calendar" 
-              android_material_icon_name="calendar_today" 
-              color={color} 
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="shopping"
         options={{
           title: 'Shopping',
@@ -70,6 +57,13 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+        }}
+      />
+      {/* Planner tab removed as requested by user */}
+      <Tabs.Screen
+        name="planner"
+        options={{
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>

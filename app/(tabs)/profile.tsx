@@ -20,6 +20,7 @@ import { loadPantryItems } from '@/utils/storage';
 import { getExpirationStatus } from '@/utils/expirationHelper';
 import { getSubscription, hasActiveAccess } from '@/utils/subscription';
 import Toast from '@/components/Toast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function ProfileScreen() {
   return (
@@ -35,6 +36,7 @@ function ProfileScreenContent() {
   const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const [stats, setStats] = useState({
     totalItems: 0,
     expiringSoon: 0,
@@ -53,6 +55,7 @@ function ProfileScreenContent() {
   const loadUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Loaded user:', user?.email);
       setUser(user);
     } catch (error) {
       console.error('Error loading user:', error);
@@ -103,12 +106,39 @@ function ProfileScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await supabase.auth.signOut();
+              setSigningOut(true);
+              console.log('Starting sign out process...');
+              
+              // Sign out from Supabase
+              const { error } = await supabase.auth.signOut();
+              
+              if (error) {
+                console.error('Supabase sign out error:', error);
+                throw error;
+              }
+              
+              console.log('Supabase sign out successful');
+              
+              // Clear any local session data
+              await AsyncStorage.multiRemove([
+                '@nutrion_subscription_intro_completed',
+              ]);
+              
+              console.log('Local data cleared');
+              
+              // Show success message
               Toast.show(t('profile.signedOut'), 'success');
-              router.replace('/auth');
-            } catch (error) {
+              
+              // Small delay to ensure state is cleared
+              setTimeout(() => {
+                console.log('Redirecting to auth screen...');
+                router.replace('/auth');
+              }, 500);
+              
+            } catch (error: any) {
               console.error('Error signing out:', error);
-              Toast.show(t('profile.signOutError'), 'error');
+              setSigningOut(false);
+              Toast.show(error.message || t('profile.signOutError'), 'error');
             }
           },
         },
@@ -121,6 +151,17 @@ function ProfileScreenContent() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (signingOut) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>{t('profile.signingOut')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -422,6 +463,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   header: {
     paddingHorizontal: spacing.lg,
