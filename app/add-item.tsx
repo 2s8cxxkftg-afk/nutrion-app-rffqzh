@@ -1,5 +1,12 @@
 
+import { categorizeFoodItem } from '@/utils/categoryHelper';
+import { IconSymbol } from '@/components/IconSymbol';
+import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
+import { addPantryItem } from '@/utils/storage';
+import Toast from '@/components/Toast';
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,434 +19,213 @@ import {
   KeyboardAvoidingView,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
-import { addPantryItem } from '@/utils/storage';
 import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
-import { categorizeFoodItem } from '@/utils/categoryHelper';
-import Toast from '@/components/Toast';
-import { useTranslation } from 'react-i18next';
+import { Stack, useRouter } from 'expo-router';
 
 export default function AddItemScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const nameInputRef = useRef<TextInput>(null);
-  const quantityInputRef = useRef<TextInput>(null);
-  const dateInputRef = useRef<TextInput>(null);
-  const notesInputRef = useRef<TextInput>(null);
-  
+
   const [name, setName] = useState('');
-  const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDateText, setExpirationDateText] = useState('');
-  const [notes, setNotes] = useState('');
+  const [unit, setUnit] = useState('pieces');
+  const [category, setCategory] = useState('other');
+  const [expirationDate, setExpirationDate] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
-  const [dateError, setDateError] = useState('');
-  const [aiEstimation, setAiEstimation] = useState<string | null>(null);
-  const [autoCategory, setAutoCategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Update AI estimation and auto-category when name changes
-  const handleNameChange = (text: string) => {
-    setName(text);
-    
-    // Get AI estimation for the food item
-    if (text.trim().length > 0) {
-      // Auto-categorize
-      const detectedCategory = categorizeFoodItem(text);
-      setAutoCategory(detectedCategory);
-      setCategory(detectedCategory);
-      
-      // Get expiration estimation
-      const estimation = getExpirationEstimation(text, true);
-      setAiEstimation(estimation);
-      
-      // Auto-fill expiration date with EARLIEST predicted date
-      if (estimation && !expirationDateText) {
-        const predictedDate = predictExpirationDate(text, detectedCategory, new Date(), true);
-        const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-        setExpirationDateText(formattedDate);
-      }
-    } else {
-      setAiEstimation(null);
-      setAutoCategory(null);
-    }
-  };
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Update expiration date when category changes (for better accuracy)
   useEffect(() => {
-    if (name.trim().length > 0 && category) {
-      const predictedDate = predictExpirationDate(name, category, new Date(), true);
-      const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-      setExpirationDateText(formattedDate);
-      
-      // Update estimation text
-      const estimation = getExpirationEstimation(name, true);
-      setAiEstimation(estimation);
+    if (category && name) {
+      const estimation = getExpirationEstimation(name, category);
+      if (estimation && !expirationDate) {
+        const predicted = predictExpirationDate(name, category);
+        if (predicted) {
+          setExpirationDate(predicted);
+        }
+      }
     }
   }, [category, name]);
 
-  // Format date input as user types (MM/DD/YYYY)
-  const handleDateChange = (text: string) => {
-    // Remove all non-numeric characters
-    const cleaned = text.replace(/\D/g, '');
-    
-    let formatted = '';
-    if (cleaned.length > 0) {
-      // Add first part (month)
-      formatted = cleaned.substring(0, 2);
-      
-      if (cleaned.length >= 3) {
-        // Add slash and day
-        formatted += '/' + cleaned.substring(2, 4);
-      }
-      
-      if (cleaned.length >= 5) {
-        // Add slash and year
-        formatted += '/' + cleaned.substring(4, 8);
+  const handleNameChange = (text: string) => {
+    setName(text);
+    if (text.length > 2) {
+      const detectedCategory = categorizeFoodItem(text);
+      if (detectedCategory !== 'other') {
+        setCategory(detectedCategory);
       }
     }
-    
-    setExpirationDateText(formatted);
-    setDateError('');
   };
 
-  // Validate date format and create Date object
-  const validateAndParseDate = (dateText: string): Date | null => {
-    // Check format MM/DD/YYYY
-    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/(\d{4})$/;
-    
-    if (!dateRegex.test(dateText)) {
-      return null;
+  const handleDateChange = (text: string) => {
+    let formatted = text.replace(/[^0-9]/g, '');
+    if (formatted.length >= 2) {
+      formatted = formatted.slice(0, 2) + '/' + formatted.slice(2);
     }
+    if (formatted.length >= 5) {
+      formatted = formatted.slice(0, 5) + '/' + formatted.slice(5, 9);
+    }
+    setExpirationDate(formatted);
+  };
 
+  const validateAndParseDate = (dateText: string): Date | null => {
     const parts = dateText.split('/');
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
+    if (parts.length !== 3) return null;
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
 
-    // Create date object
-    const date = new Date(year, month - 1, day);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 2024) return null;
 
-    // Verify the date is valid (handles invalid dates like 02/30/2024)
-    if (
-      date.getFullYear() !== year ||
-      date.getMonth() !== month - 1 ||
-      date.getDate() !== day
-    ) {
-      return null;
-    }
-
-    return date;
+    return new Date(year, month - 1, day);
   };
 
   const handleSave = async () => {
-    console.log('=== Save Button Pressed ===');
-    console.log('Name:', name);
-    console.log('Category:', category);
-    console.log('Quantity:', quantity);
-    console.log('Expiration Date:', expirationDateText);
-    
     if (!name.trim()) {
-      Alert.alert(t('error'), t('pantry.enterItemName'));
+      Alert.alert(t('error'), t('pleaseEnterItemName'));
       return;
     }
 
-    const quantityNum = parseFloat(quantity);
-    if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert(t('error'), t('addItem.enterValidQuantity'));
-      return;
-    }
-
-    // Validate expiration date
-    if (!expirationDateText.trim()) {
-      setDateError(t('addItem.enterExpirationDate'));
-      Alert.alert(t('error'), t('addItem.enterExpirationDateAlert'));
-      return;
-    }
-
-    const parsedDate = validateAndParseDate(expirationDateText);
+    const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      setDateError(t('addItem.invalidDateFormat'));
-      Alert.alert(t('error'), t('addItem.invalidDateFormatAlert'));
+      Alert.alert(t('error'), t('pleaseEnterValidDate'));
       return;
     }
 
-    // Check if date is in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (parsedDate < today) {
-      setDateError(t('addItem.dateCannotBePast'));
-      Alert.alert(t('error'), t('addItem.dateCannotBePastAlert'));
-      return;
-    }
-
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const formattedDate = parsedDate.toISOString().split('T')[0];
+    setLoading(true);
 
     const newItem: PantryItem = {
-      id: uniqueId,
+      id: Date.now().toString(),
       name: name.trim(),
-      category,
-      quantity: quantityNum,
+      quantity: parseFloat(quantity) || 1,
       unit,
+      category,
+      expirationDate: parsedDate.toISOString(),
       dateAdded: new Date().toISOString(),
-      expirationDate: formattedDate,
-      notes: notes.trim() || (aiEstimation ? `${t('addItem.aiPrediction')}: ${aiEstimation}` : ''),
     };
 
     try {
-      console.log('Adding item to pantry:', newItem);
       await addPantryItem(newItem);
-      console.log('Item added successfully');
-      
-      Toast.show({
-        message: t('addItem.itemAddedSuccess', { name }),
-        type: 'success',
-      });
-      
-      setTimeout(() => {
-        console.log('Navigating back to pantry');
-        router.back();
-      }, 1000);
+      Toast.show(t('itemAddedSuccessfully'), 'success');
+      router.back();
     } catch (error) {
       console.error('Error adding item:', error);
-      Alert.alert(t('error'), t('addItem.failedToAddItem'));
+      Alert.alert(t('error'), t('failedToAddItem'));
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleQuantityPresetSelect = (value: number) => {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
-    console.log('Quantity preset selected:', value);
   };
 
   const closeAllPickers = () => {
     setShowCategoryPicker(false);
     setShowUnitPicker(false);
     setShowQuantityPicker(false);
+    Keyboard.dismiss();
   };
 
   const openCategoryPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowCategoryPicker(true);
-    }, 150);
+    setShowCategoryPicker(true);
   };
 
   const openUnitPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowUnitPicker(true);
-    }, 150);
+    setShowUnitPicker(true);
   };
 
   const openQuantityPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowQuantityPicker(true);
-    }, 150);
+    setShowQuantityPicker(true);
   };
 
-  // Helper function to get translated category name
   const getCategoryTranslation = (cat: string) => {
-    const key = cat.toLowerCase().replace(/\s+/g, '');
-    return t(key, cat);
+    const key = `category_${cat}`;
+    return t(key);
   };
 
-  // Helper function to get translated unit name
   const getUnitTranslation = (unitValue: string) => {
-    const key = unitValue.toLowerCase().replace(/\s+/g, '');
-    return t(key, unitValue);
+    const key = `unit_${unitValue}`;
+    return t(key);
   };
 
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen
         options={{
+          title: t('addItem'),
           headerShown: true,
-          title: t('pantry.addItem'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-          headerBackTitleVisible: false,
-          presentation: 'card',
         }}
       />
-      
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          scrollEventThrottle={16}
         >
-          <Text style={styles.label}>{t('addItem.itemNameRequired')}</Text>
-          <TextInput
-            ref={nameInputRef}
-            style={commonStyles.input}
-            placeholder={t('addItem.itemNamePlaceholder')}
-            placeholderTextColor={colors.textSecondary}
-            value={name}
-            onChangeText={handleNameChange}
-            autoCapitalize="words"
-            returnKeyType="next"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            onFocus={closeAllPickers}
-            onSubmitEditing={() => {
-              quantityInputRef.current?.focus();
-            }}
-            editable={true}
-            selectTextOnFocus={true}
-          />
-
-          {(aiEstimation || autoCategory) && (
-            <View style={styles.aiEstimationBanner}>
-              <View style={styles.aiEstimationIcon}>
-                <IconSymbol 
-                  ios_icon_name="sparkles" 
-                  android_material_icon_name="auto_awesome"
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <View style={styles.aiEstimationContent}>
-                <Text style={styles.aiEstimationTitle}>{t('addItem.aiPredictionTitle')}</Text>
-                {autoCategory && (
-                  <Text style={styles.aiEstimationText}>
-                    {t('addItem.categoryDetected')}: {getCategoryTranslation(autoCategory)}
-                  </Text>
-                )}
-                {aiEstimation && (
-                  <Text style={styles.aiEstimationText}>
-                    {aiEstimation}
-                  </Text>
-                )}
-                <Text style={styles.aiEstimationSubtext}>
-                  {t('addItem.earliestExpirationAutoFilled')}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          <Text style={styles.label}>
-            {t('addItem.categoryRequired')} {autoCategory && t('addItem.autoDetected')}
-          </Text>
-          <TouchableOpacity
-            style={[commonStyles.input, styles.picker]}
-            onPress={openCategoryPicker}
-            activeOpacity={0.7}
-          >
-            <Text style={{ color: colors.text }}>{getCategoryTranslation(category)}</Text>
-            <IconSymbol 
-              ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
-              android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
-              size={20} 
-              color={colors.textSecondary} 
+          <View style={styles.formSection}>
+            <Text style={styles.label}>{t('itemName')}</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={handleNameChange}
+              placeholder={t('enterItemName')}
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="words"
             />
-          </TouchableOpacity>
+          </View>
 
-          {showCategoryPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {FOOD_CATEGORIES.map(cat => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setCategory(cat);
-                      setShowCategoryPicker(false);
-                      console.log('Category selected:', cat);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      category === cat && styles.pickerOptionTextSelected
-                    ]}>
-                      {getCategoryTranslation(cat)}
-                    </Text>
-                    {category === cat && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+          <View style={styles.formSection}>
+            <Text style={styles.label}>{t('category')}</Text>
+            <TouchableOpacity style={styles.pickerButton} onPress={openCategoryPicker}>
+              <Text style={styles.pickerButtonText}>{getCategoryTranslation(category)}</Text>
+              <IconSymbol 
+                ios_icon_name="chevron.down" 
+                android_material_icon_name="expand-more" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t('addItem.quantityRequired')}</Text>
-              <View style={styles.quantityContainer}>
-                <TextInput
-                  ref={quantityInputRef}
-                  style={[commonStyles.input, { flex: 1 }]}
-                  placeholder="1"
-                  placeholderTextColor={colors.textSecondary}
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  keyboardType="decimal-pad"
-                  returnKeyType="next"
-                  clearButtonMode="while-editing"
-                  onFocus={closeAllPickers}
-                  onSubmitEditing={() => {
-                    dateInputRef.current?.focus();
-                  }}
-                  editable={true}
-                  selectTextOnFocus={true}
+            <View style={[styles.formSection, styles.halfWidth]}>
+              <Text style={styles.label}>{t('quantity')}</Text>
+              <TouchableOpacity style={styles.pickerButton} onPress={openQuantityPicker}>
+                <Text style={styles.pickerButtonText}>{quantity}</Text>
+                <IconSymbol 
+                  ios_icon_name="chevron.down" 
+                  android_material_icon_name="expand-more" 
+                  size={20} 
+                  color={colors.textSecondary} 
                 />
-                <TouchableOpacity
-                  style={styles.quantityPresetButton}
-                  onPress={openQuantityPicker}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol 
-                    ios_icon_name="list.bullet" 
-                    android_material_icon_name="format_list_bulleted"
-                    size={20} 
-                    color={colors.text} 
-                  />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
 
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>{t('addItem.unitRequired')}</Text>
-              <TouchableOpacity
-                style={[commonStyles.input, styles.picker]}
-                onPress={openUnitPicker}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: colors.text }}>{getUnitTranslation(unit)}</Text>
+            <View style={[styles.formSection, styles.halfWidth]}>
+              <Text style={styles.label}>{t('unit')}</Text>
+              <TouchableOpacity style={styles.pickerButton} onPress={openUnitPicker}>
+                <Text style={styles.pickerButtonText}>{getUnitTranslation(unit)}</Text>
                 <IconSymbol 
-                  ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
-                  android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
+                  ios_icon_name="chevron.down" 
+                  android_material_icon_name="expand-more" 
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -447,269 +233,306 @@ export default function AddItemScreen() {
             </View>
           </View>
 
-          {showQuantityPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {QUANTITY_PRESETS.map(preset => (
-                  <TouchableOpacity
-                    key={preset.label}
-                    style={styles.pickerOption}
-                    onPress={() => handleQuantityPresetSelect(preset.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.pickerOptionText}>
-                      {preset.label}
-                    </Text>
-                    {parseFloat(quantity) === preset.value && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {showUnitPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {UNITS.map(u => (
-                  <TouchableOpacity
-                    key={u}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setUnit(u);
-                      setShowUnitPicker(false);
-                      console.log('Unit selected:', u);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      unit === u && styles.pickerOptionTextSelected
-                    ]}>
-                      {getUnitTranslation(u)}
-                    </Text>
-                    {unit === u && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          <Text style={styles.label}>{t('addItem.expirationDateRequired')}</Text>
-          <View>
+          <View style={styles.formSection}>
+            <Text style={styles.label}>{t('expirationDate')}</Text>
             <TextInput
-              ref={dateInputRef}
-              style={[
-                commonStyles.input,
-                dateError ? styles.inputError : null
-              ]}
-              placeholder={t('addItem.expirationDatePlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={expirationDateText}
+              style={styles.input}
+              value={expirationDate}
               onChangeText={handleDateChange}
-              keyboardType="number-pad"
-              returnKeyType="next"
+              placeholder="DD/MM/YYYY"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="numeric"
               maxLength={10}
-              clearButtonMode="while-editing"
-              onFocus={closeAllPickers}
-              onSubmitEditing={() => {
-                notesInputRef.current?.focus();
-              }}
-              editable={true}
-              selectTextOnFocus={true}
             />
-            {dateError ? (
-              <Text style={styles.errorText}>{dateError}</Text>
-            ) : (
-              <Text style={styles.helperText}>
-                {aiEstimation 
-                  ? t('addItem.aiPredictedDate')
-                  : t('addItem.dateFormatHelper')}
-              </Text>
-            )}
           </View>
 
-          <Text style={styles.label}>{t('addItem.notesOptional')}</Text>
-          <TextInput
-            ref={notesInputRef}
-            style={[commonStyles.input, styles.notesInput]}
-            placeholder={t('addItem.notesPlaceholder')}
-            placeholderTextColor={colors.textSecondary}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            returnKeyType="default"
-            clearButtonMode="while-editing"
-            onFocus={closeAllPickers}
-            editable={true}
-            selectTextOnFocus={true}
-          />
-
           <TouchableOpacity
-            style={[buttonStyles.primary, styles.saveButton]}
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
             onPress={handleSave}
-            activeOpacity={0.7}
+            disabled={loading}
           >
-            <Text style={buttonStyles.primaryText}>{t('pantry.addToPantry')}</Text>
+            <Text style={styles.saveButtonText}>
+              {loading ? t('saving') : t('saveItem')}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {showCategoryPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t('selectCategory')}</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  {FOOD_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.pickerOption, category === cat && styles.pickerOptionSelected]}
+                      onPress={() => {
+                        setCategory(cat);
+                        closeAllPickers();
+                      }}
+                    >
+                      <Text style={[styles.pickerOptionText, category === cat && styles.pickerOptionTextSelected]}>
+                        {getCategoryTranslation(cat)}
+                      </Text>
+                      {category === cat && (
+                        <IconSymbol 
+                          ios_icon_name="checkmark" 
+                          android_material_icon_name="check" 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {showUnitPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t('selectUnit')}</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  {UNITS.map((u) => (
+                    <TouchableOpacity
+                      key={u}
+                      style={[styles.pickerOption, unit === u && styles.pickerOptionSelected]}
+                      onPress={() => {
+                        setUnit(u);
+                        closeAllPickers();
+                      }}
+                    >
+                      <Text style={[styles.pickerOptionText, unit === u && styles.pickerOptionTextSelected]}>
+                        {getUnitTranslation(u)}
+                      </Text>
+                      {unit === u && (
+                        <IconSymbol 
+                          ios_icon_name="checkmark" 
+                          android_material_icon_name="check" 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {showQuantityPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t('selectQuantity')}</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  {QUANTITY_PRESETS.map((preset) => (
+                    <TouchableOpacity
+                      key={preset}
+                      style={styles.pickerOption}
+                      onPress={() => handleQuantityPresetSelect(preset)}
+                    >
+                      <Text style={styles.pickerOptionText}>{preset}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardView: {
     flex: 1,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
     paddingBottom: 40,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  aiEstimationBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.primary + '15',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.primary + '30',
-    gap: 12,
-  },
-  aiEstimationIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary + '25',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiEstimationContent: {
-    flex: 1,
-  },
-  aiEstimationTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  aiEstimationText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  aiEstimationSubtext: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontStyle: 'italic',
+  formSection: {
+    marginBottom: 24,
   },
   row: {
     flexDirection: 'row',
+    gap: 16,
   },
-  quantityContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
+  halfWidth: {
+    flex: 1,
   },
-  quantityPresetButton: {
-    backgroundColor: colors.card,
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 10,
+    letterSpacing: 0.2,
+  },
+  input: {
+    backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
-    padding: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: colors.text,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: colors.border,
+    minHeight: 50,
   },
-  picker: {
+  pickerButton: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  pickerOptions: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 8,
     borderWidth: 1,
-    borderColor: colors.primary,
-    overflow: 'hidden',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    borderColor: colors.border,
+    minHeight: 50,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 16,
+    minHeight: 54,
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  pickerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerOverlayTouchable: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: 0.2,
+  },
+  pickerScroll: {
+    maxHeight: 400,
   },
   pickerOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.textSecondary + '20',
+    minHeight: 56,
+  },
+  pickerOptionSelected: {
+    backgroundColor: colors.primary + '10',
   },
   pickerOptionText: {
     fontSize: 16,
     color: colors.text,
+    flex: 1,
   },
   pickerOptionTextSelected: {
+    color: colors.primary,
     fontWeight: '600',
-    color: colors.text,
-  },
-  inputError: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  helperText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  notesInput: {
-    height: 80,
-    paddingTop: 12,
-  },
-  saveButton: {
-    marginTop: 32,
-    marginBottom: 20,
   },
 });
