@@ -43,8 +43,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
+    color: colors.text,
   },
   addButton: {
     flexDirection: 'row',
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl * 2,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: spacing.md,
     textAlign: 'center',
@@ -109,15 +110,15 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   itemName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   itemDetails: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   expirationBadge: {
     paddingHorizontal: spacing.sm,
@@ -153,14 +154,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
 });
 

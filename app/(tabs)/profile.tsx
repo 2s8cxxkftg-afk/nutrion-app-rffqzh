@@ -35,24 +35,29 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold as any,
+    fontSize: 28,
+    fontWeight: '700',
     color: colors.text,
   },
   statsCard: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statsTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',
@@ -62,21 +67,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as any,
+    fontSize: 24,
+    fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: typography.sizes.sm,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
   section: {
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 12,
+    fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: spacing.sm,
     textTransform: 'uppercase',
@@ -89,18 +94,23 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   menuItemContent: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginLeft: spacing.sm,
   },
   menuItemTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
   },
   menuItemDescription: {
-    fontSize: typography.sizes.sm,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -113,29 +123,34 @@ const styles = StyleSheet.create({
   },
   signOutButtonText: {
     color: '#FFFFFF',
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 16,
+    fontWeight: '600',
   },
   premiumCard: {
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   premiumContent: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginLeft: spacing.sm,
   },
   premiumTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold as any,
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   premiumDescription: {
-    fontSize: typography.sizes.sm,
+    fontSize: 13,
     color: '#FFFFFF',
     opacity: 0.9,
   },
@@ -324,7 +339,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="star.fill"
               android_material_icon_name="star"
-              size={40}
+              size={32}
               color="#FFFFFF"
             />
             <View style={styles.premiumContent}>
@@ -336,7 +351,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="chevron.right"
               android_material_icon_name="arrow_forward"
-              size={24}
+              size={20}
               color="#FFFFFF"
             />
           </TouchableOpacity>
@@ -353,7 +368,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="star.circle.fill"
               android_material_icon_name="star"
-              size={24}
+              size={22}
               color={colors.primary}
             />
             <View style={styles.menuItemContent}>
@@ -365,7 +380,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="chevron.right"
               android_material_icon_name="arrow_forward"
-              size={20}
+              size={18}
               color={colors.textSecondary}
             />
           </TouchableOpacity>
@@ -377,7 +392,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="globe"
               android_material_icon_name="language"
-              size={24}
+              size={22}
               color={colors.primary}
             />
             <View style={styles.menuItemContent}>
@@ -389,7 +404,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="chevron.right"
               android_material_icon_name="arrow_forward"
-              size={20}
+              size={18}
               color={colors.textSecondary}
             />
           </TouchableOpacity>
@@ -401,7 +416,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="bell.fill"
               android_material_icon_name="notifications"
-              size={24}
+              size={22}
               color={colors.primary}
             />
             <View style={styles.menuItemContent}>
@@ -413,7 +428,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="chevron.right"
               android_material_icon_name="arrow_forward"
-              size={20}
+              size={18}
               color={colors.textSecondary}
             />
           </TouchableOpacity>
@@ -425,7 +440,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="info.circle.fill"
               android_material_icon_name="info"
-              size={24}
+              size={22}
               color={colors.primary}
             />
             <View style={styles.menuItemContent}>
@@ -437,7 +452,7 @@ function ProfileScreenContent() {
             <IconSymbol
               ios_icon_name="chevron.right"
               android_material_icon_name="arrow_forward"
-              size={20}
+              size={18}
               color={colors.textSecondary}
             />
           </TouchableOpacity>

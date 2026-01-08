@@ -43,8 +43,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold as any,
+    fontSize: 28,
+    fontWeight: '700',
     color: colors.text,
   },
   clearButton: {
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl * 2,
   },
   emptyText: {
-    fontSize: typography.sizes.lg,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: spacing.md,
     textAlign: 'center',
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   itemName: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
   },
   itemNameCompleted: {
@@ -156,14 +156,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as any,
+    fontSize: 24,
+    fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: typography.sizes.sm,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -461,7 +461,7 @@ function ShoppingScreenContent() {
           <View style={styles.inputContainer}>
             <IconSymbol
               ios_icon_name="plus.circle.fill"
-              android_material_icon_name="add-circle"
+              android_material_icon_name="add_circle"
               size={24}
               color={colors.primary}
             />
@@ -485,7 +485,7 @@ function ShoppingScreenContent() {
             <View style={styles.emptyContainer}>
               <IconSymbol
                 ios_icon_name="cart"
-                android_material_icon_name="shopping-cart"
+                android_material_icon_name="shopping_cart"
                 size={80}
                 color={colors.textSecondary}
               />
