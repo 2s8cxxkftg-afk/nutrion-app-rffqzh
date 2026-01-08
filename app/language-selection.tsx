@@ -47,11 +47,11 @@ export default function LanguageSelectionScreen() {
       if (success) {
         // Mark that language has been selected
         await AsyncStorage.setItem(LANGUAGE_SELECTED_KEY, 'true');
-        console.log('✅ Language set successfully, navigating to onboarding');
+        console.log('✅ Language set successfully, navigating to introduction');
 
-        // Navigate to onboarding after a short delay
+        // Navigate to introduction after a short delay
         setTimeout(() => {
-          router.replace('/onboarding');
+          router.replace('/introduction');
         }, 300);
       } else {
         throw new Error('Failed to change language');
@@ -82,7 +82,12 @@ export default function LanguageSelectionScreen() {
         {/* Content */}
         <View style={styles.content}>
           <View style={styles.iconContainer}>
-            <IconSymbol name="globe" size={64} color={colors.primary} />
+            <IconSymbol 
+              ios_icon_name="globe" 
+              android_material_icon_name="language" 
+              size={64} 
+              color={colors.primary} 
+            />
           </View>
 
           <Text style={styles.title}>Choose Your Language</Text>
@@ -114,7 +119,12 @@ export default function LanguageSelectionScreen() {
                   {isLoading ? (
                     <ActivityIndicator color={colors.primary} size="small" />
                   ) : isSelected ? (
-                    <IconSymbol name="checkmark.circle.fill" size={28} color={colors.primary} />
+                    <IconSymbol 
+                      ios_icon_name="checkmark.circle.fill" 
+                      android_material_icon_name="check_circle" 
+                      size={28} 
+                      color={colors.primary} 
+                    />
                   ) : (
                     <View style={styles.languageCircle} />
                   )}
@@ -135,53 +145,51 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.huge,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
-    marginTop: spacing.xxl,
+    marginBottom: spacing.xl,
+    marginTop: spacing.md,
   },
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: spacing.lg,
+    width: 80,
+    height: 80,
+    marginBottom: spacing.md,
   },
   appName: {
-    ...typography.displayMedium,
+    fontSize: 28,
     color: colors.primary,
-    fontSize: 32,
     fontWeight: '800',
   },
   content: {
     flex: 1,
   },
   iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: colors.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.lg,
   },
   title: {
-    ...typography.displayMedium,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 36,
+    marginBottom: spacing.sm,
+    lineHeight: 32,
     fontWeight: '700',
   },
   subtitle: {
-    ...typography.bodyLarge,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
     lineHeight: 24,
     paddingHorizontal: spacing.md,
   },
@@ -192,32 +200,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     borderWidth: 2,
     borderColor: colors.border,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
   languageItemSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary + '10',
-    boxShadow: `0px 4px 16px ${colors.primary}30`,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 4,
   },
   languageInfo: {
     flex: 1,
   },
   languageName: {
-    ...typography.h3,
     color: colors.text,
     marginBottom: spacing.xs,
     fontSize: 18,
     fontWeight: '600',
   },
   languageNative: {
-    ...typography.body,
     color: colors.textSecondary,
     fontSize: 15,
   },

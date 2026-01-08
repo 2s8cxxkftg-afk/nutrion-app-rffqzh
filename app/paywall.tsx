@@ -99,16 +99,16 @@ export default function PaywallScreen() {
           <Text style={styles.featuresTitle}>Premium Features</Text>
           
           {[
-            { icon: 'check-circle', text: 'Smart Pantry Inventory' },
-            { icon: 'check-circle', text: 'Expiration Alerts' },
-            { icon: 'check-circle', text: 'Shopping List' },
-            { icon: 'check-circle', text: 'Analytics Dashboard' },
-            { icon: 'check-circle', text: 'Cloud Sync' },
+            { text: 'Smart Pantry Inventory' },
+            { text: 'Expiration Alerts' },
+            { text: 'Shopping List' },
+            { text: 'Analytics Dashboard' },
+            { text: 'Cloud Sync' },
           ].map((feature, index) => (
             <View key={index} style={styles.featureRow}>
               <IconSymbol 
                 ios_icon_name="checkmark.circle.fill" 
-                android_material_icon_name={feature.icon} 
+                android_material_icon_name="check_circle" 
                 size={24} 
                 color={colors.success} 
               />
@@ -155,29 +155,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconContainer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     marginBottom: spacing.lg,
   },
   title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
+    fontSize: 24,
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: spacing.sm,
     color: colors.text,
   },
   subtitle: {
-    fontSize: typography.sizes.md,
+    fontSize: 16,
     textAlign: 'center',
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   priceCard: {
     backgroundColor: colors.surface,
-    padding: spacing.xl,
-    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     width: '100%',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   priceAmount: {
     fontSize: 48,
@@ -185,17 +191,17 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   pricePeriod: {
-    fontSize: typography.sizes.md,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
   featuresContainer: {
     width: '100%',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   featuresTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: spacing.md,
     color: colors.text,
   },
@@ -205,7 +211,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   featureText: {
-    fontSize: typography.sizes.md,
+    fontSize: 16,
     marginLeft: spacing.sm,
     color: colors.text,
     flex: 1,
@@ -216,20 +222,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.md,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     width: '100%',
   },
   subscribeButtonDisabled: {
     opacity: 0.6,
   },
   subscribeButtonText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#fff',
     marginRight: spacing.sm,
   },
   disclaimer: {
-    fontSize: typography.sizes.sm,
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.md,
@@ -239,7 +245,7 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: colors.primary,
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

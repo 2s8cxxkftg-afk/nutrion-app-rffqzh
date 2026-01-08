@@ -1,8 +1,7 @@
-
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "nutrion",
+    "slug": "Nutrion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -27,7 +26,10 @@
         "backgroundColor": "#E8F5E9"
       },
       "package": "com.nutrion.app",
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       "expo-font",
@@ -50,5 +52,6 @@
     "experiments": {
       "typedRoutes": true
     }
-  }
+  },
+  "scheme": "Nutrion"
 }
