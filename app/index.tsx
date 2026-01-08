@@ -121,11 +121,13 @@ export default function Index() {
   if (isLoading || hasSelectedLanguage === null || hasCompletedOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
-        <Image
-          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
         {error && (
           <Text style={styles.errorText}>{error}</Text>
@@ -193,9 +195,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.background,
   },
-  logo: {
+  logoContainer: {
     width: 200,
     height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logo: {
+    width: 160,
+    height: 160,
+    opacity: 0.95,
   },
   loader: {
     marginTop: 20,

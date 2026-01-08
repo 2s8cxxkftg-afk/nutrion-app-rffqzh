@@ -71,11 +71,13 @@ export default function LanguageSelectionScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Image
-            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.appName}>Nutrion</Text>
         </View>
 
@@ -154,10 +156,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     marginTop: spacing.md,
   },
-  logo: {
-    width: 80,
-    height: 80,
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  logo: {
+    width: 70,
+    height: 70,
+    opacity: 0.95,
   },
   appName: {
     fontSize: 28,

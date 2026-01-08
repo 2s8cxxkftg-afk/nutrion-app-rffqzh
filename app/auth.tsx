@@ -265,11 +265,13 @@ export default function AuthScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Image
-              source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.appName}>Nutrion</Text>
             <Text style={styles.subtitle}>
               {isLogin ? 'Welcome back!' : 'Create your account'}
@@ -531,10 +533,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.huge,
   },
-  logo: {
+  logoContainer: {
     width: 100,
     height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.lg,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  logo: {
+    width: 70,
+    height: 70,
+    opacity: 0.95,
   },
   appName: {
     ...typography.displayMedium,
