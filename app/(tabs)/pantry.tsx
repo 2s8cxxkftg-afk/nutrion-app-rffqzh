@@ -198,10 +198,7 @@ function PantryScreenContent() {
       await checkAndNotifyExpiringItems(loadedItems);
     } catch (error) {
       console.error('Error loading pantry items:', error);
-      Toast.show({
-        message: 'Failed to load pantry items',
-        type: 'error',
-      });
+      Toast.show('Failed to load pantry items', 'error');
     }
   }, []);
 
@@ -218,10 +215,13 @@ function PantryScreenContent() {
   }, [loadItems]);
 
   const handleEditItem = (itemId: string) => {
-    router.push(`/edit-item?itemId=${itemId}`);
+    console.log('Edit button pressed for item:', itemId);
+    router.push(`/edit-item?id=${itemId}`);
   };
 
   const handleDeleteItem = async (itemId: string) => {
+    console.log('Delete button pressed for item:', itemId);
+    
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
@@ -241,18 +241,13 @@ function PantryScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Deleting item:', itemId);
               await deletePantryItem(itemId);
               await loadItems();
-              Toast.show({
-                message: '✅ Item deleted successfully!',
-                type: 'success',
-              });
+              Toast.show('Item deleted successfully!', 'success');
             } catch (error) {
               console.error('Error deleting item:', error);
-              Toast.show({
-                message: 'Failed to delete item',
-                type: 'error',
-              });
+              Toast.show('Failed to delete item', 'error');
             }
           },
         },
@@ -287,6 +282,7 @@ function PantryScreenContent() {
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleEditItem(item.id)}
+              activeOpacity={0.7}
             >
               <IconSymbol
                 ios_icon_name="pencil"
@@ -298,6 +294,7 @@ function PantryScreenContent() {
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => handleDeleteItem(item.id)}
+              activeOpacity={0.7}
             >
               <IconSymbol
                 ios_icon_name="trash"
