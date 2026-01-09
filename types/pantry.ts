@@ -21,6 +21,7 @@ export interface ShoppingItem {
   id: string;
   name: string;
   quantity: number;
+  unit?: string;
   completed: boolean;
   createdAt?: string;
 }
@@ -78,28 +79,28 @@ export const FOOD_CATEGORIES = [
 ];
 
 export const UNITS = [
-  'pcs',
-  'kg',
-  'g',
-  'mg',
-  'L',
-  'mL',
-  'lbs',
-  'oz',
-  'cups',
-  'tbsp',
-  'tsp',
-  'gal',
-  'qt',
-  'pt',
-  'fl oz',
-  'dozen',
-  'box',
-  'bag',
-  'can',
-  'jar',
-  'bottle',
-  'pack',
+  { label: 'Pieces', value: 'pieces' },
+  { label: 'Kilogram (kg)', value: 'kg' },
+  { label: 'Gram (g)', value: 'g' },
+  { label: 'Milligram (mg)', value: 'mg' },
+  { label: 'Liter (L)', value: 'L' },
+  { label: 'Milliliter (mL)', value: 'mL' },
+  { label: 'Pounds (lbs)', value: 'lbs' },
+  { label: 'Ounce (oz)', value: 'oz' },
+  { label: 'Cups', value: 'cups' },
+  { label: 'Tablespoon (tbsp)', value: 'tbsp' },
+  { label: 'Teaspoon (tsp)', value: 'tsp' },
+  { label: 'Gallon (gal)', value: 'gal' },
+  { label: 'Quart (qt)', value: 'qt' },
+  { label: 'Pint (pt)', value: 'pt' },
+  { label: 'Fluid Ounce (fl oz)', value: 'fl oz' },
+  { label: 'Dozen', value: 'dozen' },
+  { label: 'Box', value: 'box' },
+  { label: 'Bag', value: 'bag' },
+  { label: 'Can', value: 'can' },
+  { label: 'Jar', value: 'jar' },
+  { label: 'Bottle', value: 'bottle' },
+  { label: 'Pack', value: 'pack' },
 ];
 
 export const QUANTITY_PRESETS = [
@@ -117,5 +118,14 @@ export const QUANTITY_PRESETS = [
   { label: '3', value: 3 },
   { label: '4', value: 4 },
   { label: '5', value: 5 },
+  { label: '6', value: 6 },
+  { label: '7', value: 7 },
+  { label: '8', value: 8 },
+  { label: '9', value: 9 },
   { label: '10', value: 10 },
+  { label: '15', value: 15 },
+  { label: '20', value: 20 },
+  { label: '25', value: 25 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 },
 ];

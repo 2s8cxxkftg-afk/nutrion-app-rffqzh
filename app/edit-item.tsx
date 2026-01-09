@@ -1,5 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
+import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import {
   View,
   Text,
@@ -12,734 +15,633 @@ import {
   KeyboardAvoidingView,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useRef, useEffect } from 'react';
+import Toast from '@/components/Toast';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
-import { updatePantryItem, loadPantryItems } from '@/utils/storage';
-import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
 import { categorizeFoodItem } from '@/utils/categoryHelper';
-import Toast from '@/components/Toast';
+import { updatePantryItem, loadPantryItems } from '@/utils/storage';
 
 export default function EditItemScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const itemId = params.id as string;
-  
-  const scrollViewRef = useRef<ScrollView>(null);
-  const nameInputRef = useRef<TextInput>(null);
-  const quantityInputRef = useRef<TextInput>(null);
-  const dateInputRef = useRef<TextInput>(null);
-  const notesInputRef = useRef<TextInput>(null);
-  
-  const [loading, setLoading] = useState(true);
+  const { itemId } = useLocalSearchParams();
+
   const [name, setName] = useState('');
-  const [category, setCategory] = useState(FOOD_CATEGORIES[0]);
   const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState(UNITS[0]);
-  const [expirationDateText, setExpirationDateText] = useState('');
-  const [notes, setNotes] = useState('');
+  const [unit, setUnit] = useState('pieces');
+  const [category, setCategory] = useState('Other');
+  const [expirationDate, setExpirationDate] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
-  const [dateError, setDateError] = useState('');
-  const [aiEstimation, setAiEstimation] = useState<string | null>(null);
-  const [autoCategory, setAutoCategory] = useState<string | null>(null);
-  const [originalItem, setOriginalItem] = useState<PantryItem | null>(null);
+  const [customQuantityMode, setCustomQuantityMode] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Load the item to edit
+  const scrollViewRef = useRef<ScrollView>(null);
+  const quantityInputRef = useRef<TextInput>(null);
+
   useEffect(() => {
-    const loadItem = async () => {
-      try {
-        const items = await loadPantryItems();
-        const item = items.find(i => i.id === itemId);
-        
-        if (item) {
-          setOriginalItem(item);
-          setName(item.name);
-          setCategory(item.category);
-          setQuantity(item.quantity.toString());
-          setUnit(item.unit);
-          setNotes(item.notes || '');
-          
-          // Format expiration date to MM/DD/YYYY
-          const expDate = new Date(item.expirationDate);
-          const formattedDate = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${String(expDate.getDate()).padStart(2, '0')}/${expDate.getFullYear()}`;
-          setExpirationDateText(formattedDate);
-          
-          console.log('Loaded item for editing:', item.name);
-        } else {
-          Alert.alert('Error', 'Item not found');
-          router.back();
-        }
-      } catch (error) {
-        console.error('Error loading item:', error);
-        Alert.alert('Error', 'Failed to load item');
-        router.back();
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadItem();
   }, [itemId]);
 
-  // Update AI estimation and auto-category when name changes
+  const loadItem = async () => {
+    try {
+      const items = await loadPantryItems();
+      const item = items.find(i => i.id === itemId);
+      
+      if (item) {
+        setName(item.name);
+        setQuantity(item.quantity.toString());
+        setUnit(item.unit);
+        setCategory(item.category);
+        
+        const date = new Date(item.expirationDate);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        setExpirationDate(`${day}/${month}/${year}`);
+      } else {
+        Toast.show({ message: 'Item not found', type: 'error' });
+        router.back();
+      }
+    } catch (error) {
+      console.error('Error loading item:', error);
+      Toast.show({ message: 'Failed to load item', type: 'error' });
+      router.back();
+    }
+  };
+
+  useEffect(() => {
+    if (category && name) {
+      const estimation = getExpirationEstimation(name, category);
+      if (estimation && !expirationDate) {
+        const predicted = predictExpirationDate(name, category);
+        if (predicted) {
+          setExpirationDate(predicted);
+        }
+      }
+    }
+  }, [category, name]);
+
   const handleNameChange = (text: string) => {
     setName(text);
-    
-    // Get AI estimation for the food item
-    if (text.trim().length > 0) {
-      // Auto-categorize
+    if (text.length > 2) {
       const detectedCategory = categorizeFoodItem(text);
-      setAutoCategory(detectedCategory);
-      
-      // Get expiration estimation
-      const estimation = getExpirationEstimation(text, true);
-      setAiEstimation(estimation);
-    } else {
-      setAiEstimation(null);
-      setAutoCategory(null);
+      if (detectedCategory !== 'Other') {
+        setCategory(detectedCategory);
+      }
     }
   };
 
-  // Update expiration date when category changes (for better accuracy)
-  useEffect(() => {
-    if (name.trim().length > 0 && category && !loading) {
-      // Update estimation text
-      const estimation = getExpirationEstimation(name, true);
-      setAiEstimation(estimation);
-    }
-  }, [category, loading]);
-
-  // Format date input as user types (MM/DD/YYYY)
   const handleDateChange = (text: string) => {
-    // Remove all non-numeric characters
-    const cleaned = text.replace(/\D/g, '');
-    
-    let formatted = '';
-    if (cleaned.length > 0) {
-      // Add first part (month)
-      formatted = cleaned.substring(0, 2);
-      
-      if (cleaned.length >= 3) {
-        // Add slash and day
-        formatted += '/' + cleaned.substring(2, 4);
-      }
-      
-      if (cleaned.length >= 5) {
-        // Add slash and year
-        formatted += '/' + cleaned.substring(4, 8);
-      }
+    let formatted = text.replace(/[^0-9]/g, '');
+    if (formatted.length >= 2) {
+      formatted = formatted.slice(0, 2) + '/' + formatted.slice(2);
     }
-    
-    setExpirationDateText(formatted);
-    setDateError('');
+    if (formatted.length >= 5) {
+      formatted = formatted.slice(0, 5) + '/' + formatted.slice(5, 9);
+    }
+    setExpirationDate(formatted);
   };
 
-  // Validate date format and create Date object
   const validateAndParseDate = (dateText: string): Date | null => {
-    // Check format MM/DD/YYYY
-    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/(\d{4})$/;
-    
-    if (!dateRegex.test(dateText)) {
-      return null;
-    }
-
     const parts = dateText.split('/');
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
+    if (parts.length !== 3) return null;
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
 
-    // Create date object
-    const date = new Date(year, month - 1, day);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 2024) return null;
 
-    // Verify the date is valid (handles invalid dates like 02/30/2024)
-    if (
-      date.getFullYear() !== year ||
-      date.getMonth() !== month - 1 ||
-      date.getDate() !== day
-    ) {
-      return null;
-    }
-
-    return date;
+    return new Date(year, month - 1, day);
   };
 
   const handleSave = async () => {
-    console.log('=== Save Button Pressed ===');
-    console.log('Name:', name);
-    console.log('Category:', category);
-    console.log('Quantity:', quantity);
-    console.log('Expiration Date:', expirationDateText);
-    
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter item name');
+      Toast.show({ message: 'Please enter item name', type: 'error' });
       return;
     }
 
-    const quantityNum = parseFloat(quantity);
-    if (isNaN(quantityNum) || quantityNum <= 0) {
-      Alert.alert('Error', 'Please enter valid quantity');
+    if (!quantity || parseFloat(quantity) <= 0) {
+      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
       return;
     }
 
-    // Validate expiration date
-    if (!expirationDateText.trim()) {
-      setDateError('Please enter expiration date');
-      Alert.alert('Error', 'Please enter expiration date');
-      return;
-    }
-
-    const parsedDate = validateAndParseDate(expirationDateText);
+    const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      setDateError('Invalid date format (MM/DD/YYYY)');
-      Alert.alert('Error', 'Invalid date format. Please use MM/DD/YYYY');
+      Toast.show({ message: 'Please enter valid date (DD/MM/YYYY)', type: 'error' });
       return;
     }
 
-    // Check if date is in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (parsedDate < today) {
-      setDateError('Date cannot be in the past');
-      Alert.alert('Error', 'Expiration date cannot be in the past');
-      return;
-    }
-
-    const formattedDate = parsedDate.toISOString().split('T')[0];
+    setLoading(true);
 
     const updatedItem: PantryItem = {
-      ...originalItem!,
+      id: itemId as string,
       name: name.trim(),
-      category,
-      quantity: quantityNum,
+      quantity: parseFloat(quantity),
       unit,
-      expirationDate: formattedDate,
-      notes: notes.trim(),
+      category,
+      expirationDate: parsedDate.toISOString(),
+      dateAdded: new Date().toISOString(),
     };
 
     try {
-      console.log('Updating item in pantry:', updatedItem);
       await updatePantryItem(updatedItem);
-      console.log('Item updated successfully');
-      
-      Toast.show({
-        message: `✅ ${name} updated successfully!`,
-        type: 'success',
-      });
-      
-      setTimeout(() => {
-        console.log('Navigating back to pantry');
-        router.back();
-      }, 1000);
+      Toast.show({ message: 'Item updated successfully', type: 'success' });
+      router.back();
     } catch (error) {
       console.error('Error updating item:', error);
-      Alert.alert('Error', 'Failed to update item');
+      Toast.show({ message: 'Failed to update item', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleQuantityPresetSelect = (value: number) => {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
-    console.log('Quantity preset selected:', value);
+    setCustomQuantityMode(false);
+  };
+
+  const handleCustomQuantityMode = () => {
+    setCustomQuantityMode(true);
+    setShowQuantityPicker(false);
+    setTimeout(() => {
+      quantityInputRef.current?.focus();
+    }, 100);
   };
 
   const closeAllPickers = () => {
     setShowCategoryPicker(false);
     setShowUnitPicker(false);
     setShowQuantityPicker(false);
+    Keyboard.dismiss();
   };
 
   const openCategoryPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowCategoryPicker(true);
-    }, 150);
+    setShowCategoryPicker(true);
   };
 
   const openUnitPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowUnitPicker(true);
-    }, 150);
+    setShowUnitPicker(true);
   };
 
   const openQuantityPicker = () => {
-    Keyboard.dismiss();
     closeAllPickers();
-    setTimeout(() => {
-      setShowQuantityPicker(true);
-    }, 150);
+    setCustomQuantityMode(false);
+    setShowQuantityPicker(true);
   };
 
-  // Helper function to get category name
-  const getCategoryTranslation = (cat: string) => {
-    return cat.charAt(0).toUpperCase() + cat.slice(1);
+  const getUnitLabel = (unitValue: string) => {
+    const unit = UNITS.find(u => u.value === unitValue);
+    return unit ? unit.label : unitValue;
   };
-
-  // Helper function to get unit name
-  const getUnitTranslation = (unitValue: string) => {
-    return unitValue;
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Edit Item',
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
-            headerBackTitleVisible: false,
-            presentation: 'card',
-          }}
-        />
-        <View style={[commonStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ color: colors.text }}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen
         options={{
+          title: 'Edit Item',
           headerShown: true,
-          title: '✏️ Edit Item',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-          headerBackTitleVisible: false,
-          presentation: 'card',
         }}
       />
-      
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          scrollEventThrottle={16}
         >
-          <Text style={styles.label}>📝 Item Name (Required)</Text>
-          <TextInput
-            ref={nameInputRef}
-            style={commonStyles.input}
-            placeholder="e.g., Fresh Milk, Organic Apples"
-            placeholderTextColor={colors.textSecondary}
-            value={name}
-            onChangeText={handleNameChange}
-            autoCapitalize="words"
-            returnKeyType="next"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            onFocus={closeAllPickers}
-            onSubmitEditing={() => {
-              quantityInputRef.current?.focus();
-            }}
-            editable={true}
-            selectTextOnFocus={true}
-          />
-
-          {(aiEstimation || autoCategory) && (
-            <View style={styles.aiEstimationBanner}>
-              <View style={styles.aiEstimationIcon}>
-                <IconSymbol 
-                  ios_icon_name="sparkles" 
-                  android_material_icon_name="auto_awesome"
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-              <View style={styles.aiEstimationContent}>
-                <Text style={styles.aiEstimationTitle}>✨ AI Suggestion</Text>
-                {autoCategory && (
-                  <Text style={styles.aiEstimationText}>
-                    Suggested Category: {getCategoryTranslation(autoCategory)}
-                  </Text>
-                )}
-                {aiEstimation && (
-                  <Text style={styles.aiEstimationText}>
-                    {aiEstimation}
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-
-          <Text style={styles.label}>🏷️ Category (Required)</Text>
-          <TouchableOpacity
-            style={[commonStyles.input, styles.picker]}
-            onPress={openCategoryPicker}
-            activeOpacity={0.7}
-          >
-            <Text style={{ color: colors.text }}>{getCategoryTranslation(category)}</Text>
-            <IconSymbol 
-              ios_icon_name={showCategoryPicker ? "chevron.up" : "chevron.down"}
-              android_material_icon_name={showCategoryPicker ? "expand_less" : "expand_more"}
-              size={20} 
-              color={colors.textSecondary} 
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Item Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={handleNameChange}
+              placeholder="e.g., Milk, Apples, Bread"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="words"
             />
-          </TouchableOpacity>
+          </View>
 
-          {showCategoryPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {FOOD_CATEGORIES.map(cat => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setCategory(cat);
-                      setShowCategoryPicker(false);
-                      console.log('Category selected:', cat);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      category === cat && styles.pickerOptionTextSelected
-                    ]}>
-                      {getCategoryTranslation(cat)}
-                    </Text>
-                    {category === cat && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Category *</Text>
+            <TouchableOpacity style={styles.pickerButton} onPress={openCategoryPicker}>
+              <Text style={styles.pickerButtonText}>{category}</Text>
+              <IconSymbol 
+                ios_icon_name="chevron.down" 
+                android_material_icon_name="arrow-drop-down" 
+                size={24} 
+                color={colors.textSecondary} 
+              />
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>🔢 Quantity (Required)</Text>
-              <View style={styles.quantityContainer}>
+            <View style={[styles.formSection, styles.halfWidth]}>
+              <Text style={styles.label}>Quantity *</Text>
+              {customQuantityMode ? (
                 <TextInput
                   ref={quantityInputRef}
-                  style={[commonStyles.input, { flex: 1 }]}
-                  placeholder="1"
-                  placeholderTextColor={colors.textSecondary}
+                  style={styles.input}
                   value={quantity}
                   onChangeText={setQuantity}
+                  placeholder="Enter quantity"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
-                  returnKeyType="next"
-                  clearButtonMode="while-editing"
-                  onFocus={closeAllPickers}
-                  onSubmitEditing={() => {
-                    dateInputRef.current?.focus();
+                  onBlur={() => {
+                    if (!quantity || parseFloat(quantity) <= 0) {
+                      setQuantity('1');
+                    }
                   }}
-                  editable={true}
-                  selectTextOnFocus={true}
                 />
-                <TouchableOpacity
-                  style={styles.quantityPresetButton}
-                  onPress={openQuantityPicker}
-                  activeOpacity={0.7}
-                >
+              ) : (
+                <TouchableOpacity style={styles.pickerButton} onPress={openQuantityPicker}>
+                  <Text style={styles.pickerButtonText}>{quantity}</Text>
                   <IconSymbol 
-                    ios_icon_name="list.bullet" 
-                    android_material_icon_name="format_list_bulleted"
-                    size={20} 
-                    color={colors.text} 
+                    ios_icon_name="chevron.down" 
+                    android_material_icon_name="arrow-drop-down" 
+                    size={24} 
+                    color={colors.textSecondary} 
                   />
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
 
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.label}>📏 Unit (Required)</Text>
-              <TouchableOpacity
-                style={[commonStyles.input, styles.picker]}
-                onPress={openUnitPicker}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: colors.text }}>{getUnitTranslation(unit)}</Text>
+            <View style={[styles.formSection, styles.halfWidth]}>
+              <Text style={styles.label}>Unit *</Text>
+              <TouchableOpacity style={styles.pickerButton} onPress={openUnitPicker}>
+                <Text style={styles.pickerButtonText} numberOfLines={1}>
+                  {getUnitLabel(unit)}
+                </Text>
                 <IconSymbol 
-                  ios_icon_name={showUnitPicker ? "chevron.up" : "chevron.down"}
-                  android_material_icon_name={showUnitPicker ? "expand_less" : "expand_more"}
-                  size={20} 
+                  ios_icon_name="chevron.down" 
+                  android_material_icon_name="arrow-drop-down" 
+                  size={24} 
                   color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
           </View>
 
-          {showQuantityPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {QUANTITY_PRESETS.map(preset => (
-                  <TouchableOpacity
-                    key={preset.label}
-                    style={styles.pickerOption}
-                    onPress={() => handleQuantityPresetSelect(preset.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.pickerOptionText}>
-                      {preset.label}
-                    </Text>
-                    {parseFloat(quantity) === preset.value && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {showUnitPicker && (
-            <View style={styles.pickerOptions}>
-              <ScrollView 
-                style={{ maxHeight: 200 }} 
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-              >
-                {UNITS.map(u => (
-                  <TouchableOpacity
-                    key={u}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setUnit(u);
-                      setShowUnitPicker(false);
-                      console.log('Unit selected:', u);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      unit === u && styles.pickerOptionTextSelected
-                    ]}>
-                      {getUnitTranslation(u)}
-                    </Text>
-                    {unit === u && (
-                      <IconSymbol 
-                        ios_icon_name="checkmark" 
-                        android_material_icon_name="check"
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          <Text style={styles.label}>📅 Expiration Date (Required)</Text>
-          <View>
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Expiration Date *</Text>
             <TextInput
-              ref={dateInputRef}
-              style={[
-                commonStyles.input,
-                dateError ? styles.inputError : null
-              ]}
-              placeholder="MM/DD/YYYY"
-              placeholderTextColor={colors.textSecondary}
-              value={expirationDateText}
+              style={styles.input}
+              value={expirationDate}
               onChangeText={handleDateChange}
-              keyboardType="number-pad"
-              returnKeyType="next"
+              placeholder="DD/MM/YYYY"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="numeric"
               maxLength={10}
-              clearButtonMode="while-editing"
-              onFocus={closeAllPickers}
-              onSubmitEditing={() => {
-                notesInputRef.current?.focus();
-              }}
-              editable={true}
-              selectTextOnFocus={true}
             />
-            {dateError ? (
-              <Text style={styles.errorText}>{dateError}</Text>
-            ) : (
-              <Text style={styles.helperText}>
-                Format: MM/DD/YYYY (e.g., 12/31/2024)
-              </Text>
-            )}
+            <Text style={styles.helperText}>
+              Format: Day/Month/Year (e.g., 25/12/2024)
+            </Text>
           </View>
 
-          <Text style={styles.label}>📝 Notes (Optional)</Text>
-          <TextInput
-            ref={notesInputRef}
-            style={[commonStyles.input, styles.notesInput]}
-            placeholder="Add any additional notes..."
-            placeholderTextColor={colors.textSecondary}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            returnKeyType="default"
-            clearButtonMode="while-editing"
-            onFocus={closeAllPickers}
-            editable={true}
-            selectTextOnFocus={true}
-          />
-
           <TouchableOpacity
-            style={[buttonStyles.primary, styles.saveButton]}
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
             onPress={handleSave}
-            activeOpacity={0.7}
+            disabled={loading}
           >
-            <Text style={buttonStyles.primaryText}>💾 Save Changes</Text>
+            {loading ? (
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            ) : (
+              <>
+                <IconSymbol 
+                  ios_icon_name="checkmark" 
+                  android_material_icon_name="check" 
+                  size={20} 
+                  color="#FFFFFF" 
+                />
+                <Text style={styles.saveButtonText}>Update Item</Text>
+              </>
+            )}
           </TouchableOpacity>
         </ScrollView>
+
+        {showCategoryPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>Select Category</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  {FOOD_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.pickerOption, category === cat && styles.pickerOptionSelected]}
+                      onPress={() => {
+                        setCategory(cat);
+                        closeAllPickers();
+                      }}
+                    >
+                      <Text style={[styles.pickerOptionText, category === cat && styles.pickerOptionTextSelected]}>
+                        {cat}
+                      </Text>
+                      {category === cat && (
+                        <IconSymbol 
+                          ios_icon_name="checkmark" 
+                          android_material_icon_name="check" 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {showUnitPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>Select Unit</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  {UNITS.map((u) => (
+                    <TouchableOpacity
+                      key={u.value}
+                      style={[styles.pickerOption, unit === u.value && styles.pickerOptionSelected]}
+                      onPress={() => {
+                        setUnit(u.value);
+                        closeAllPickers();
+                      }}
+                    >
+                      <Text style={[styles.pickerOptionText, unit === u.value && styles.pickerOptionTextSelected]}>
+                        {u.label}
+                      </Text>
+                      {unit === u.value && (
+                        <IconSymbol 
+                          ios_icon_name="checkmark" 
+                          android_material_icon_name="check" 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {showQuantityPicker && (
+          <View style={styles.pickerOverlay}>
+            <TouchableOpacity 
+              style={styles.pickerOverlayTouchable} 
+              activeOpacity={1} 
+              onPress={closeAllPickers}
+            >
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>Select Quantity</Text>
+                  <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <IconSymbol 
+                      ios_icon_name="xmark" 
+                      android_material_icon_name="close" 
+                      size={24} 
+                      color={colors.text} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerScroll}>
+                  <TouchableOpacity
+                    style={styles.customQuantityButton}
+                    onPress={handleCustomQuantityMode}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="pencil" 
+                      android_material_icon_name="edit" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                    <Text style={styles.customQuantityButtonText}>Enter Custom Quantity</Text>
+                  </TouchableOpacity>
+                  {QUANTITY_PRESETS.map((preset) => (
+                    <TouchableOpacity
+                      key={preset.value}
+                      style={styles.pickerOption}
+                      onPress={() => handleQuantityPresetSelect(preset.value)}
+                    >
+                      <Text style={styles.pickerOptionText}>{preset.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardView: {
     flex: 1,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
     paddingBottom: 40,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  aiEstimationBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.primary + '15',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.primary + '30',
-    gap: 12,
-  },
-  aiEstimationIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary + '25',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiEstimationContent: {
-    flex: 1,
-  },
-  aiEstimationTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  aiEstimationText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 2,
+  formSection: {
+    marginBottom: 24,
   },
   row: {
     flexDirection: 'row',
+    gap: 16,
   },
-  quantityContainer: {
+  halfWidth: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 10,
+    letterSpacing: 0.2,
+  },
+  input: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 50,
+  },
+  helperText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  pickerButton: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 50,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 16,
+    minHeight: 54,
+    justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    alignItems: 'center',
   },
-  quantityPresetButton: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.text,
-    justifyContent: 'center',
-    alignItems: 'center',
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
-  picker: {
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  pickerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerOverlayTouchable: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  pickerOptions: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    overflow: 'hidden',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: 0.2,
+  },
+  pickerScroll: {
+    maxHeight: 400,
   },
   pickerOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.textSecondary + '20',
+    minHeight: 56,
+  },
+  pickerOptionSelected: {
+    backgroundColor: colors.primary + '10',
   },
   pickerOptionText: {
     fontSize: 16,
     color: colors.text,
+    flex: 1,
   },
   pickerOptionTextSelected: {
+    color: colors.primary,
     fontWeight: '600',
-    color: colors.text,
   },
-  inputError: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
+  customQuantityButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.primary + '08',
   },
-  errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  helperText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  notesInput: {
-    height: 80,
-    paddingTop: 12,
-  },
-  saveButton: {
-    marginTop: 32,
-    marginBottom: 20,
+  customQuantityButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
   },
 });

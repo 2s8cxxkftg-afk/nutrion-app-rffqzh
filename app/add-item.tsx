@@ -1,11 +1,9 @@
 
-import { categorizeFoodItem } from '@/utils/categoryHelper';
-import { IconSymbol } from '@/components/IconSymbol';
-import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
-import { addPantryItem } from '@/utils/storage';
-import Toast from '@/components/Toast';
-import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
+import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
+import { Stack, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -18,9 +16,11 @@ import {
   KeyboardAvoidingView,
   Keyboard,
 } from 'react-native';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
-import { Stack, useRouter } from 'expo-router';
+import Toast from '@/components/Toast';
+import React, { useState, useRef, useEffect } from 'react';
+import { addPantryItem } from '@/utils/storage';
+import { IconSymbol } from '@/components/IconSymbol';
+import { categorizeFoodItem } from '@/utils/categoryHelper';
 
 export default function AddItemScreen() {
   const router = useRouter();
@@ -28,14 +28,16 @@ export default function AddItemScreen() {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState('pieces');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('Other');
   const [expirationDate, setExpirationDate] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
+  const [customQuantityMode, setCustomQuantityMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const quantityInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (category && name) {
@@ -53,7 +55,7 @@ export default function AddItemScreen() {
     setName(text);
     if (text.length > 2) {
       const detectedCategory = categorizeFoodItem(text);
-      if (detectedCategory !== 'other') {
+      if (detectedCategory !== 'Other') {
         setCategory(detectedCategory);
       }
     }
@@ -86,13 +88,18 @@ export default function AddItemScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter item name');
+      Toast.show({ message: 'Please enter item name', type: 'error' });
+      return;
+    }
+
+    if (!quantity || parseFloat(quantity) <= 0) {
+      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
       return;
     }
 
     const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      Alert.alert('Error', 'Please enter valid date (DD/MM/YYYY)');
+      Toast.show({ message: 'Please enter valid date (DD/MM/YYYY)', type: 'error' });
       return;
     }
 
@@ -101,7 +108,7 @@ export default function AddItemScreen() {
     const newItem: PantryItem = {
       id: Date.now().toString(),
       name: name.trim(),
-      quantity: parseFloat(quantity) || 1,
+      quantity: parseFloat(quantity),
       unit,
       category,
       expirationDate: parsedDate.toISOString(),
@@ -114,7 +121,7 @@ export default function AddItemScreen() {
       router.back();
     } catch (error) {
       console.error('Error adding item:', error);
-      Alert.alert('Error', 'Failed to add item');
+      Toast.show({ message: 'Failed to add item', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -123,6 +130,15 @@ export default function AddItemScreen() {
   const handleQuantityPresetSelect = (value: number) => {
     setQuantity(value.toString());
     setShowQuantityPicker(false);
+    setCustomQuantityMode(false);
+  };
+
+  const handleCustomQuantityMode = () => {
+    setCustomQuantityMode(true);
+    setShowQuantityPicker(false);
+    setTimeout(() => {
+      quantityInputRef.current?.focus();
+    }, 100);
   };
 
   const closeAllPickers = () => {
@@ -144,15 +160,13 @@ export default function AddItemScreen() {
 
   const openQuantityPicker = () => {
     closeAllPickers();
+    setCustomQuantityMode(false);
     setShowQuantityPicker(true);
   };
 
-  const getCategoryTranslation = (cat: string) => {
-    return cat.charAt(0).toUpperCase() + cat.slice(1);
-  };
-
-  const getUnitTranslation = (unitValue: string) => {
-    return unitValue;
+  const getUnitLabel = (unitValue: string) => {
+    const unit = UNITS.find(u => u.value === unitValue);
+    return unit ? unit.label : unitValue;
   };
 
   return (
@@ -177,25 +191,25 @@ export default function AddItemScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.formSection}>
-            <Text style={styles.label}>Item Name</Text>
+            <Text style={styles.label}>Item Name *</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={handleNameChange}
-              placeholder="Enter item name"
+              placeholder="e.g., Milk, Apples, Bread"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
             />
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>Category</Text>
+            <Text style={styles.label}>Category *</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={openCategoryPicker}>
-              <Text style={styles.pickerButtonText}>{getCategoryTranslation(category)}</Text>
+              <Text style={styles.pickerButtonText}>{category}</Text>
               <IconSymbol 
                 ios_icon_name="chevron.down" 
-                android_material_icon_name="expand_more" 
-                size={20} 
+                android_material_icon_name="arrow-drop-down" 
+                size={24} 
                 color={colors.textSecondary} 
               />
             </TouchableOpacity>
@@ -203,26 +217,45 @@ export default function AddItemScreen() {
 
           <View style={styles.row}>
             <View style={[styles.formSection, styles.halfWidth]}>
-              <Text style={styles.label}>Quantity</Text>
-              <TouchableOpacity style={styles.pickerButton} onPress={openQuantityPicker}>
-                <Text style={styles.pickerButtonText}>{quantity}</Text>
-                <IconSymbol 
-                  ios_icon_name="chevron.down" 
-                  android_material_icon_name="expand_more" 
-                  size={20} 
-                  color={colors.textSecondary} 
+              <Text style={styles.label}>Quantity *</Text>
+              {customQuantityMode ? (
+                <TextInput
+                  ref={quantityInputRef}
+                  style={styles.input}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  placeholder="Enter quantity"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="decimal-pad"
+                  onBlur={() => {
+                    if (!quantity || parseFloat(quantity) <= 0) {
+                      setQuantity('1');
+                    }
+                  }}
                 />
-              </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.pickerButton} onPress={openQuantityPicker}>
+                  <Text style={styles.pickerButtonText}>{quantity}</Text>
+                  <IconSymbol 
+                    ios_icon_name="chevron.down" 
+                    android_material_icon_name="arrow-drop-down" 
+                    size={24} 
+                    color={colors.textSecondary} 
+                  />
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={[styles.formSection, styles.halfWidth]}>
-              <Text style={styles.label}>Unit</Text>
+              <Text style={styles.label}>Unit *</Text>
               <TouchableOpacity style={styles.pickerButton} onPress={openUnitPicker}>
-                <Text style={styles.pickerButtonText}>{getUnitTranslation(unit)}</Text>
+                <Text style={styles.pickerButtonText} numberOfLines={1}>
+                  {getUnitLabel(unit)}
+                </Text>
                 <IconSymbol 
                   ios_icon_name="chevron.down" 
-                  android_material_icon_name="expand_more" 
-                  size={20} 
+                  android_material_icon_name="arrow-drop-down" 
+                  size={24} 
                   color={colors.textSecondary} 
                 />
               </TouchableOpacity>
@@ -230,7 +263,7 @@ export default function AddItemScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>Expiration Date</Text>
+            <Text style={styles.label}>Expiration Date *</Text>
             <TextInput
               style={styles.input}
               value={expirationDate}
@@ -240,6 +273,9 @@ export default function AddItemScreen() {
               keyboardType="numeric"
               maxLength={10}
             />
+            <Text style={styles.helperText}>
+              Format: Day/Month/Year (e.g., 25/12/2024)
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -247,9 +283,19 @@ export default function AddItemScreen() {
             onPress={handleSave}
             disabled={loading}
           >
-            <Text style={styles.saveButtonText}>
-              {loading ? 'Saving...' : 'Save Item'}
-            </Text>
+            {loading ? (
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            ) : (
+              <>
+                <IconSymbol 
+                  ios_icon_name="checkmark" 
+                  android_material_icon_name="check" 
+                  size={20} 
+                  color="#FFFFFF" 
+                />
+                <Text style={styles.saveButtonText}>Save Item</Text>
+              </>
+            )}
           </TouchableOpacity>
         </ScrollView>
 
@@ -283,7 +329,7 @@ export default function AddItemScreen() {
                       }}
                     >
                       <Text style={[styles.pickerOptionText, category === cat && styles.pickerOptionTextSelected]}>
-                        {getCategoryTranslation(cat)}
+                        {cat}
                       </Text>
                       {category === cat && (
                         <IconSymbol 
@@ -323,17 +369,17 @@ export default function AddItemScreen() {
                 <ScrollView style={styles.pickerScroll}>
                   {UNITS.map((u) => (
                     <TouchableOpacity
-                      key={u}
-                      style={[styles.pickerOption, unit === u && styles.pickerOptionSelected]}
+                      key={u.value}
+                      style={[styles.pickerOption, unit === u.value && styles.pickerOptionSelected]}
                       onPress={() => {
-                        setUnit(u);
+                        setUnit(u.value);
                         closeAllPickers();
                       }}
                     >
-                      <Text style={[styles.pickerOptionText, unit === u && styles.pickerOptionTextSelected]}>
-                        {getUnitTranslation(u)}
+                      <Text style={[styles.pickerOptionText, unit === u.value && styles.pickerOptionTextSelected]}>
+                        {u.label}
                       </Text>
-                      {unit === u && (
+                      {unit === u.value && (
                         <IconSymbol 
                           ios_icon_name="checkmark" 
                           android_material_icon_name="check" 
@@ -369,13 +415,25 @@ export default function AddItemScreen() {
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.pickerScroll}>
+                  <TouchableOpacity
+                    style={styles.customQuantityButton}
+                    onPress={handleCustomQuantityMode}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="pencil" 
+                      android_material_icon_name="edit" 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                    <Text style={styles.customQuantityButtonText}>Enter Custom Quantity</Text>
+                  </TouchableOpacity>
                   {QUANTITY_PRESETS.map((preset) => (
                     <TouchableOpacity
-                      key={preset}
+                      key={preset.value}
                       style={styles.pickerOption}
-                      onPress={() => handleQuantityPresetSelect(preset)}
+                      onPress={() => handleQuantityPresetSelect(preset.value)}
                     >
-                      <Text style={styles.pickerOptionText}>{preset}</Text>
+                      <Text style={styles.pickerOptionText}>{preset.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -431,6 +489,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     minHeight: 50,
   },
+  helperText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
   pickerButton: {
     backgroundColor: colors.backgroundAlt,
     borderRadius: 12,
@@ -457,6 +521,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     minHeight: 54,
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -528,6 +594,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickerOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  customQuantityButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.primary + '08',
+  },
+  customQuantityButtonText: {
+    fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
   },
