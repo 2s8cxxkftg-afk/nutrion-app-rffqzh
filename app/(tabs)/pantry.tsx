@@ -38,7 +38,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    ...typography.h1,
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
     flex: 1,
   },
   headerButtons: {
@@ -84,15 +86,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    ...typography.h2,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   emptyDescription: {
-    ...typography.body,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
+    lineHeight: 24,
   },
   itemCard: {
     backgroundColor: colors.surface,
@@ -118,12 +123,15 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   itemName: {
-    ...typography.h3,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
     marginBottom: spacing.xs,
   },
   itemCategory: {
-    ...typography.caption,
+    fontSize: 13,
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   itemActions: {
     flexDirection: 'row',
@@ -147,8 +155,9 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   itemQuantity: {
-    ...typography.body,
+    fontSize: 15,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   expirationBadge: {
     paddingHorizontal: spacing.sm,
@@ -156,8 +165,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   expirationText: {
-    ...typography.caption,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
@@ -235,7 +244,7 @@ function PantryScreenContent() {
               await deletePantryItem(itemId);
               await loadItems();
               Toast.show({
-                message: 'Item deleted',
+                message: '✅ Item deleted successfully!',
                 type: 'success',
               });
             } catch (error) {
@@ -317,7 +326,7 @@ function PantryScreenContent() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Pantry</Text>
+        <Text style={styles.headerTitle}>🥗 My Pantry</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.iconButton}
@@ -347,7 +356,7 @@ function PantryScreenContent() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search pantry..."
+          placeholder="🔍 Search your pantry..."
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -370,9 +379,9 @@ function PantryScreenContent() {
               color={colors.textSecondary}
               style={styles.emptyIcon}
             />
-            <Text style={styles.emptyTitle}>Your pantry is empty</Text>
+            <Text style={styles.emptyTitle}>🚀 Let&apos;s Get Started!</Text>
             <Text style={styles.emptyDescription}>
-              Start by adding items to track your food inventory
+              Your pantry is empty! Start adding items now to track your food inventory and never waste food again!
             </Text>
           </View>
         ) : (

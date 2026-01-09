@@ -38,16 +38,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    ...typography.h1,
+    fontSize: 32,
+    fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    fontWeight: '500',
   },
   featuresContainer: {
     marginVertical: spacing.xl,
@@ -69,14 +72,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    ...typography.h3,
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: spacing.xs,
   },
   featureDescription: {
-    ...typography.body,
+    fontSize: 15,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   pricingContainer: {
     backgroundColor: colors.surface,
@@ -84,27 +88,32 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginVertical: spacing.lg,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   badge: {
     backgroundColor: colors.success,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.round,
     marginBottom: spacing.md,
   },
   badgeText: {
-    ...typography.caption,
+    fontSize: 13,
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   pricingText: {
-    ...typography.h2,
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.text,
     marginBottom: spacing.xs,
   },
   cancelText: {
-    ...typography.caption,
+    fontSize: 14,
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   ctaButton: {
     backgroundColor: colors.primary,
@@ -121,16 +130,17 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 8,
       },
     }),
   },
   ctaButtonText: {
-    ...typography.button,
+    fontSize: 18,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   termsText: {
-    ...typography.caption,
+    fontSize: 12,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: spacing.lg,
@@ -143,29 +153,29 @@ const features = [
     icon: 'leaf.fill',
     androidIcon: 'eco',
     color: colors.success,
-    title: 'Smart Pantry Tracking',
-    description: 'Scan barcodes or manually add items to track your food inventory',
+    title: '🎯 Smart Pantry Tracking',
+    description: 'Scan barcodes instantly or add items manually - track your entire food inventory with ease!',
   },
   {
     icon: 'bell.fill',
     androidIcon: 'notifications',
     color: colors.warning,
-    title: 'Expiration Alerts',
-    description: 'Get notified before food expires so nothing goes to waste',
+    title: '⚡ Powerful Expiration Alerts',
+    description: 'Get notified before food expires so nothing goes to waste - save money and the planet!',
   },
   {
     icon: 'chart.bar.fill',
     androidIcon: 'bar_chart',
     color: colors.info,
-    title: 'Waste Analytics',
-    description: 'See how much money and food you\'re saving over time',
+    title: '📊 Amazing Waste Analytics',
+    description: 'Watch your savings grow! See exactly how much money and food you\'re saving over time!',
   },
   {
     icon: 'fork.knife',
     androidIcon: 'restaurant',
     color: colors.primary,
-    title: 'Meal Planning',
-    description: 'Get recipe suggestions based on what\'s in your pantry',
+    title: '🍳 Intelligent Meal Planning',
+    description: 'Get delicious recipe suggestions based on what\'s already in your pantry - cooking made easy!',
   },
 ];
 
@@ -193,9 +203,9 @@ export default function SubscriptionIntroScreen() {
               color={colors.primary} 
             />
           </View>
-          <Text style={styles.title}>Welcome to Nutrion</Text>
+          <Text style={styles.title}>🚀 Welcome to Nutrion!</Text>
           <Text style={styles.subtitle}>
-            Track your pantry, reduce waste, and save money with smart food management
+            Transform your kitchen! Track your pantry, eliminate waste, and save money with smart food management!
           </Text>
         </View>
 
@@ -225,14 +235,14 @@ export default function SubscriptionIntroScreen() {
 
         <View style={styles.pricingContainer}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>15 DAYS FREE TRIAL</Text>
+            <Text style={styles.badgeText}>🎉 15 DAYS FREE TRIAL!</Text>
           </View>
-          <Text style={styles.pricingText}>$1.99/month after trial</Text>
-          <Text style={styles.cancelText}>Cancel anytime</Text>
+          <Text style={styles.pricingText}>Only $1.99/month</Text>
+          <Text style={styles.cancelText}>Cancel anytime - No commitment!</Text>
         </View>
 
         <TouchableOpacity style={styles.ctaButton} onPress={handleStartTrial}>
-          <Text style={styles.ctaButtonText}>Start Free Trial →</Text>
+          <Text style={styles.ctaButtonText}>🚀 Start Your Free Trial Now!</Text>
         </TouchableOpacity>
 
         <Text style={styles.termsText}>

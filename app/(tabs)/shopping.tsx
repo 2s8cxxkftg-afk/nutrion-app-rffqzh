@@ -38,11 +38,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    ...typography.h1,
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
   },
   headerStats: {
-    ...typography.caption,
+    fontSize: 13,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   addItemContainer: {
     flexDirection: 'row',
@@ -74,7 +77,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   content: {
     flex: 1,
@@ -90,7 +93,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   sectionTitle: {
-    ...typography.h2,
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text,
   },
   clearButton: {
     paddingHorizontal: spacing.md,
@@ -101,7 +106,7 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: colors.error,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   itemCard: {
     flexDirection: 'row',
@@ -130,7 +135,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    ...typography.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
     marginBottom: spacing.xs,
   },
   itemNameCompleted: {
@@ -138,8 +145,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   itemQuantity: {
-    ...typography.caption,
+    fontSize: 13,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   itemActions: {
     flexDirection: 'row',
@@ -163,15 +171,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    ...typography.h2,
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   emptyDescription: {
-    ...typography.body,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
+    lineHeight: 24,
   },
   modalOverlay: {
     flex: 1,
@@ -187,7 +198,9 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   modalTitle: {
-    ...typography.h2,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
     marginBottom: spacing.md,
   },
   modalInput: {
@@ -219,7 +232,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   modalButtonTextCancel: {
     color: colors.text,
@@ -428,9 +441,9 @@ function ShoppingScreenContent() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Shopping List</Text>
+          <Text style={styles.headerTitle}>🛒 Shopping List</Text>
           <Text style={styles.headerStats}>
-            {pendingItems.length} {pendingItems.length === 1 ? 'item' : 'items'} to buy
+            {pendingItems.length === 0 ? '🎉 All done!' : `⚡ ${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'items'} to grab!`}
           </Text>
         </View>
       </View>
@@ -442,7 +455,7 @@ function ShoppingScreenContent() {
         <View style={styles.addItemContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Add item to shopping list..."
+            placeholder="✨ Add item to your list..."
             placeholderTextColor={colors.textSecondary}
             value={newItemName}
             onChangeText={setNewItemName}
@@ -470,9 +483,9 @@ function ShoppingScreenContent() {
                 color={colors.textSecondary}
                 style={styles.emptyIcon}
               />
-              <Text style={styles.emptyTitle}>Shopping list is empty</Text>
+              <Text style={styles.emptyTitle}>🚀 Ready to Shop!</Text>
               <Text style={styles.emptyDescription}>
-                Add items you need to buy from the store
+                Start adding items you need to buy and make grocery shopping a breeze!
               </Text>
             </View>
           ) : (
@@ -480,7 +493,7 @@ function ShoppingScreenContent() {
               {pendingItems.length > 0 && (
                 <>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>To Buy</Text>
+                    <Text style={styles.sectionTitle}>⚡ To Buy</Text>
                   </View>
                   {pendingItems.map(renderShoppingItem)}
                 </>
@@ -489,12 +502,12 @@ function ShoppingScreenContent() {
               {completedItems.length > 0 && (
                 <>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Completed</Text>
+                    <Text style={styles.sectionTitle}>✅ Completed</Text>
                     <TouchableOpacity
                       style={styles.clearButton}
                       onPress={handleClearCompleted}
                     >
-                      <Text style={styles.clearButtonText}>Clear</Text>
+                      <Text style={styles.clearButtonText}>Clear All</Text>
                     </TouchableOpacity>
                   </View>
                   {completedItems.map(renderShoppingItem)}

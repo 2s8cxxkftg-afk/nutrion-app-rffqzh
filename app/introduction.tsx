@@ -19,22 +19,22 @@ const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 const onboardingData = [
   {
-    title: 'Smart Pantry Management',
-    description: 'Track your food inventory with barcode scanning and expiration alerts',
+    title: '🚀 Smart Pantry Revolution!',
+    description: 'Track every item with lightning-fast barcode scanning and never miss an expiration date again!',
     iosIcon: 'archivebox.fill',
     androidIcon: 'inventory',
     color: '#4CAF50',
   },
   {
-    title: 'Never Waste Food Again',
-    description: 'Get notified before items expire and reduce food waste',
+    title: '💪 Zero Food Waste Mission!',
+    description: 'Get powerful alerts before items expire and save money while saving the planet!',
     iosIcon: 'bell.badge.fill',
     androidIcon: 'notifications',
     color: '#FF9800',
   },
   {
-    title: 'Shopping List Made Easy',
-    description: 'Create and manage your shopping lists effortlessly',
+    title: '⚡ Shopping Made Effortless!',
+    description: 'Create and manage your shopping lists in seconds - grocery shopping has never been this easy!',
     iosIcon: 'cart.fill',
     androidIcon: 'shopping_cart',
     color: '#2196F3',
@@ -98,7 +98,7 @@ export default function IntroductionScreen() {
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentPage === onboardingData.length - 1 ? 'Start Free Trial' : 'Next'}
+            {currentPage === onboardingData.length - 1 ? '🎉 Start Your Free Trial!' : 'Next →'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -126,18 +126,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: '#1A1A1A',
     textAlign: 'center',
     marginBottom: spacing.md,
+    letterSpacing: -0.5,
   },
   description: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
     paddingHorizontal: spacing.md,
+    fontWeight: '500',
   },
   footer: {
     paddingHorizontal: spacing.lg,
@@ -164,10 +166,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
     alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   nextButtonText: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

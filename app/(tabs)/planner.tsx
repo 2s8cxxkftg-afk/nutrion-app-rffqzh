@@ -29,21 +29,21 @@ interface MealSuggestion {
 const SAMPLE_MEALS: MealSuggestion[] = [
   {
     id: '1',
-    name: 'Quick Pasta',
+    name: '⚡ Quick Pasta Delight',
     ingredients: ['Pasta', 'Tomato Sauce', 'Cheese'],
     prepTime: '15 min',
     difficulty: 'Easy',
   },
   {
     id: '2',
-    name: 'Chicken Stir Fry',
+    name: '🔥 Amazing Chicken Stir Fry',
     ingredients: ['Chicken', 'Vegetables', 'Soy Sauce', 'Rice'],
     prepTime: '25 min',
     difficulty: 'Medium',
   },
   {
     id: '3',
-    name: 'Fresh Salad',
+    name: '🥗 Super Fresh Salad',
     ingredients: ['Lettuce', 'Tomatoes', 'Cucumber', 'Dressing'],
     prepTime: '10 min',
     difficulty: 'Easy',
@@ -114,9 +114,9 @@ function PlannerScreenContent() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>{t('planner.title') || 'Meal Planner'}</Text>
+          <Text style={styles.headerTitle}>🍳 Meal Planner</Text>
           <Text style={styles.headerSubtitle}>
-            {availableCount} {t('planner.ingredientsAvailable') || 'ingredients available'}
+            🎉 {availableCount} amazing ingredients ready to use!
           </Text>
         </View>
         <TouchableOpacity style={styles.generateButton}>
@@ -139,7 +139,7 @@ function PlannerScreenContent() {
       >
         {/* Day Selector */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('planner.selectDay') || 'Select Day'}</Text>
+          <Text style={styles.sectionTitle}>📅 Pick Your Day!</Text>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
@@ -169,9 +169,9 @@ function PlannerScreenContent() {
 
         {/* Meal Suggestions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('planner.suggestions') || 'Meal Suggestions'}</Text>
+          <Text style={styles.sectionTitle}>✨ Delicious Meal Ideas!</Text>
           <Text style={styles.sectionSubtitle}>
-            {t('planner.suggestionsDesc') || 'Based on your available ingredients'}
+            Perfectly matched to your available ingredients!
           </Text>
 
           {SAMPLE_MEALS.map((meal) => (
@@ -222,7 +222,7 @@ function PlannerScreenContent() {
 
               <TouchableOpacity style={styles.addToPlanButton}>
                 <Text style={styles.addToPlanButtonText}>
-                  {t('planner.addToPlan') || 'Add to Plan'}
+                  🚀 Add to My Plan!
                 </Text>
                 <IconSymbol 
                   ios_icon_name="plus" 
@@ -245,10 +245,10 @@ function PlannerScreenContent() {
               color={colors.textLight} 
             />
             <Text style={styles.emptyStateTitle}>
-              {t('planner.emptyTitle') || 'No Ingredients Available'}
+              🎯 Let&apos;s Fill Your Pantry!
             </Text>
             <Text style={styles.emptyStateText}>
-              {t('planner.emptyDesc') || 'Add items to your pantry to get meal suggestions'}
+              Add items to your pantry now to unlock amazing meal suggestions and start cooking delicious meals!
             </Text>
           </View>
         )}
@@ -275,13 +275,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
   },
   headerSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
+    fontWeight: '600',
   },
   generateButton: {
     backgroundColor: colors.primary,
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginBottom: spacing.xs,
   },
@@ -313,6 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: spacing.md,
+    fontWeight: '500',
   },
   daysContainer: {
     paddingVertical: spacing.sm,
@@ -330,7 +332,7 @@ const styles = StyleSheet.create({
   },
   dayButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   dayButtonTextActive: {
@@ -364,7 +366,7 @@ const styles = StyleSheet.create({
   },
   mealName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginBottom: spacing.xs,
   },
@@ -381,6 +383,7 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     color: colors.textSecondary,
+    fontWeight: '600',
   },
   difficultyBadge: {
     paddingHorizontal: spacing.sm,
@@ -389,7 +392,7 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   ingredientsList: {
     marginBottom: spacing.md,
@@ -403,6 +406,7 @@ const styles = StyleSheet.create({
   ingredientText: {
     fontSize: 14,
     color: colors.text,
+    fontWeight: '500',
   },
   addToPlanButton: {
     flexDirection: 'row',
@@ -411,12 +415,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.sm,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
   addToPlanButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
   },
   emptyState: {
@@ -426,18 +431,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: colors.text,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '500',
   },
 });
 
