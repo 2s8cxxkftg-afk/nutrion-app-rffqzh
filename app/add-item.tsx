@@ -5,7 +5,6 @@ import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pa
 import { addPantryItem } from '@/utils/storage';
 import Toast from '@/components/Toast';
 import React, { useState, useRef, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
@@ -24,7 +23,6 @@ import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirati
 import { Stack, useRouter } from 'expo-router';
 
 export default function AddItemScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
 
   const [name, setName] = useState('');
@@ -88,13 +86,13 @@ export default function AddItemScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert(t('error'), t('pleaseEnterItemName'));
+      Alert.alert('Error', 'Please enter item name');
       return;
     }
 
     const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      Alert.alert(t('error'), t('pleaseEnterValidDate'));
+      Alert.alert('Error', 'Please enter valid date');
       return;
     }
 
@@ -112,11 +110,11 @@ export default function AddItemScreen() {
 
     try {
       await addPantryItem(newItem);
-      Toast.show(t('itemAddedSuccessfully'), 'success');
+      Toast.show({ message: 'Item added successfully', type: 'success' });
       router.back();
     } catch (error) {
       console.error('Error adding item:', error);
-      Alert.alert(t('error'), t('failedToAddItem'));
+      Alert.alert('Error', 'Failed to add item');
     } finally {
       setLoading(false);
     }
@@ -150,20 +148,18 @@ export default function AddItemScreen() {
   };
 
   const getCategoryTranslation = (cat: string) => {
-    const key = `category_${cat}`;
-    return t(key);
+    return cat.charAt(0).toUpperCase() + cat.slice(1);
   };
 
   const getUnitTranslation = (unitValue: string) => {
-    const key = `unit_${unitValue}`;
-    return t(key);
+    return unitValue;
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen
         options={{
-          title: t('addItem'),
+          title: 'Add Item',
           headerShown: true,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
@@ -181,24 +177,24 @@ export default function AddItemScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.formSection}>
-            <Text style={styles.label}>{t('itemName')}</Text>
+            <Text style={styles.label}>Item Name</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={handleNameChange}
-              placeholder={t('enterItemName')}
+              placeholder="Enter item name"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
             />
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>{t('category')}</Text>
+            <Text style={styles.label}>Category</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={openCategoryPicker}>
               <Text style={styles.pickerButtonText}>{getCategoryTranslation(category)}</Text>
               <IconSymbol 
                 ios_icon_name="chevron.down" 
-                android_material_icon_name="expand-more" 
+                android_material_icon_name="expand_more" 
                 size={20} 
                 color={colors.textSecondary} 
               />
@@ -207,12 +203,12 @@ export default function AddItemScreen() {
 
           <View style={styles.row}>
             <View style={[styles.formSection, styles.halfWidth]}>
-              <Text style={styles.label}>{t('quantity')}</Text>
+              <Text style={styles.label}>Quantity</Text>
               <TouchableOpacity style={styles.pickerButton} onPress={openQuantityPicker}>
                 <Text style={styles.pickerButtonText}>{quantity}</Text>
                 <IconSymbol 
                   ios_icon_name="chevron.down" 
-                  android_material_icon_name="expand-more" 
+                  android_material_icon_name="expand_more" 
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -220,12 +216,12 @@ export default function AddItemScreen() {
             </View>
 
             <View style={[styles.formSection, styles.halfWidth]}>
-              <Text style={styles.label}>{t('unit')}</Text>
+              <Text style={styles.label}>Unit</Text>
               <TouchableOpacity style={styles.pickerButton} onPress={openUnitPicker}>
                 <Text style={styles.pickerButtonText}>{getUnitTranslation(unit)}</Text>
                 <IconSymbol 
                   ios_icon_name="chevron.down" 
-                  android_material_icon_name="expand-more" 
+                  android_material_icon_name="expand_more" 
                   size={20} 
                   color={colors.textSecondary} 
                 />
@@ -234,7 +230,7 @@ export default function AddItemScreen() {
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>{t('expirationDate')}</Text>
+            <Text style={styles.label}>Expiration Date</Text>
             <TextInput
               style={styles.input}
               value={expirationDate}
@@ -252,7 +248,7 @@ export default function AddItemScreen() {
             disabled={loading}
           >
             <Text style={styles.saveButtonText}>
-              {loading ? t('saving') : t('saveItem')}
+              {loading ? 'Saving...' : 'Save Item'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -266,7 +262,7 @@ export default function AddItemScreen() {
             >
               <View style={styles.pickerContainer}>
                 <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>{t('selectCategory')}</Text>
+                  <Text style={styles.pickerTitle}>Select Category</Text>
                   <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <IconSymbol 
                       ios_icon_name="xmark" 
@@ -314,7 +310,7 @@ export default function AddItemScreen() {
             >
               <View style={styles.pickerContainer}>
                 <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>{t('selectUnit')}</Text>
+                  <Text style={styles.pickerTitle}>Select Unit</Text>
                   <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <IconSymbol 
                       ios_icon_name="xmark" 
@@ -362,7 +358,7 @@ export default function AddItemScreen() {
             >
               <View style={styles.pickerContainer}>
                 <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>{t('selectQuantity')}</Text>
+                  <Text style={styles.pickerTitle}>Select Quantity</Text>
                   <TouchableOpacity onPress={closeAllPickers} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <IconSymbol 
                       ios_icon_name="xmark" 

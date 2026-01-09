@@ -18,7 +18,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
-import { useTranslation } from 'react-i18next';
 
 interface PasswordRequirement {
   label: string;
@@ -28,7 +27,6 @@ interface PasswordRequirement {
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,27 +47,27 @@ export default function AuthScreen() {
     return [
       {
         key: 'length',
-        label: t('auth.passwordMinLength') || 'At least 8 characters',
+        label: 'At least 8 characters',
         met: pwd.length >= 8,
       },
       {
         key: 'uppercase',
-        label: t('auth.passwordUppercase') || 'One uppercase letter (A-Z)',
+        label: 'One uppercase letter (A-Z)',
         met: /[A-Z]/.test(pwd),
       },
       {
         key: 'lowercase',
-        label: t('auth.passwordLowercase') || 'One lowercase letter (a-z)',
+        label: 'One lowercase letter (a-z)',
         met: /[a-z]/.test(pwd),
       },
       {
         key: 'number',
-        label: t('auth.passwordNumber') || 'One number (0-9)',
+        label: 'One number (0-9)',
         met: /[0-9]/.test(pwd),
       },
       {
         key: 'special',
-        label: t('auth.passwordSpecial') || 'One special character (!@#$%^&*)',
+        label: 'One special character (!@#$%^&*)',
         met: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
       },
     ];
@@ -81,22 +79,22 @@ export default function AuthScreen() {
   const handleEmailAuth = async () => {
     // Validate inputs
     if (!email || !password) {
-      Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
+      Toast.show({ type: 'error', message: 'Please fill all fields' });
       return;
     }
 
     if (!isLogin && (!firstName.trim() || !lastName.trim())) {
-      Toast.show({ type: 'error', message: t('auth.fillAllFields') || 'Please fill all fields' });
+      Toast.show({ type: 'error', message: 'Please fill all fields' });
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show({ type: 'error', message: t('auth.invalidEmail') || 'Invalid email address' });
+      Toast.show({ type: 'error', message: 'Invalid email address' });
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Toast.show({ type: 'error', message: t('auth.passwordsDoNotMatch') || 'Passwords do not match' });
+      Toast.show({ type: 'error', message: 'Passwords do not match' });
       return;
     }
 
@@ -105,7 +103,7 @@ export default function AuthScreen() {
       if (!allRequirementsMet) {
         Toast.show({ 
           type: 'error', 
-          message: t('auth.passwordRequirementsNotMet') || 'Please meet all password requirements' 
+          message: 'Please meet all password requirements' 
         });
         return;
       }
@@ -114,7 +112,7 @@ export default function AuthScreen() {
       if (password.length < 6) {
         Toast.show({ 
           type: 'error', 
-          message: t('auth.passwordTooShort') || 'Password must be at least 6 characters' 
+          message: 'Password must be at least 6 characters' 
         });
         return;
       }
@@ -139,11 +137,11 @@ export default function AuthScreen() {
           if (error.message.includes('Invalid login credentials') || 
               error.message.includes('invalid') || 
               error.message.includes('credentials')) {
-            errorMessage = t('auth.invalidCredentials') || 'Invalid email or password. Please check your credentials and try again.';
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
           } else if (error.message.includes('Email not confirmed')) {
-            errorMessage = t('auth.emailNotConfirmed') || 'Please verify your email address before signing in.';
+            errorMessage = 'Please verify your email address before signing in.';
           } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
-            errorMessage = t('auth.rateLimitExceeded') || 'Too many attempts. Please wait a few minutes and try again.';
+            errorMessage = 'Too many attempts. Please wait a few minutes and try again.';
           }
           
           Toast.show({ type: 'error', message: errorMessage });
@@ -151,7 +149,7 @@ export default function AuthScreen() {
         }
 
         console.log('✅ Sign in successful:', data.user?.email);
-        Toast.show({ type: 'success', message: t('auth.welcomeBack') || 'Welcome back!' });
+        Toast.show({ type: 'success', message: 'Welcome back!' });
         
         // Navigate to subscription intro
         setTimeout(() => {
@@ -181,12 +179,11 @@ export default function AuthScreen() {
           let errorMessage = error.message;
           
           if (error.message.includes('rate limit') || error.message.includes('email rate limit exceeded')) {
-            errorMessage = t('auth.emailRateLimitExceeded') || 
-              'Email rate limit exceeded. Please wait a few minutes before trying again. This helps us prevent spam and protect your account.';
+            errorMessage = 'Email rate limit exceeded. Please wait a few minutes before trying again. This helps us prevent spam and protect your account.';
           } else if (error.message.includes('User already registered') || error.message.includes('already registered')) {
-            errorMessage = t('auth.userAlreadyExists') || 'An account with this email already exists. Please sign in instead.';
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
           } else if (error.message.includes('Password')) {
-            errorMessage = t('auth.passwordRequirementsNotMet') || 'Password does not meet security requirements.';
+            errorMessage = 'Password does not meet security requirements.';
           }
           
           Toast.show({ type: 'error', message: errorMessage });
@@ -222,7 +219,7 @@ export default function AuthScreen() {
           // Email confirmation required - navigate to OTP verification
           Toast.show({ 
             type: 'success', 
-            message: t('auth.verificationCodeSent') || 'Verification code sent to your email!' 
+            message: 'Verification code sent to your email!' 
           });
           
           setTimeout(() => {
@@ -233,7 +230,7 @@ export default function AuthScreen() {
           }, 500);
         } else {
           // Auto-confirmed, proceed to subscription intro
-          Toast.show({ type: 'success', message: t('auth.accountCreated') || 'Account created successfully!' });
+          Toast.show({ type: 'success', message: 'Account created successfully!' });
           
           setTimeout(() => {
             router.replace('/subscription-intro');
@@ -242,7 +239,7 @@ export default function AuthScreen() {
       }
     } catch (error: any) {
       console.error('❌ Auth error:', error);
-      Toast.show({ type: 'error', message: t('auth.unexpectedError') || 'An unexpected error occurred' });
+      Toast.show({ type: 'error', message: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -283,7 +280,7 @@ export default function AuthScreen() {
             {/* First Name Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>{t('auth.firstName') || 'First Name'}</Text>
+                <Text style={styles.inputLabel}>First Name</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <IconSymbol 
@@ -295,7 +292,7 @@ export default function AuthScreen() {
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder={t('auth.firstNamePlaceholder') || 'Enter your first name'}
+                    placeholder="Enter your first name"
                     placeholderTextColor={colors.textSecondary}
                     value={firstName}
                     onChangeText={setFirstName}
@@ -310,7 +307,7 @@ export default function AuthScreen() {
             {/* Last Name Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>{t('auth.lastName') || 'Last Name'}</Text>
+                <Text style={styles.inputLabel}>Last Name</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <IconSymbol 
@@ -322,7 +319,7 @@ export default function AuthScreen() {
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder={t('auth.lastNamePlaceholder') || 'Enter your last name'}
+                    placeholder="Enter your last name"
                     placeholderTextColor={colors.textSecondary}
                     value={lastName}
                     onChangeText={setLastName}
@@ -336,7 +333,7 @@ export default function AuthScreen() {
 
             {/* Email Input */}
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>{t('auth.emailAddress') || 'Email Address'}</Text>
+              <Text style={styles.inputLabel}>Email Address</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
                   <IconSymbol 
@@ -362,7 +359,7 @@ export default function AuthScreen() {
 
             {/* Password Input */}
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>{t('auth.password') || 'Password'}</Text>
+              <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconContainer}>
                   <IconSymbol 
@@ -374,7 +371,7 @@ export default function AuthScreen() {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder={t('auth.password') || 'Enter your password'}
+                  placeholder="Enter your password"
                   placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
@@ -401,7 +398,7 @@ export default function AuthScreen() {
             {!isLogin && password.length > 0 && (
               <View style={styles.passwordRequirementsContainer}>
                 <Text style={styles.passwordRequirementsTitle}>
-                  {t('auth.passwordRequirements') || 'Password Requirements:'}
+                  Password Requirements:
                 </Text>
                 {passwordRequirements.map((req) => (
                   <View key={req.key} style={styles.requirementRow}>
@@ -425,7 +422,7 @@ export default function AuthScreen() {
             {/* Confirm Password Input (Sign Up only) */}
             {!isLogin && (
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>{t('auth.confirmPassword') || 'Confirm Password'}</Text>
+                <Text style={styles.inputLabel}>Confirm Password</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <IconSymbol 
@@ -437,7 +434,7 @@ export default function AuthScreen() {
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder={t('auth.confirmPasswordPlaceholder') || 'Confirm your password'}
+                    placeholder="Confirm your password"
                     placeholderTextColor={colors.textSecondary}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -469,7 +466,7 @@ export default function AuthScreen() {
                 disabled={loading}
               >
                 <Text style={styles.forgotPasswordText}>
-                  {t('auth.forgotPassword') || 'Forgot your password?'}
+                  Forgot your password?
                 </Text>
               </TouchableOpacity>
             )}
@@ -485,7 +482,7 @@ export default function AuthScreen() {
               ) : (
                 <React.Fragment>
                   <Text style={styles.submitButtonText}>
-                    {isLogin ? (t('auth.signIn') || 'Sign In') : (t('auth.signUp') || 'Create Account')}
+                    {isLogin ? 'Sign In' : 'Create Account'}
                   </Text>
                   <IconSymbol 
                     ios_icon_name="arrow.right" 
@@ -504,7 +501,7 @@ export default function AuthScreen() {
               </Text>
               <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}>
                 <Text style={styles.toggleLink}>
-                  {isLogin ? (t('auth.signUp') || 'Sign Up') : (t('auth.signIn') || 'Sign In')}
+                  {isLogin ? 'Sign Up' : 'Sign In'}
                 </Text>
               </TouchableOpacity>
             </View>
