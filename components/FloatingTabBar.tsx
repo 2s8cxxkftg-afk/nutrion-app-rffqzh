@@ -58,11 +58,14 @@ export default function FloatingTabBar({
 
       if (pathname === tab.route) {
         score = 100;
-      } else if (pathname.startsWith(tab.route as string)) {
+      }
+      else if (pathname.startsWith(tab.route as string)) {
         score = 80;
-      } else if (pathname.includes(tab.name)) {
+      }
+      else if (pathname.includes(tab.name)) {
         score = 60;
-      } else if (tab.route.includes('/(tabs)/') && pathname.includes(tab.route.split('/(tabs)/')[1])) {
+      }
+      else if (tab.route.includes('/(tabs)/') && pathname.includes(tab.route.split('/(tabs)/')[1])) {
         score = 40;
       }
 
@@ -148,7 +151,7 @@ export default function FloatingTabBar({
         styles.container,
         {
           width: containerWidth,
-          marginBottom: bottomMargin ?? 20
+          marginBottom: bottomMargin ?? 8
         }
       ]}>
         <BlurView

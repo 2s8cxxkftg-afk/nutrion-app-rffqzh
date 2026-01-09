@@ -22,7 +22,6 @@ import { NutritionixFood, PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
-import { useTranslation } from 'react-i18next';
 import { predictExpirationDate, getExpirationEstimation } from '@/utils/expirationHelper';
 import { categorizeFoodItem } from '@/utils/categoryHelper';
 
@@ -30,7 +29,6 @@ const NUTRITIONIX_APP_ID = 'YOUR_APP_ID';
 const NUTRITIONIX_APP_KEY = 'YOUR_APP_KEY';
 
 export default function FoodSearchScreen() {
-  const { t } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<NutritionixFood[]>([]);
@@ -154,7 +152,7 @@ export default function FoodSearchScreen() {
               console.log('Food added to pantry:', newItem);
 
               Toast.show({
-                message: t('pantry.itemAdded'),
+                message: 'Item added to pantry!',
                 type: 'success',
               });
 
@@ -219,7 +217,7 @@ export default function FoodSearchScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('searchForFoods'),
+          title: 'Search for Foods',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'card',
@@ -242,7 +240,7 @@ export default function FoodSearchScreen() {
               />
               <TextInput
                 style={styles.searchInput}
-                placeholder={t('searchPlaceholder')}
+                placeholder="Search for foods..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -278,7 +276,7 @@ export default function FoodSearchScreen() {
                 size={24} 
                 color={colors.textSecondary} 
               />
-              <Text style={styles.hintText}>{t('searchHint')}</Text>
+              <Text style={styles.hintText}>Type at least 2 characters to search for foods</Text>
             </View>
           )}
 
@@ -296,7 +294,7 @@ export default function FoodSearchScreen() {
             ) : searchResults.length > 0 ? (
               <>
                 <Text style={styles.resultsTitle}>
-                  {t('resultsFor', { count: searchResults.length, query: searchQuery })}
+                  Found {searchResults.length} results for &quot;{searchQuery}&quot;
                 </Text>
                 {searchResults.map(renderFoodItem)}
               </>
@@ -310,9 +308,9 @@ export default function FoodSearchScreen() {
                     color={colors.textTertiary} 
                   />
                 </View>
-                <Text style={commonStyles.emptyStateTitle}>{t('noResults')}</Text>
+                <Text style={commonStyles.emptyStateTitle}>No results found</Text>
                 <Text style={commonStyles.emptyStateDescription}>
-                  {t('tryDifferent')}
+                  Try a different search term
                 </Text>
               </View>
             ) : null}
