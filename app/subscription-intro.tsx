@@ -1,180 +1,17 @@
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/utils/supabase';
-import { useRouter } from 'expo-router';
-import { startFreeTrial, getSubscription } from '@/utils/subscription';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  Image,
-  ActivityIndicator,
+  TouchableOpacity,
   Platform,
 } from 'react-native';
-import React, { useState } from 'react';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTranslation } from 'react-i18next';
-import Toast from '@/components/Toast';
-
-const SUBSCRIPTION_INTRO_KEY = '@subscription_intro_shown';
-
-export default function SubscriptionIntroScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const handleStartFreeTrial = async () => {
-    try {
-      setLoading(true);
-      
-      // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        Toast.show(t('subscription.pleaseSignIn'), 'error');
-        router.replace('/auth');
-        return;
-      }
-
-      // Start free trial
-      await startFreeTrial();
-      
-      // Mark intro as shown
-      await AsyncStorage.setItem(SUBSCRIPTION_INTRO_KEY, 'true');
-      
-      Toast.show(t('subscription.trialStarted'), 'success');
-      router.replace('/(tabs)/pantry');
-    } catch (error) {
-      console.error('Error starting trial:', error);
-      Toast.show(t('subscription.trialError'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.iconContainer}>
-            <IconSymbol 
-              ios_icon_name="leaf.fill" 
-              android_material_icon_name="eco" 
-              size={60} 
-              color={colors.primary} 
-            />
-          </View>
-          <Text style={styles.title}>{t('subscription.welcomeTitle')}</Text>
-          <Text style={styles.subtitle}>{t('subscription.welcomeSubtitle')}</Text>
-        </View>
-
-        {/* Features List */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.primary + '20' }]}>
-              <IconSymbol 
-                ios_icon_name="camera.fill" 
-                android_material_icon_name="camera" 
-                size={24} 
-                color={colors.primary} 
-              />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{t('subscription.feature1Title')}</Text>
-              <Text style={styles.featureDescription}>{t('subscription.feature1Description')}</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.warning + '20' }]}>
-              <IconSymbol 
-                ios_icon_name="bell.fill" 
-                android_material_icon_name="notifications" 
-                size={24} 
-                color={colors.warning} 
-              />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{t('subscription.feature2Title')}</Text>
-              <Text style={styles.featureDescription}>{t('subscription.feature2Description')}</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.success + '20' }]}>
-              <IconSymbol 
-                ios_icon_name="chart.bar.fill" 
-                android_material_icon_name="bar-chart" 
-                size={24} 
-                color={colors.success} 
-              />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{t('subscription.feature3Title')}</Text>
-              <Text style={styles.featureDescription}>{t('subscription.feature3Description')}</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureItem}>
-            <View style={[styles.featureIcon, { backgroundColor: colors.info + '20' }]}>
-              <IconSymbol 
-                ios_icon_name="fork.knife" 
-                android_material_icon_name="restaurant" 
-                size={24} 
-                color={colors.info} 
-              />
-            </View>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{t('subscription.feature4Title')}</Text>
-              <Text style={styles.featureDescription}>{t('subscription.feature4Description')}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Pricing Info */}
-        <View style={styles.pricingContainer}>
-          <View style={styles.pricingBadge}>
-            <Text style={styles.pricingBadgeText}>{t('subscription.freeTrialBadge')}</Text>
-          </View>
-          <Text style={styles.pricingText}>{t('subscription.pricingInfo')}</Text>
-          <Text style={styles.pricingSubtext}>{t('subscription.cancelAnytime')}</Text>
-        </View>
-      </ScrollView>
-
-      {/* Bottom CTA */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
-          onPress={handleStartFreeTrial}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Text style={styles.ctaButtonText}>{t('subscription.startFreeTrial')}</Text>
-              <IconSymbol 
-                ios_icon_name="arrow.right" 
-                android_material_icon_name="arrow-forward" 
-                size={20} 
-                color="#fff" 
-              />
-            </>
-          )}
-        </TouchableOpacity>
-        <Text style={styles.termsText}>{t('subscription.termsText')}</Text>
-      </View>
-    </SafeAreaView>
-  );
-}
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
 
 const styles = StyleSheet.create({
   container: {
@@ -182,119 +19,213 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  heroSection: {
-    alignItems: 'center',
     paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary + '15',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   title: {
     ...typography.h1,
+    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   subtitle: {
     ...typography.body,
-    textAlign: 'center',
     color: colors.textSecondary,
-    paddingHorizontal: spacing.md,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   featuresContainer: {
-    marginTop: spacing.xl,
-    gap: spacing.lg,
+    marginVertical: spacing.xl,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.lg,
+  featureIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing.md,
   },
-  featureText: {
+  featureContent: {
     flex: 1,
-    paddingTop: spacing.xs,
   },
   featureTitle: {
     ...typography.h3,
+    color: colors.text,
     marginBottom: spacing.xs,
   },
   featureDescription: {
     ...typography.body,
     color: colors.textSecondary,
+    lineHeight: 20,
   },
   pricingContainer: {
-    marginTop: spacing.xl,
-    padding: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginVertical: spacing.lg,
     alignItems: 'center',
   },
-  pricingBadge: {
-    backgroundColor: colors.primary,
+  badge: {
+    backgroundColor: colors.success,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     marginBottom: spacing.md,
   },
-  pricingBadgeText: {
+  badgeText: {
     ...typography.caption,
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   pricingText: {
     ...typography.h2,
-    textAlign: 'center',
+    color: colors.text,
     marginBottom: spacing.xs,
   },
-  pricingSubtext: {
-    ...typography.body,
+  cancelText: {
+    ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  bottomContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   ctaButton: {
     backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
-    flexDirection: 'row',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.6,
+    marginTop: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   ctaButtonText: {
     ...typography.button,
-    color: '#fff',
+    color: '#FFFFFF',
   },
   termsText: {
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.md,
+    marginTop: spacing.lg,
+    lineHeight: 18,
   },
 });
+
+const features = [
+  {
+    icon: 'leaf.fill',
+    color: colors.success,
+    title: 'Smart Pantry Tracking',
+    description: 'Scan barcodes or manually add items to track your food inventory',
+  },
+  {
+    icon: 'bell.fill',
+    color: colors.warning,
+    title: 'Expiration Alerts',
+    description: 'Get notified before food expires so nothing goes to waste',
+  },
+  {
+    icon: 'chart.bar.fill',
+    color: colors.info,
+    title: 'Waste Analytics',
+    description: 'See how much money and food you\'re saving over time',
+  },
+  {
+    icon: 'fork.knife',
+    color: colors.primary,
+    title: 'Meal Planning',
+    description: 'Get recipe suggestions based on what\'s in your pantry',
+  },
+];
+
+export default function SubscriptionIntroScreen() {
+  const router = useRouter();
+
+  const handleStartTrial = () => {
+    router.push('/auth');
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <IconSymbol name="leaf.fill" size={40} color={colors.primary} />
+          </View>
+          <Text style={styles.title}>Welcome to Nutrion Premium</Text>
+          <Text style={styles.subtitle}>
+            Track your pantry, reduce waste, and save money with smart food management
+          </Text>
+        </View>
+
+        <View style={styles.featuresContainer}>
+          {features.map((feature, index) => (
+            <View key={index} style={styles.featureItem}>
+              <View
+                style={[
+                  styles.featureIconContainer,
+                  { backgroundColor: `${feature.color}20` },
+                ]}
+              >
+                <IconSymbol name={feature.icon} size={20} color={feature.color} />
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureDescription}>{feature.description}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.pricingContainer}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>15 DAYS FREE TRIAL</Text>
+          </View>
+          <Text style={styles.pricingText}>$2/month after trial</Text>
+          <Text style={styles.cancelText}>Cancel anytime</Text>
+        </View>
+
+        <TouchableOpacity style={styles.ctaButton} onPress={handleStartTrial}>
+          <Text style={styles.ctaButtonText}>Start Free Trial →</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.termsText}>
+          By continuing, you agree to our Terms of Service and Privacy Policy.
+          Your trial will automatically convert to a paid subscription unless cancelled.
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

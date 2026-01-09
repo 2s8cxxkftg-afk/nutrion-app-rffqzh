@@ -92,7 +92,7 @@ export default function AddItemScreen() {
 
     const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      Alert.alert('Error', 'Please enter valid date');
+      Alert.alert('Error', 'Please enter valid date (DD/MM/YYYY)');
       return;
     }
 
