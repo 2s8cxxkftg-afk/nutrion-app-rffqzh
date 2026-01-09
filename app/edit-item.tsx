@@ -36,6 +36,7 @@ export default function EditItemScreen() {
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
   const [customQuantityMode, setCustomQuantityMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
   const quantityInputRef = useRef<TextInput>(null);
@@ -56,10 +57,10 @@ export default function EditItemScreen() {
         setCategory(item.category);
         
         const date = new Date(item.expirationDate);
-        const day = date.getDate().toString().padStart(2, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
         const year = date.getFullYear();
-        setExpirationDate(`${day}/${month}/${year}`);
+        setExpirationDate(`${month}/${day}/${year}`);
       } else {
         Toast.show({ message: 'Item not found', type: 'error' });
         router.back();
@@ -72,14 +73,11 @@ export default function EditItemScreen() {
   };
 
   useEffect(() => {
-    if (category && name) {
+    if (category && name && name.length > 2) {
       const estimation = getExpirationEstimation(name, category);
-      if (estimation && !expirationDate) {
-        const predicted = predictExpirationDate(name, category);
-        if (predicted) {
-          setExpirationDate(predicted);
-        }
-      }
+      setAiSuggestion(estimation);
+    } else {
+      setAiSuggestion('');
     }
   }, [category, name]);
 
@@ -108,8 +106,8 @@ export default function EditItemScreen() {
     const parts = dateText.split('/');
     if (parts.length !== 3) return null;
 
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
 
     if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
@@ -131,7 +129,7 @@ export default function EditItemScreen() {
 
     const parsedDate = validateAndParseDate(expirationDate);
     if (!parsedDate) {
-      Toast.show({ message: 'Please enter valid date (DD/MM/YYYY)', type: 'error' });
+      Toast.show({ message: 'Please enter valid date (MM/DD/YYYY)', type: 'error' });
       return;
     }
 
@@ -149,7 +147,7 @@ export default function EditItemScreen() {
 
     try {
       await updatePantryItem(updatedItem);
-      Toast.show({ message: 'Item updated successfully', type: 'success' });
+      Toast.show({ message: 'Item updated successfully! ✅', type: 'success' });
       router.back();
     } catch (error) {
       console.error('Error updating item:', error);
@@ -228,10 +226,23 @@ export default function EditItemScreen() {
               style={styles.input}
               value={name}
               onChangeText={handleNameChange}
-              placeholder="e.g., Milk, Apples, Bread"
+              placeholder="e.g., Milk, Salmon, Apples, Bread"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
             />
+            {aiSuggestion ? (
+              <View style={styles.aiSuggestionBox}>
+                <IconSymbol 
+                  ios_icon_name="sparkles" 
+                  android_material_icon_name="auto-awesome" 
+                  size={16} 
+                  color={colors.primary} 
+                />
+                <Text style={styles.aiSuggestionText}>
+                  🤖 AI Tip: {aiSuggestion}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.formSection}>
@@ -300,13 +311,13 @@ export default function EditItemScreen() {
               style={styles.input}
               value={expirationDate}
               onChangeText={handleDateChange}
-              placeholder="DD/MM/YYYY"
+              placeholder="MM/DD/YYYY"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               maxLength={10}
             />
             <Text style={styles.helperText}>
-              Format: Day/Month/Year (e.g., 25/12/2024)
+              Format: Month/Day/Year (e.g., 12/25/2024)
             </Text>
           </View>
 
@@ -526,6 +537,24 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 6,
     fontStyle: 'italic',
+  },
+  aiSuggestionBox: {
+    marginTop: 10,
+    backgroundColor: colors.primary + '15',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  aiSuggestionText: {
+    fontSize: 13,
+    color: colors.text,
+    flex: 1,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   pickerButton: {
     backgroundColor: colors.backgroundAlt,

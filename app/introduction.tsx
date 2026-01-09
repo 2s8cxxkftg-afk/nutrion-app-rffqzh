@@ -20,7 +20,7 @@ const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 const onboardingData = [
   {
     title: '🚀 Smart Pantry Revolution!',
-    description: 'Track every item with lightning-fast barcode scanning and never miss an expiration date again!',
+    description: 'Track every item in your pantry and never miss an expiration date again! Keep your food fresh and organized.',
     iosIcon: 'archivebox.fill',
     androidIcon: 'inventory',
     color: '#4CAF50',
@@ -36,7 +36,7 @@ const onboardingData = [
     title: '⚡ Shopping Made Effortless!',
     description: 'Create and manage your shopping lists in seconds - grocery shopping has never been this easy!',
     iosIcon: 'cart.fill',
-    androidIcon: 'shopping_cart',
+    androidIcon: 'shopping-cart',
     color: '#2196F3',
   },
 ];
