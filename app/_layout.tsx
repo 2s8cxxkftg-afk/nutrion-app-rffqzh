@@ -66,7 +66,6 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="language-selection" options={{ headerShown: false }} />
           <Stack.Screen name="introduction" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -75,7 +74,6 @@ export default function RootLayout() {
           <Stack.Screen name="email-confirmed" options={{ headerShown: false }} />
           <Stack.Screen name="add-item" options={{ headerShown: false }} />
           <Stack.Screen name="food-search" options={{ headerShown: false }} />
-          <Stack.Screen name="language-settings" options={{ headerShown: false }} />
           <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
           <Stack.Screen name="subscription-management" options={{ headerShown: false }} />
           <Stack.Screen name="subscription-intro" options={{ headerShown: false }} />
@@ -85,6 +83,7 @@ export default function RootLayout() {
           <Stack.Screen name="about" options={{ headerShown: false }} />
           <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
           <Stack.Screen name="change-password" options={{ headerShown: false }} />
+          <Stack.Screen name="paywall" options={{ headerShown: false }} />
           <Stack.Screen name="test-connection" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />

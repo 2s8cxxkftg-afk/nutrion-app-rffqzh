@@ -7,12 +7,10 @@ import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import { shouldShowPaywall } from '@/utils/subscription';
 
-const LANGUAGE_SELECTED_KEY = '@nutrion_language_selected';
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
-  const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -26,12 +24,6 @@ export default function Index() {
   const checkAppStatus = async () => {
     try {
       console.log('=== Checking App Status ===');
-      
-      // Check language selection status
-      const languageValue = await AsyncStorage.getItem(LANGUAGE_SELECTED_KEY);
-      const selectedLanguage = languageValue === 'true';
-      console.log('Language selected:', selectedLanguage);
-      setHasSelectedLanguage(selectedLanguage);
 
       // Check onboarding status
       const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
@@ -82,7 +74,6 @@ export default function Index() {
       console.error('Error checking app status:', error);
       setError(error.message || 'Failed to initialize');
       // On error, assume nothing completed
-      setHasSelectedLanguage(false);
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
       setShowPaywall(false);
@@ -95,7 +86,6 @@ export default function Index() {
   const handleSkipToApp = async () => {
     try {
       // Mark everything as completed
-      await AsyncStorage.setItem(LANGUAGE_SELECTED_KEY, 'true');
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
       
       // Reload the app state
@@ -108,7 +98,6 @@ export default function Index() {
   const handleResetApp = async () => {
     try {
       // Clear all onboarding flags
-      await AsyncStorage.removeItem(LANGUAGE_SELECTED_KEY);
       await AsyncStorage.removeItem(ONBOARDING_KEY);
       
       // Reload the app state
@@ -118,7 +107,7 @@ export default function Index() {
     }
   };
 
-  if (isLoading || hasSelectedLanguage === null || hasCompletedOnboarding === null) {
+  if (isLoading || hasCompletedOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.logoContainer}>
@@ -158,15 +147,9 @@ export default function Index() {
 
   // Navigation logic
   console.log('=== Navigation Decision ===');
-  console.log('Language:', hasSelectedLanguage);
   console.log('Onboarding:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
   console.log('Show paywall:', showPaywall);
-  
-  if (!hasSelectedLanguage) {
-    console.log('→ /language-selection');
-    return <Redirect href="/language-selection" />;
-  }
 
   if (!hasCompletedOnboarding) {
     console.log('→ /introduction');

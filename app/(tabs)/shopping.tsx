@@ -1,7 +1,8 @@
 
-import { IconSymbol } from '@/components/IconSymbol';
-import { ShoppingItem } from '@/types/pantry';
+import { Stack, useFocusEffect } from 'expo-router';
 import { loadShoppingItems, saveShoppingItems, deleteShoppingItem } from '@/utils/storage';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import {
   View,
   Text,
@@ -16,96 +17,101 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { Stack, useFocusEffect } from 'expo-router';
-import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
+import { ShoppingItem } from '@/types/pantry';
 import * as Haptics from 'expo-haptics';
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-  },
-  contentContainer: {
-    padding: spacing.md,
-  },
-  contentContainerWithTabBar: {
-    paddingBottom: 100,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    ...typography.h1,
+  },
+  headerStats: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  addItemContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
+  sectionTitle: {
+    ...typography.h2,
   },
   clearButton: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
     backgroundColor: colors.error + '20',
   },
   clearButtonText: {
     color: colors.error,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold as any,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  input: {
-    flex: 1,
-    fontSize: typography.sizes.md,
-    color: colors.text,
-    marginLeft: spacing.sm,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    marginLeft: spacing.sm,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxl * 2,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
   },
   itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemCardCompleted: {
-    opacity: 0.5,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   checkbox: {
     width: 24,
@@ -113,57 +119,59 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.primary,
+    marginRight: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
     backgroundColor: colors.primary,
   },
-  itemContent: {
+  itemInfo: {
     flex: 1,
-    marginLeft: spacing.md,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.body,
+    marginBottom: spacing.xs,
   },
   itemNameCompleted: {
     textDecorationLine: 'line-through',
     color: colors.textSecondary,
   },
   itemQuantity: {
-    fontSize: typography.sizes.sm,
+    ...typography.caption,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
   },
   itemActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   actionButton: {
-    padding: spacing.sm,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  statItem: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl * 2,
   },
-  statLabel: {
-    fontSize: 12,
+  emptyIcon: {
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    ...typography.h2,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  emptyDescription: {
+    ...typography.body,
     color: colors.textSecondary,
-    marginTop: 4,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   modalOverlay: {
     flex: 1,
@@ -172,23 +180,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     width: '80%',
+    maxWidth: 400,
   },
   modalTitle: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold as any,
-    color: colors.text,
+    ...typography.h2,
     marginBottom: spacing.md,
   },
   modalInput: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.sizes.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 16,
     color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.md,
   },
   modalButtons: {
@@ -197,29 +207,29 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
   },
   modalButtonSave: {
     backgroundColor: colors.primary,
   },
   modalButtonText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold as any,
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalButtonTextCancel: {
     color: colors.text,
   },
   modalButtonTextSave: {
-    color: '#FFFFFF',
+    color: '#fff',
   },
 });
 
-export default function ShoppingScreen() {
+function ShoppingScreen() {
   return (
     <>
       <Stack.Screen
@@ -233,7 +243,6 @@ export default function ShoppingScreen() {
 }
 
 function ShoppingScreenContent() {
-  const { t } = useTranslation();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -262,16 +271,16 @@ function ShoppingScreenContent() {
   }, [loadItems]);
 
   const handleAddItem = async () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim()) {
+      return;
+    }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newItem: ShoppingItem = {
       id: Date.now().toString(),
       name: newItemName.trim(),
       quantity: 1,
-      unit: 'pcs',
       completed: false,
-      addedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     const updatedItems = [...items, newItem];
@@ -282,8 +291,13 @@ function ShoppingScreenContent() {
   };
 
   const handleToggleItem = async (itemId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const updatedItems = items.map((item) =>
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
+    const updatedItems = items.map(item =>
       item.id === itemId ? { ...item, completed: !item.completed } : item
     );
     await saveShoppingItems(updatedItems);
@@ -291,17 +305,19 @@ function ShoppingScreenContent() {
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
     Alert.alert(
-      t('shopping.deleteConfirmTitle'),
-      t('shopping.deleteConfirmMessage'),
+      'Delete Item',
+      'Are you sure you want to delete this item?',
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.delete'),
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             await deleteShoppingItem(itemId);
@@ -320,8 +336,13 @@ function ShoppingScreenContent() {
   const handleSaveQuantity = async () => {
     if (!editingItem) return;
 
-    const quantity = parseInt(editQuantity) || 1;
-    const updatedItems = items.map((item) =>
+    const quantity = parseInt(editQuantity, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity');
+      return;
+    }
+
+    const updatedItems = items.map(item =>
       item.id === editingItem.id ? { ...item, quantity } : item
     );
     await saveShoppingItems(updatedItems);
@@ -331,20 +352,19 @@ function ShoppingScreenContent() {
   };
 
   const handleClearCompleted = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const completedCount = items.filter(item => item.completed).length;
+    if (completedCount === 0) return;
+
     Alert.alert(
-      t('shopping.clearCompletedTitle'),
-      t('shopping.clearCompletedMessage'),
+      'Clear Completed',
+      `Remove all ${completedCount} checked items from the list?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.clear'),
+          text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            const updatedItems = items.filter((item) => !item.completed);
+            const updatedItems = items.filter(item => !item.completed);
             await saveShoppingItems(updatedItems);
             setItems(updatedItems);
           },
@@ -353,134 +373,94 @@ function ShoppingScreenContent() {
     );
   };
 
-  const completedCount = items.filter((item) => item.completed).length;
-  const pendingCount = items.length - completedCount;
+  const pendingItems = items.filter(item => !item.completed);
+  const completedItems = items.filter(item => item.completed);
 
-  const renderShoppingItem = (item: ShoppingItem) => {
-    return (
-      <View
-        key={item.id}
-        style={[styles.itemCard, item.completed && styles.itemCardCompleted]}
+  const renderShoppingItem = (item: ShoppingItem) => (
+    <View key={item.id} style={styles.itemCard}>
+      <TouchableOpacity
+        style={[styles.checkbox, item.completed && styles.checkboxChecked]}
+        onPress={() => handleToggleItem(item.id)}
       >
-        <TouchableOpacity
-          style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-          onPress={() => handleToggleItem(item.id)}
-        >
-          {item.completed && (
-            <IconSymbol
-              ios_icon_name="checkmark"
-              android_material_icon_name="check"
-              size={16}
-              color="#FFFFFF"
-            />
-          )}
-        </TouchableOpacity>
-        <View style={styles.itemContent}>
-          <Text
-            style={[
-              styles.itemName,
-              item.completed && styles.itemNameCompleted,
-            ]}
-          >
-            {item.name}
-          </Text>
-          <TouchableOpacity onPress={() => handleEditQuantity(item)}>
-            <Text style={styles.itemQuantity}>
-              {item.quantity} {item.unit}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.itemActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleDeleteItem(item.id)}
-          >
-            <IconSymbol
-              ios_icon_name="trash"
-              android_material_icon_name="delete"
-              size={24}
-              color={colors.error}
-            />
-          </TouchableOpacity>
-        </View>
+        {item.completed && (
+          <IconSymbol
+            ios_icon_name="checkmark"
+            android_material_icon_name="check"
+            size={16}
+            color="#fff"
+          />
+        )}
+      </TouchableOpacity>
+      <View style={styles.itemInfo}>
+        <Text style={[styles.itemName, item.completed && styles.itemNameCompleted]}>
+          {item.name}
+        </Text>
+        <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
       </View>
-    );
-  };
+      <View style={styles.itemActions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleEditQuantity(item)}
+        >
+          <IconSymbol
+            ios_icon_name="pencil"
+            android_material_icon_name="edit"
+            size={18}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleDeleteItem(item.id)}
+        >
+          <IconSymbol
+            ios_icon_name="trash"
+            android_material_icon_name="delete"
+            size={18}
+            color={colors.error}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Shopping List</Text>
+          <Text style={styles.headerStats}>
+            {pendingItems.length} {pendingItems.length === 1 ? 'item' : 'items'} to buy
+          </Text>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <View style={styles.addItemContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Add item to shopping list..."
+            placeholderTextColor={colors.textSecondary}
+            value={newItemName}
+            onChangeText={setNewItemName}
+            onSubmitEditing={handleAddItem}
+            returnKeyType="done"
+          />
+          <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
-          style={styles.container}
-          contentContainerStyle={[
-            styles.contentContainer,
-            Platform.OS !== 'ios' && styles.contentContainerWithTabBar,
-          ]}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>{t('shopping.title')}</Text>
-            {completedCount > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={handleClearCompleted}
-              >
-                <Text style={styles.clearButtonText}>
-                  {t('shopping.clearCompleted')}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {items.length > 0 && (
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{items.length}</Text>
-                <Text style={styles.statLabel}>{t('shopping.totalItems')}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {pendingCount}
-                </Text>
-                <Text style={styles.statLabel}>{t('shopping.pending')}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.success }]}>
-                  {completedCount}
-                </Text>
-                <Text style={styles.statLabel}>{t('shopping.completed')}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.inputContainer}>
-            <IconSymbol
-              ios_icon_name="plus.circle.fill"
-              android_material_icon_name="add_circle"
-              size={24}
-              color={colors.primary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder={t('shopping.addItemPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={newItemName}
-              onChangeText={setNewItemName}
-              onSubmitEditing={handleAddItem}
-              returnKeyType="done"
-            />
-            {newItemName.trim() && (
-              <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
-                <Text style={styles.addButtonText}>{t('common.add')}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           {items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <IconSymbol
@@ -488,13 +468,39 @@ function ShoppingScreenContent() {
                 android_material_icon_name="shopping_cart"
                 size={80}
                 color={colors.textSecondary}
+                style={styles.emptyIcon}
               />
-              <Text style={styles.emptyText}>
-                {t('shopping.emptyMessage')}
+              <Text style={styles.emptyTitle}>Shopping list is empty</Text>
+              <Text style={styles.emptyDescription}>
+                Add items you need to buy from the store
               </Text>
             </View>
           ) : (
-            items.map(renderShoppingItem)
+            <>
+              {pendingItems.length > 0 && (
+                <>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>To Buy</Text>
+                  </View>
+                  {pendingItems.map(renderShoppingItem)}
+                </>
+              )}
+
+              {completedItems.length > 0 && (
+                <>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Completed</Text>
+                    <TouchableOpacity
+                      style={styles.clearButton}
+                      onPress={handleClearCompleted}
+                    >
+                      <Text style={styles.clearButtonText}>Clear</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {completedItems.map(renderShoppingItem)}
+                </>
+              )}
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -505,42 +511,47 @@ function ShoppingScreenContent() {
         animationType="fade"
         onRequestClose={() => setEditingItem(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('shopping.editQuantity')}</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editQuantity}
-              onChangeText={setEditQuantity}
-              keyboardType="numeric"
-              placeholder={t('shopping.quantityPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setEditingItem(null)}
-              >
-                <Text
-                  style={[styles.modalButtonText, styles.modalButtonTextCancel]}
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setEditingItem(null)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Quantity</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter quantity"
+                placeholderTextColor={colors.textSecondary}
+                value={editQuantity}
+                onChangeText={setEditQuantity}
+                keyboardType="number-pad"
+                autoFocus
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setEditingItem(null)}
                 >
-                  {t('common.cancel')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSave]}
-                onPress={handleSaveQuantity}
-              >
-                <Text
-                  style={[styles.modalButtonText, styles.modalButtonTextSave]}
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSave]}
+                  onPress={handleSaveQuantity}
                 >
-                  {t('common.save')}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextSave]}>
+                    Save
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
 }
+
+export default ShoppingScreen;

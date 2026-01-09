@@ -1,4 +1,8 @@
 
+import { IconSymbol } from '@/components/IconSymbol';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { PantryItem } from '@/types/pantry';
 import {
   View,
   Text,
@@ -10,162 +14,154 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { IconSymbol } from '@/components/IconSymbol';
-import { PantryItem } from '@/types/pantry';
 import { colors, commonStyles, expirationColors, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { loadPantryItems, deletePantryItem } from '@/utils/storage';
-import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
-import { useTranslation } from 'react-i18next';
-import * as Haptics from 'expo-haptics';
 import Toast from '@/components/Toast';
-import React, { useState, useCallback } from 'react';
+import { loadPantryItems, deletePantryItem } from '@/utils/storage';
+import * as Haptics from 'expo-haptics';
+import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
+import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-  },
-  contentContainer: {
-    padding: spacing.md,
-  },
-  contentContainerWithTabBar: {
-    paddingBottom: 100,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
+  headerTitle: {
+    ...typography.h1,
+    flex: 1,
   },
-  addButton: {
+  headerButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    gap: spacing.sm,
   },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: spacing.xs,
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  searchInput: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  searchInput: {
-    flex: 1,
     fontSize: 16,
     color: colors.text,
-    marginLeft: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   emptyContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.xl * 2,
   },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
+  emptyIcon: {
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    ...typography.h2,
     textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  emptyDescription: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   itemCard: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  itemContent: {
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  itemInfo: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginRight: spacing.sm,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+    ...typography.h3,
+    marginBottom: spacing.xs,
   },
-  itemDetails: {
-    fontSize: 13,
+  itemCategory: {
+    ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  expirationBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
-    alignSelf: 'flex-start',
-  },
-  expirationText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   itemActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   actionButton: {
-    padding: spacing.sm,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statItem: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
+  itemDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  statLabel: {
-    fontSize: 12,
+  itemQuantity: {
+    ...typography.body,
     color: colors.textSecondary,
-    marginTop: 4,
+  },
+  expirationBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  expirationText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
 });
 
-export default function PantryScreen() {
+function PantryScreen() {
   return (
     <>
       <Stack.Screen
@@ -179,7 +175,6 @@ export default function PantryScreen() {
 }
 
 function PantryScreenContent() {
-  const { t } = useTranslation();
   const router = useRouter();
   const [items, setItems] = useState<PantryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -189,12 +184,17 @@ function PantryScreenContent() {
     try {
       const loadedItems = await loadPantryItems();
       setItems(loadedItems);
+      
+      // Check for expiring items and send notifications
       await checkAndNotifyExpiringItems(loadedItems);
     } catch (error) {
       console.error('Error loading pantry items:', error);
-      Toast.show(t('pantry.errorLoading'), 'error');
+      Toast.show({
+        message: 'Failed to load pantry items',
+        type: 'error',
+      });
     }
-  }, [t]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -209,31 +209,41 @@ function PantryScreenContent() {
   }, [loadItems]);
 
   const handleEditItem = (itemId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/edit-item?itemId=${itemId}`);
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Haptics not available:', error);
+    }
+
     Alert.alert(
-      t('pantry.deleteConfirmTitle'),
-      t('pantry.deleteConfirmMessage'),
+      'Delete Item',
+      'Are you sure you want to delete this item?',
       [
         {
-          text: t('common.cancel'),
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: t('common.delete'),
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               await deletePantryItem(itemId);
               await loadItems();
-              Toast.show(t('pantry.itemDeleted'), 'success');
+              Toast.show({
+                message: 'Item deleted',
+                type: 'success',
+              });
             } catch (error) {
               console.error('Error deleting item:', error);
-              Toast.show(t('pantry.errorDeleting'), 'error');
+              Toast.show({
+                message: 'Failed to delete item',
+                type: 'error',
+              });
             }
           },
         },
@@ -241,160 +251,128 @@ function PantryScreenContent() {
     );
   };
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const expiredCount = items.filter(
-    (item) => getExpirationStatus(item.expirationDate).status === 'expired'
-  ).length;
-  const expiringSoonCount = items.filter(
-    (item) => getExpirationStatus(item.expirationDate).status === 'expiring'
-  ).length;
-
   const renderPantryItem = (item: PantryItem) => {
-    const expirationInfo = getExpirationStatus(item.expirationDate);
+    const status = getExpirationStatus(item.expirationDate);
     const expirationText = formatExpirationText(item.expirationDate);
+    
+    const statusColors = {
+      fresh: expirationColors.fresh,
+      warning: expirationColors.warning,
+      'expiring-soon': expirationColors.expiringSoon,
+      expired: expirationColors.expired,
+    };
 
     return (
       <View key={item.id} style={styles.itemCard}>
-        <IconSymbol
-          ios_icon_name="cube.box.fill"
-          android_material_icon_name="inventory"
-          size={40}
-          color={expirationColors[expirationInfo.status]}
-        />
-        <View style={styles.itemContent}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemDetails}>
-            {item.quantity} {item.unit} • {item.category}
-          </Text>
-          <View
-            style={[
-              styles.expirationBadge,
-              { backgroundColor: expirationColors[expirationInfo.status] + '20' },
-            ]}
-          >
-            <Text
-              style={[
-                styles.expirationText,
-                { color: expirationColors[expirationInfo.status] },
-              ]}
+        <View style={styles.itemHeader}>
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemCategory}>{item.category}</Text>
+          </View>
+          <View style={styles.itemActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEditItem(item.id)}
             >
+              <IconSymbol
+                ios_icon_name="pencil"
+                android_material_icon_name="edit"
+                size={20}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleDeleteItem(item.id)}
+            >
+              <IconSymbol
+                ios_icon_name="trash"
+                android_material_icon_name="delete"
+                size={20}
+                color={colors.error}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.itemDetails}>
+          <Text style={styles.itemQuantity}>
+            {item.quantity} {item.unit}
+          </Text>
+          <View style={[styles.expirationBadge, { backgroundColor: statusColors[status] + '20' }]}>
+            <Text style={[styles.expirationText, { color: statusColors[status] }]}>
               {expirationText}
             </Text>
           </View>
-        </View>
-        <View style={styles.itemActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleEditItem(item.id)}
-          >
-            <IconSymbol
-              ios_icon_name="pencil"
-              android_material_icon_name="edit"
-              size={24}
-              color={colors.primary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleDeleteItem(item.id)}
-          >
-            <IconSymbol
-              ios_icon_name="trash"
-              android_material_icon_name="delete"
-              size={24}
-              color={colors.error}
-            />
-          </TouchableOpacity>
         </View>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar,
-        ]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('pantry.title')}</Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Pantry</Text>
+        <View style={styles.headerButtons}>
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/add-item');
-            }}
+            style={styles.iconButton}
+            onPress={() => router.push('/food-search')}
+          >
+            <IconSymbol
+              ios_icon_name="magnifyingglass"
+              android_material_icon_name="search"
+              size={20}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push('/add-item')}
           >
             <IconSymbol
               ios_icon_name="plus"
               android_material_icon_name="add"
               size={20}
-              color="#FFFFFF"
+              color={colors.text}
             />
-            <Text style={styles.addButtonText}>{t('pantry.addItem')}</Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        {items.length > 0 && (
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{items.length}</Text>
-              <Text style={styles.statLabel}>{t('pantry.totalItems')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: expirationColors.expiring }]}>
-                {expiringSoonCount}
-              </Text>
-              <Text style={styles.statLabel}>{t('pantry.expiringSoon')}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: expirationColors.expired }]}>
-                {expiredCount}
-              </Text>
-              <Text style={styles.statLabel}>{t('pantry.expired')}</Text>
-            </View>
-          </View>
-        )}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search pantry..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
 
-        {items.length > 0 && (
-          <View style={styles.searchContainer}>
-            <IconSymbol
-              ios_icon_name="magnifyingglass"
-              android_material_icon_name="search"
-              size={20}
-              color={colors.textSecondary}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('pantry.searchPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        )}
-
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
-              ios_icon_name="cube.box"
+              ios_icon_name="archivebox"
               android_material_icon_name="inventory"
               size={80}
               color={colors.textSecondary}
+              style={styles.emptyIcon}
             />
-            <Text style={styles.emptyText}>
-              {searchQuery
-                ? t('pantry.noResults')
-                : t('pantry.emptyMessage')}
+            <Text style={styles.emptyTitle}>Your pantry is empty</Text>
+            <Text style={styles.emptyDescription}>
+              Start by adding items to track your food inventory
             </Text>
           </View>
         ) : (
@@ -404,3 +382,5 @@ function PantryScreenContent() {
     </SafeAreaView>
   );
 }
+
+export default PantryScreen;
