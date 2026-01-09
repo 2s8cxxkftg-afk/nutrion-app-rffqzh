@@ -1,37 +1,26 @@
 
-import '../utils/i18n';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { useColorScheme, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import 'react-native-reanimated';
-import { ToastComponent } from '@/components/Toast';
+import React, { useEffect, useState } from 'react';
+import { useFonts } from 'expo-font';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useColorScheme } from 'react-native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
+import { supabase } from '@/utils/supabase';
+import { Session } from '@supabase/supabase-js';
 import { initializeNotifications } from '@/utils/notificationScheduler';
-import { ErrorBoundary } from 'react-error-boundary';
 
 SplashScreen.preventAutoHideAsync();
 
-// Error fallback component
-function ErrorFallback({ error, resetErrorBoundary }: any) {
-  return (
-    <View style={styles.errorContainer}>
-      <Text style={styles.errorTitle}>⚠️ Something went wrong</Text>
-      <Text style={styles.errorMessage}>{error.message}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={resetErrorBoundary}>
-        <Text style={styles.retryButtonText}>Try Again</Text>
-      </TouchableOpacity>
-      <Text style={styles.errorHint}>
-        If the problem persists, try restarting the app.
-      </Text>
-    </View>
-  );
-}
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [session, setSession] = useState<Session | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const router = useRouter();
+  const segments = useSegments();
+
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -39,100 +28,58 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      
-      // Initialize notification system with error handling
-      initializeNotifications().catch(error => {
-        console.error('Failed to initialize notifications:', error);
-      });
     }
   }, [loaded]);
 
-  if (!loaded) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsReady(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    initializeNotifications();
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+
+    if (!session && !inAuthGroup) {
+      router.replace('/auth');
+    } else if (session && inAuthGroup) {
+      router.replace('/(tabs)/pantry');
+    }
+  }, [session, segments, isReady]);
+
+  if (!loaded || !isReady) {
     return null;
   }
 
   return (
-    <ErrorBoundary
-      FallbackComponent={ErrorFallback}
-      onError={(error, errorInfo) => {
-        console.error('App Error:', error);
-        console.error('Error Info:', errorInfo);
-      }}
-      onReset={() => {
-        // Reset app state if needed
-        console.log('Error boundary reset');
-      }}
-    >
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="introduction" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-          <Stack.Screen name="confirm-email" options={{ headerShown: false }} />
-          <Stack.Screen name="email-confirmed" options={{ headerShown: false }} />
-          <Stack.Screen name="add-item" options={{ headerShown: false }} />
-          <Stack.Screen name="food-search" options={{ headerShown: false }} />
-          <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
-          <Stack.Screen name="subscription-management" options={{ headerShown: false }} />
-          <Stack.Screen name="subscription-intro" options={{ headerShown: false }} />
-          <Stack.Screen name="subscription-success" options={{ headerShown: false }} />
-          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-          <Stack.Screen name="edit-item" options={{ headerShown: false }} />
-          <Stack.Screen name="about" options={{ headerShown: false }} />
-          <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
-          <Stack.Screen name="change-password" options={{ headerShown: false }} />
-          <Stack.Screen name="paywall" options={{ headerShown: false }} />
-          <Stack.Screen name="test-connection" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />
-          <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
-        </Stack>
         <StatusBar style="auto" />
-        <ToastComponent />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="add-item" />
+          <Stack.Screen name="edit-item" />
+          <Stack.Screen name="food-search" />
+          <Stack.Screen name="subscription-intro" />
+          <Stack.Screen name="paywall" />
+          <Stack.Screen name="subscription-management" />
+          <Stack.Screen name="notification-settings" />
+          <Stack.Screen name="change-password" />
+          <Stack.Screen name="confirm-email" />
+        </Stack>
       </ThemeProvider>
-    </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#dc3545',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  errorHint: {
-    fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-});
