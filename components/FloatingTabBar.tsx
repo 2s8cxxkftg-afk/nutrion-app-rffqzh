@@ -38,6 +38,33 @@ interface FloatingTabBarProps {
   bottomMargin?: number;
 }
 
+// Map Material icon names to iOS SF Symbol names
+const getIOSIconName = (materialIconName: string): string => {
+  const iconMap: Record<string, string> = {
+    'kitchen': 'fork.knife',
+    'shopping-cart': 'cart.fill',
+    'person': 'person.fill',
+    'home': 'house.fill',
+    'search': 'magnifyingglass',
+    'settings': 'gearshape.fill',
+    'notifications': 'bell.fill',
+    'favorite': 'heart.fill',
+    'star': 'star.fill',
+    'calendar-today': 'calendar',
+    'add': 'plus',
+    'delete': 'trash.fill',
+    'edit': 'pencil',
+    'check': 'checkmark',
+    'close': 'xmark',
+    'menu': 'line.3.horizontal',
+    'more-vert': 'ellipsis',
+    'arrow-back': 'chevron.left',
+    'arrow-forward': 'chevron.right',
+  };
+  
+  return iconMap[materialIconName] || materialIconName;
+};
+
 export default function FloatingTabBar({
   tabs,
   containerWidth = screenWidth / 2.5,
@@ -174,7 +201,7 @@ export default function FloatingTabBar({
                   <View style={styles.tabContent}>
                     <IconSymbol
                       android_material_icon_name={tab.icon}
-                      ios_icon_name={tab.icon}
+                      ios_icon_name={getIOSIconName(tab.icon)}
                       size={24}
                       color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
                     />
