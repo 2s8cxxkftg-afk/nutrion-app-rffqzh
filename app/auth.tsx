@@ -1,11 +1,5 @@
 
-import { IconSymbol } from '@/components/IconSymbol';
-import { supabase } from '@/utils/supabase';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from '@/components/Toast';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +12,12 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { supabase } from '@/utils/supabase';
+import Toast from '@/components/Toast';
+import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
 
 interface PasswordRequirement {
   label: string;
@@ -32,11 +32,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
+    padding: spacing.xl,
+    justifyContent: 'center',
   },
-  logoContainer: {
+  backButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    zIndex: 10,
+  },
+  header: {
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
@@ -46,212 +51,137 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: typography.sizes.xxl,
+    fontWeight: '700',
     color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.5,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    fontWeight: '500',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: 4,
+  form: {
     marginBottom: spacing.lg,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderRadius: borderRadius.sm,
-  },
-  activeTab: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  activeTabText: {
-    color: '#FFFFFF',
   },
   inputContainer: {
     marginBottom: spacing.md,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: typography.sizes.sm,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.xs,
   },
   input: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
+    padding: spacing.md,
+    fontSize: typography.sizes.md,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  passwordContainer: {
-    position: 'relative',
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: spacing.md,
-    top: spacing.sm,
-    padding: spacing.xs,
-  },
-  requirementsContainer: {
+  passwordRequirements: {
     marginTop: spacing.sm,
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.sm,
   },
   requirement: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   requirementText: {
-    fontSize: 12,
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
     marginLeft: spacing.xs,
-    fontWeight: '500',
   },
   requirementMet: {
     color: colors.success,
   },
-  requirementNotMet: {
-    color: colors.textSecondary,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.md,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  submitButton: {
+  button: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    color: colors.text,
+  },
+  forgotPassword: {
     alignItems: 'center',
     marginTop: spacing.md,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
-  submitButtonDisabled: {
-    backgroundColor: colors.textLight,
+  forgotPasswordText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
   },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  loadingContainer: {
+  divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginVertical: spacing.lg,
   },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    marginLeft: spacing.sm,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
   },
 });
 
 export default function AuthScreen() {
-  const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const validateEmail = (email: string): boolean => {
+  function validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
+  }
 
-  const getPasswordRequirements = (pwd: string): PasswordRequirement[] => {
+  function getPasswordRequirements(pwd: string): PasswordRequirement[] {
     return [
-      {
-        key: 'length',
-        label: 'At least 8 characters',
-        met: pwd.length >= 8,
-      },
-      {
-        key: 'uppercase',
-        label: 'One uppercase letter',
-        met: /[A-Z]/.test(pwd),
-      },
-      {
-        key: 'lowercase',
-        label: 'One lowercase letter',
-        met: /[a-z]/.test(pwd),
-      },
-      {
-        key: 'number',
-        label: 'One number',
-        met: /\d/.test(pwd),
-      },
+      { key: 'length', label: 'At least 8 characters', met: pwd.length >= 8 },
+      { key: 'uppercase', label: 'One uppercase letter', met: /[A-Z]/.test(pwd) },
+      { key: 'lowercase', label: 'One lowercase letter', met: /[a-z]/.test(pwd) },
+      { key: 'number', label: 'One number', met: /[0-9]/.test(pwd) },
     ];
-  };
+  }
 
-  const handleEmailAuth = async () => {
+  async function handleEmailAuth() {
     if (!validateEmail(email)) {
-      Toast.show({
-        message: 'Please enter a valid email address',
-        type: 'error',
-      });
+      Toast.show('Please enter a valid email address', 'error');
       return;
     }
 
     if (password.length < 8) {
-      Toast.show({
-        message: 'Password must be at least 8 characters',
-        type: 'error',
-      });
+      Toast.show('Password must be at least 8 characters', 'error');
       return;
     }
 
-    if (isSignUp) {
-      const requirements = getPasswordRequirements(password);
-      const allMet = requirements.every(req => req.met);
-      
-      if (!allMet) {
-        Toast.show({
-          message: 'Please meet all password requirements',
-          type: 'error',
-        });
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        Toast.show({
-          message: 'Passwords do not match',
-          type: 'error',
-        });
-        return;
-      }
+    if (isSignUp && password !== confirmPassword) {
+      Toast.show('Passwords do not match', 'error');
+      return;
     }
 
     try {
@@ -263,221 +193,210 @@ export default function AuthScreen() {
           password,
         });
 
-        if (error) throw error;
-
-        if (data?.user?.identities?.length === 0) {
-          Toast.show({
-            message: 'This email is already registered. Please sign in.',
-            type: 'error',
-          });
-          setIsSignUp(false);
+        if (error) {
+          console.error('Sign up error:', error);
+          Toast.show(error.message, 'error');
           return;
         }
 
-        Toast.show({
-          message: '✅ Account created! Check your email to verify.',
-          type: 'success',
-        });
-        
-        router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+        if (data.user) {
+          Toast.show('Account created! Please check your email to verify.', 'success');
+          router.push({
+            pathname: '/confirm-email',
+            params: { email },
+          });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Sign in error:', error);
+          Toast.show('Invalid email or password', 'error');
+          return;
+        }
 
-        Toast.show({
-          message: '🎉 Welcome back! Signed in successfully!',
-          type: 'success',
-        });
-        
+        Toast.show('Welcome back!', 'success');
         router.replace('/(tabs)/pantry');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Auth error:', error);
-      Toast.show({
-        message: error.message || 'Authentication failed',
-        type: 'error',
-      });
+      Toast.show('An error occurred. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleForgotPassword = () => {
-    router.push('/forgot-password');
-  };
+  async function handleForgotPassword() {
+    if (!validateEmail(email)) {
+      Toast.show('Please enter your email address', 'error');
+      return;
+    }
 
-  const requirements = getPasswordRequirements(password);
-  const isFormValid = validateEmail(email) && 
-    password.length >= 8 && 
-    (!isSignUp || (password === confirmPassword && requirements.every(req => req.met)));
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+      if (error) {
+        console.error('Password reset error:', error);
+        Toast.show('Failed to send reset email', 'error');
+        return;
+      }
+
+      Toast.show('Password reset email sent!', 'success');
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      Toast.show('Failed to send reset email', 'error');
+    }
+  }
+
+  const passwordRequirements = getPasswordRequirements(password);
+  const allRequirementsMet = passwordRequirements.every(req => req.met);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <IconSymbol 
+          ios_icon_name="chevron.left" 
+          android_material_icon_name="arrow-back"
+          size={24} 
+          color={colors.text} 
+        />
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-              style={styles.logo}
-              resizeMode="contain"
+          <View style={styles.header}>
+            <IconSymbol
+              ios_icon_name="leaf.fill"
+              android_material_icon_name="eco"
+              size={64}
+              color={colors.primary}
             />
             <Text style={styles.title}>
-              {isSignUp ? '🚀 Join Nutrion!' : '👋 Welcome Back!'}
+              {isSignUp ? 'Create Account' : 'Welcome Back'}
             </Text>
             <Text style={styles.subtitle}>
-              {isSignUp 
-                ? 'Start your journey to zero food waste today!' 
-                : 'Sign in to continue managing your pantry!'}
+              {isSignUp
+                ? 'Sign up to start managing your pantry'
+                : 'Sign in to continue to Nutrion'}
             </Text>
           </View>
 
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, !isSignUp && styles.activeTab]}
-              onPress={() => setIsSignUp(false)}
-            >
-              <Text style={[styles.tabText, !isSignUp && styles.activeTabText]}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, isSignUp && styles.activeTab]}
-              onPress={() => setIsSignUp(true)}
-            >
-              <Text style={[styles.tabText, isSignUp && styles.activeTabText]}>
-                Sign Up
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="your@email.com"
+                placeholderTextColor={colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>📧 Email Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>🔒 Password</Text>
-            <View style={styles.passwordContainer}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your password"
                 placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry={!showPassword}
+                secureTextEntry
                 autoCapitalize="none"
-                autoCorrect={false}
+                autoComplete="password"
               />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <IconSymbol
-                  ios_icon_name={showPassword ? 'eye.slash' : 'eye'}
-                  android_material_icon_name={showPassword ? 'visibility_off' : 'visibility'}
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
+              {isSignUp && password.length > 0 && (
+                <View style={styles.passwordRequirements}>
+                  {passwordRequirements.map((req) => (
+                    <View key={req.key} style={styles.requirement}>
+                      <IconSymbol
+                        ios_icon_name={req.met ? 'checkmark.circle.fill' : 'circle'}
+                        android_material_icon_name={req.met ? 'check-circle' : 'radio-button-unchecked'}
+                        size={16}
+                        color={req.met ? colors.success : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.requirementText,
+                          req.met && styles.requirementMet,
+                        ]}
+                      >
+                        {req.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
-            {isSignUp && password.length > 0 && (
-              <View style={styles.requirementsContainer}>
-                {requirements.map((req) => (
-                  <View key={req.key} style={styles.requirement}>
-                    <IconSymbol
-                      ios_icon_name={req.met ? 'checkmark.circle.fill' : 'circle'}
-                      android_material_icon_name={req.met ? 'check_circle' : 'radio_button_unchecked'}
-                      size={16}
-                      color={req.met ? colors.success : colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.requirementText,
-                        req.met ? styles.requirementMet : styles.requirementNotMet,
-                      ]}
-                    >
-                      {req.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {isSignUp && (
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>✅ Confirm Password</Text>
-              <View style={styles.passwordContainer}>
+            {isSignUp && (
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Confirm Password</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Confirm your password"
                   placeholderTextColor={colors.textSecondary}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
+                  secureTextEntry
                   autoCapitalize="none"
-                  autoCorrect={false}
+                  autoComplete="password"
                 />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  <IconSymbol
-                    ios_icon_name={showConfirmPassword ? 'eye.slash' : 'eye'}
-                    android_material_icon_name={showConfirmPassword ? 'visibility_off' : 'visibility'}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </TouchableOpacity>
               </View>
-            </View>
-          )}
-
-          {!isSignUp && (
-            <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.submitButton, (!isFormValid || loading) && styles.submitButtonDisabled]}
-            onPress={handleEmailAuth}
-            disabled={!isFormValid || loading}
-          >
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator color="#FFFFFF" />
-                <Text style={styles.loadingText}>
-                  {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {isSignUp ? '🚀 Create Account!' : '✨ Sign In!'}
-              </Text>
             )}
-          </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (loading || (isSignUp && !allRequirementsMet)) && styles.buttonDisabled,
+              ]}
+              onPress={handleEmailAuth}
+              disabled={loading || (isSignUp && !allRequirementsMet)}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={() => setIsSignUp(!isSignUp)}
+            >
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                {isSignUp
+                  ? 'Already have an account? Sign In'
+                  : 'Don&apos;t have an account? Sign Up'}
+              </Text>
+            </TouchableOpacity>
+
+            {!isSignUp && (
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,5 +1,7 @@
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -11,22 +13,18 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
-import * as Notifications from 'expo-notifications';
 import {
   requestNotificationPermissions,
   scheduleDailyReminder,
   scheduleAllExpirationNotifications,
   cancelAllNotifications,
 } from '@/utils/notificationScheduler';
+import { IconSymbol } from '@/components/IconSymbol';
 import { loadPantryItems } from '@/utils/storage';
-
-const NOTIFICATION_SETTINGS_KEY = '@nutrion_notification_settings';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -37,498 +35,303 @@ interface NotificationSettings {
   shoppingListReminders: boolean;
 }
 
+const NOTIFICATION_SETTINGS_KEY = '@notification_settings';
+
 const DEFAULT_SETTINGS: NotificationSettings = {
-  enabled: true,
+  enabled: false,
   expirationAlerts: true,
   daysBeforeExpiry: 3,
   dailyReminder: false,
   dailyReminderTime: '09:00',
-  shoppingListReminders: true,
+  shoppingListReminders: false,
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  section: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  settingRowLast: {
+    borderBottomWidth: 0,
+  },
+  settingLabel: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  daysSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+  },
+  dayButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  dayButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  dayButtonText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  dayButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    flex: 1,
+    marginLeft: 8,
+  },
+});
+
 export default function NotificationSettingsScreen() {
-  const router = useRouter();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     loadSettings();
-    checkNotificationPermission();
   }, []);
 
-  const loadSettings = async () => {
+  async function loadSettings() {
     try {
-      const saved = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
-      if (saved) {
-        setSettings(JSON.parse(saved));
+      const stored = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+      if (stored) {
+        setSettings(JSON.parse(stored));
       }
+      await checkNotificationPermission();
     } catch (error) {
       console.error('Error loading notification settings:', error);
     }
-  };
+  }
 
-  const saveSettings = async (newSettings: NotificationSettings) => {
+  async function saveSettings(newSettings: NotificationSettings) {
     try {
       await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(newSettings));
       setSettings(newSettings);
-      
-      // Reschedule notifications based on new settings
+
       if (newSettings.enabled && newSettings.expirationAlerts) {
         const items = await loadPantryItems();
         await scheduleAllExpirationNotifications(items);
+      }
+
+      if (newSettings.enabled && newSettings.dailyReminder) {
+        await scheduleDailyReminder();
       } else {
         await cancelAllNotifications();
       }
-      
-      // Schedule daily reminder if enabled
-      if (newSettings.enabled && newSettings.dailyReminder) {
-        await scheduleDailyReminder();
-      }
-      
-      Toast.show({
-        type: 'success',
-        message: '✅ Settings saved successfully!',
-        duration: 2000,
-      });
     } catch (error) {
       console.error('Error saving notification settings:', error);
-      Toast.show({
-        type: 'error',
-        message: 'Failed to save settings',
-        duration: 2000,
-      });
+      Toast.show('Failed to save settings', 'error');
     }
-  };
+  }
 
-  const checkNotificationPermission = async () => {
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      setPermissionGranted(status === 'granted');
-    } catch (error) {
-      console.error('Error checking notification permission:', error);
+  async function checkNotificationPermission() {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && settings.enabled) {
+      setSettings({ ...settings, enabled: false });
     }
-  };
+  }
 
-  const requestNotificationPermission = async () => {
-    try {
-      const granted = await requestNotificationPermissions();
-      setPermissionGranted(granted);
-      
-      if (granted) {
-        Toast.show({
-          type: 'success',
-          message: '🎉 Notifications enabled!',
-          duration: 2000,
-        });
-        
-        // Enable notifications and reschedule
-        const newSettings = { ...settings, enabled: true };
-        await saveSettings(newSettings);
-      } else {
-        Alert.alert(
-          'Permission Denied',
-          'Please enable notifications in your device settings to receive alerts.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Open Settings', 
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
-                }
-              }
-            },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
+  async function requestNotificationPermission() {
+    const granted = await requestNotificationPermissions();
+    if (!granted) {
+      Alert.alert(
+        'Permission Required',
+        'Please enable notifications in your device settings to receive expiration alerts.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
     }
-  };
+    return granted;
+  }
 
-  const handleToggleEnabled = async (value: boolean) => {
-    if (value && !permissionGranted) {
-      await requestNotificationPermission();
-      return;
+  async function handleToggleEnabled(value: boolean) {
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
     }
-    
-    const newSettings = { ...settings, enabled: value };
-    await saveSettings(newSettings);
-  };
+    await saveSettings({ ...settings, enabled: value });
+  }
 
-  const handleToggleExpirationAlerts = async (value: boolean) => {
-    const newSettings = { ...settings, expirationAlerts: value };
-    await saveSettings(newSettings);
-  };
+  async function handleToggleExpirationAlerts(value: boolean) {
+    await saveSettings({ ...settings, expirationAlerts: value });
+  }
 
-  const handleToggleDailyReminder = async (value: boolean) => {
-    const newSettings = { ...settings, dailyReminder: value };
-    await saveSettings(newSettings);
-  };
+  async function handleToggleDailyReminder(value: boolean) {
+    await saveSettings({ ...settings, dailyReminder: value });
+  }
 
-  const handleToggleShoppingListReminders = async (value: boolean) => {
-    const newSettings = { ...settings, shoppingListReminders: value };
-    await saveSettings(newSettings);
-  };
+  async function handleToggleShoppingListReminders(value: boolean) {
+    await saveSettings({ ...settings, shoppingListReminders: value });
+  }
 
-  const handleChangeDaysBeforeExpiry = (days: number) => {
-    const newSettings = { ...settings, daysBeforeExpiry: days };
-    saveSettings(newSettings);
-  };
+  async function handleChangeDaysBeforeExpiry(days: number) {
+    await saveSettings({ ...settings, daysBeforeExpiry: days });
+  }
 
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
-      <Stack.Screen
-        options={{
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <Stack.Screen 
+        options={{ 
           headerShown: true,
-          title: '🔔 Notification Settings',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: '800', fontSize: 20 },
-        }}
+          title: 'Notification Settings',
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={{ marginLeft: Platform.OS === 'ios' ? 0 : 16 }}
+            >
+              <IconSymbol 
+                ios_icon_name="chevron.left" 
+                android_material_icon_name="arrow-back"
+                size={24} 
+                color={colors.text} 
+              />
+            </TouchableOpacity>
+          ),
+        }} 
       />
 
-      <ScrollView
-        style={commonStyles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Permission Status */}
-        {!permissionGranted && (
-          <View style={styles.permissionBanner}>
-            <IconSymbol 
-              ios_icon_name="exclamationmark.triangle.fill" 
-              android_material_icon_name="warning"
-              size={24} 
-              color={colors.warning} 
-            />
-            <View style={styles.permissionTextContainer}>
-              <Text style={styles.permissionTitle}>
-                Notifications Disabled
-              </Text>
-              <Text style={styles.permissionDescription}>
-                Enable notifications to receive expiration alerts and reminders
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.enableButton}
-              onPress={requestNotificationPermission}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.enableButtonText}>
-                Enable
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Master Toggle */}
+      <ScrollView style={styles.scrollContent}>
         <View style={styles.section}>
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <IconSymbol 
-                ios_icon_name="bell.fill" 
-                android_material_icon_name="notifications"
-                size={24} 
-                color={colors.primary} 
-              />
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingTitle}>
-                  Enable Notifications
-                </Text>
-                <Text style={styles.settingDescription}>
-                  Receive alerts and reminders from Nutrion
-                </Text>
-              </View>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Enable Notifications</Text>
+              <Text style={styles.settingDescription}>
+                Receive alerts about expiring items
+              </Text>
             </View>
             <Switch
               value={settings.enabled}
               onValueChange={handleToggleEnabled}
               trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
+              thumbColor="#FFFFFF"
             />
           </View>
-        </View>
 
-        {/* Expiration Alerts */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            ⏰ Expiration Alerts
-          </Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol 
-                  ios_icon_name="clock.fill" 
-                  android_material_icon_name="schedule"
-                  size={24} 
-                  color={colors.warning} 
-                />
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>
-                    Expiration Alerts
-                  </Text>
+          {settings.enabled && (
+            <>
+              <View style={styles.settingRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>Expiration Alerts</Text>
                   <Text style={styles.settingDescription}>
                     Get notified when items are about to expire
                   </Text>
                 </View>
+                <Switch
+                  value={settings.expirationAlerts}
+                  onValueChange={handleToggleExpirationAlerts}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFFFFF"
+                />
               </View>
-              <Switch
-                value={settings.expirationAlerts}
-                onValueChange={handleToggleExpirationAlerts}
-                disabled={!settings.enabled}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
-              />
-            </View>
 
-            {settings.expirationAlerts && (
-              <View style={styles.subSetting}>
-                <Text style={styles.subSettingLabel}>
-                  Alert me when items expire in:
-                </Text>
-                <View style={styles.daysSelector}>
-                  {[1, 2, 3, 5, 7].map((days) => (
-                    <TouchableOpacity
-                      key={days}
-                      style={[
-                        styles.dayOption,
-                        settings.daysBeforeExpiry === days && styles.dayOptionSelected,
-                      ]}
-                      onPress={() => handleChangeDaysBeforeExpiry(days)}
-                      activeOpacity={0.7}
-                      disabled={!settings.enabled}
-                    >
-                      <Text
+              {settings.expirationAlerts && (
+                <View>
+                  <Text style={[styles.settingLabel, { marginTop: 12 }]}>
+                    Alert me when items expire in:
+                  </Text>
+                  <View style={styles.daysSelector}>
+                    {[1, 2, 3, 5, 7].map((days) => (
+                      <TouchableOpacity
+                        key={days}
                         style={[
-                          styles.dayOptionText,
-                          settings.daysBeforeExpiry === days && styles.dayOptionTextSelected,
+                          styles.dayButton,
+                          settings.daysBeforeExpiry === days && styles.dayButtonActive,
                         ]}
+                        onPress={() => handleChangeDaysBeforeExpiry(days)}
                       >
-                        {days} {days === 1 ? 'day' : 'days'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.dayButtonText,
+                            settings.daysBeforeExpiry === days && styles.dayButtonTextActive,
+                          ]}
+                        >
+                          {days}d
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
+              )}
+
+              <View style={[styles.settingRow, styles.settingRowLast]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>Daily Reminder</Text>
+                  <Text style={styles.settingDescription}>
+                    Daily summary of expiring items
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.dailyReminder}
+                  onValueChange={handleToggleDailyReminder}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFFFFF"
+                />
               </View>
-            )}
+            </>
+          )}
+
+          <View style={styles.infoBox}>
+            <IconSymbol
+              ios_icon_name="info.circle"
+              android_material_icon_name="info"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.infoText}>
+              Notifications help you reduce food waste by reminding you to use items before they expire.
+            </Text>
           </View>
         </View>
-
-        {/* Daily Reminders */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            📅 Reminders
-          </Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol 
-                  ios_icon_name="calendar" 
-                  android_material_icon_name="event"
-                  size={24} 
-                  color={colors.accent} 
-                />
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>
-                    Daily Reminder
-                  </Text>
-                  <Text style={styles.settingDescription}>
-                    Daily summary of your pantry status
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.dailyReminder}
-                onValueChange={handleToggleDailyReminder}
-                disabled={!settings.enabled}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol 
-                  ios_icon_name="cart.fill" 
-                  android_material_icon_name="shopping_cart"
-                  size={24} 
-                  color={colors.secondary} 
-                />
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>
-                    Shopping List Reminders
-                  </Text>
-                  <Text style={styles.settingDescription}>
-                    Reminders for incomplete shopping items
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.shoppingListReminders}
-                onValueChange={handleToggleShoppingListReminders}
-                disabled={!settings.enabled}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? undefined : '#FFFFFF'}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <IconSymbol 
-            ios_icon_name="info.circle.fill" 
-            android_material_icon_name="info"
-            size={20} 
-            color={colors.textSecondary} 
-          />
-          <Text style={styles.infoText}>
-            Notifications help you reduce food waste by alerting you before items expire. You can customize when and what notifications you receive.
-          </Text>
-        </View>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  permissionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.warning + '15',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
-  },
-  permissionTextContainer: {
-    flex: 1,
-  },
-  permissionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  permissionDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  enableButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  enableButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 16,
-    letterSpacing: -0.3,
-  },
-  settingsList: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    overflow: 'hidden',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
-    elevation: 3,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  settingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 16,
-  },
-  settingTextContainer: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  subSetting: {
-    padding: 16,
-    backgroundColor: colors.background,
-  },
-  subSettingLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  daysSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  dayOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  dayOptionSelected: {
-    backgroundColor: colors.primary + '20',
-    borderColor: colors.primary,
-  },
-  dayOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  dayOptionTextSelected: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  infoSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-});
