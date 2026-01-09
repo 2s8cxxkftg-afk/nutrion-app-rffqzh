@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
 import * as Notifications from 'expo-notifications';
@@ -49,7 +48,6 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
@@ -89,14 +87,14 @@ export default function NotificationSettingsScreen() {
       
       Toast.show({
         type: 'success',
-        message: t('notifications.settingsSaved') || 'Settings saved',
+        message: '✅ Settings saved successfully!',
         duration: 2000,
       });
     } catch (error) {
       console.error('Error saving notification settings:', error);
       Toast.show({
         type: 'error',
-        message: t('notifications.saveError') || 'Failed to save settings',
+        message: 'Failed to save settings',
         duration: 2000,
       });
     }
@@ -119,7 +117,7 @@ export default function NotificationSettingsScreen() {
       if (granted) {
         Toast.show({
           type: 'success',
-          message: t('notifications.permissionGranted') || 'Notifications enabled',
+          message: '🎉 Notifications enabled!',
           duration: 2000,
         });
         
@@ -128,12 +126,12 @@ export default function NotificationSettingsScreen() {
         await saveSettings(newSettings);
       } else {
         Alert.alert(
-          t('notifications.permissionDenied') || 'Permission Denied',
-          t('notifications.permissionMessage') || 'Please enable notifications in your device settings to receive alerts.',
+          'Permission Denied',
+          'Please enable notifications in your device settings to receive alerts.',
           [
-            { text: t('cancel') || 'Cancel', style: 'cancel' },
+            { text: 'Cancel', style: 'cancel' },
             { 
-              text: t('notifications.openSettings') || 'Open Settings', 
+              text: 'Open Settings', 
               onPress: () => {
                 if (Platform.OS === 'ios') {
                   Linking.openURL('app-settings:');
@@ -185,7 +183,7 @@ export default function NotificationSettingsScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('notifications.title') || 'Notification Settings',
+          title: '🔔 Notification Settings',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerTitleStyle: { fontWeight: '800', fontSize: 20 },
@@ -208,10 +206,10 @@ export default function NotificationSettingsScreen() {
             />
             <View style={styles.permissionTextContainer}>
               <Text style={styles.permissionTitle}>
-                {t('notifications.permissionRequired') || 'Notifications Disabled'}
+                Notifications Disabled
               </Text>
               <Text style={styles.permissionDescription}>
-                {t('notifications.permissionMessage') || 'Enable notifications to receive expiration alerts and reminders'}
+                Enable notifications to receive expiration alerts and reminders
               </Text>
             </View>
             <TouchableOpacity
@@ -220,7 +218,7 @@ export default function NotificationSettingsScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.enableButtonText}>
-                {t('notifications.enable') || 'Enable'}
+                Enable
               </Text>
             </TouchableOpacity>
           </View>
@@ -238,10 +236,10 @@ export default function NotificationSettingsScreen() {
               />
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingTitle}>
-                  {t('notifications.enabled') || 'Enable Notifications'}
+                  Enable Notifications
                 </Text>
                 <Text style={styles.settingDescription}>
-                  {t('notifications.enabledDesc') || 'Receive alerts and reminders from Nutrion'}
+                  Receive alerts and reminders from Nutrion
                 </Text>
               </View>
             </View>
@@ -257,7 +255,7 @@ export default function NotificationSettingsScreen() {
         {/* Expiration Alerts */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {t('notifications.expirationAlerts') || 'Expiration Alerts'}
+            ⏰ Expiration Alerts
           </Text>
           <View style={styles.settingsList}>
             <View style={styles.settingItem}>
@@ -270,10 +268,10 @@ export default function NotificationSettingsScreen() {
                 />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>
-                    {t('notifications.expirationAlerts') || 'Expiration Alerts'}
+                    Expiration Alerts
                   </Text>
                   <Text style={styles.settingDescription}>
-                    {t('notifications.expirationAlertsDesc') || 'Get notified when items are about to expire'}
+                    Get notified when items are about to expire
                   </Text>
                 </View>
               </View>
@@ -289,7 +287,7 @@ export default function NotificationSettingsScreen() {
             {settings.expirationAlerts && (
               <View style={styles.subSetting}>
                 <Text style={styles.subSettingLabel}>
-                  {t('notifications.alertMeWhen') || 'Alert me when items expire in:'}
+                  Alert me when items expire in:
                 </Text>
                 <View style={styles.daysSelector}>
                   {[1, 2, 3, 5, 7].map((days) => (
@@ -309,7 +307,7 @@ export default function NotificationSettingsScreen() {
                           settings.daysBeforeExpiry === days && styles.dayOptionTextSelected,
                         ]}
                       >
-                        {days} {days === 1 ? (t('expiration.day') || 'day') : (t('expiration.days') || 'days')}
+                        {days} {days === 1 ? 'day' : 'days'}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -322,7 +320,7 @@ export default function NotificationSettingsScreen() {
         {/* Daily Reminders */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {t('notifications.reminders') || 'Reminders'}
+            📅 Reminders
           </Text>
           <View style={styles.settingsList}>
             <View style={styles.settingItem}>
@@ -335,10 +333,10 @@ export default function NotificationSettingsScreen() {
                 />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>
-                    {t('notifications.dailyReminder') || 'Daily Reminder'}
+                    Daily Reminder
                   </Text>
                   <Text style={styles.settingDescription}>
-                    {t('notifications.dailyReminderDesc') || 'Daily summary of your pantry status'}
+                    Daily summary of your pantry status
                   </Text>
                 </View>
               </View>
@@ -361,10 +359,10 @@ export default function NotificationSettingsScreen() {
                 />
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>
-                    {t('notifications.shoppingListReminders') || 'Shopping List Reminders'}
+                    Shopping List Reminders
                   </Text>
                   <Text style={styles.settingDescription}>
-                    {t('notifications.shoppingListRemindersDesc') || 'Reminders for incomplete shopping items'}
+                    Reminders for incomplete shopping items
                   </Text>
                 </View>
               </View>
@@ -388,7 +386,7 @@ export default function NotificationSettingsScreen() {
             color={colors.textSecondary} 
           />
           <Text style={styles.infoText}>
-            {t('notifications.infoText') || 'Notifications help you reduce food waste by alerting you before items expire. You can customize when and what notifications you receive.'}
+            Notifications help you reduce food waste by alerting you before items expire. You can customize when and what notifications you receive.
           </Text>
         </View>
 
