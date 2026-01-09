@@ -48,13 +48,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addItemContainer: {
-    flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    gap: spacing.sm,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   input: {
     flex: 1,
@@ -67,6 +70,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  quantityInput: {
+    width: 80,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
+  },
   addButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
@@ -78,6 +93,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  quantityLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
   content: {
     flex: 1,
@@ -258,6 +279,7 @@ function ShoppingScreen() {
 function ShoppingScreenContent() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [refreshing, setRefreshing] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [editQuantity, setEditQuantity] = useState('');
@@ -288,10 +310,16 @@ function ShoppingScreenContent() {
       return;
     }
 
+    const quantity = parseInt(newItemQuantity, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity (minimum 1)');
+      return;
+    }
+
     const newItem: ShoppingItem = {
       id: Date.now().toString(),
       name: newItemName.trim(),
-      quantity: 1,
+      quantity: quantity,
       completed: false,
       createdAt: new Date().toISOString(),
     };
@@ -300,6 +328,7 @@ function ShoppingScreenContent() {
     await saveShoppingItems(updatedItems);
     setItems(updatedItems);
     setNewItemName('');
+    setNewItemQuantity('1');
     Keyboard.dismiss();
   };
 
@@ -453,18 +482,30 @@ function ShoppingScreenContent() {
         style={{ flex: 1 }}
       >
         <View style={styles.addItemContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="✨ Add item to your list..."
-            placeholderTextColor={colors.textSecondary}
-            value={newItemName}
-            onChangeText={setNewItemName}
-            onSubmitEditing={handleAddItem}
-            returnKeyType="done"
-          />
-          <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
+          <Text style={styles.quantityLabel}>Add New Item</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="✨ Item name..."
+              placeholderTextColor={colors.textSecondary}
+              value={newItemName}
+              onChangeText={setNewItemName}
+              returnKeyType="next"
+            />
+            <TextInput
+              style={styles.quantityInput}
+              placeholder="Qty"
+              placeholderTextColor={colors.textSecondary}
+              value={newItemQuantity}
+              onChangeText={setNewItemQuantity}
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onSubmitEditing={handleAddItem}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -478,7 +519,7 @@ function ShoppingScreenContent() {
             <View style={styles.emptyContainer}>
               <IconSymbol
                 ios_icon_name="cart"
-                android_material_icon_name="shopping_cart"
+                android_material_icon_name="shopping-cart"
                 size={80}
                 color={colors.textSecondary}
                 style={styles.emptyIcon}

@@ -44,6 +44,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
+  userName: {
+    fontSize: typography.sizes.xl,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
   email: {
     fontSize: typography.sizes.md,
     color: colors.textSecondary,
@@ -141,6 +147,7 @@ function ProfileScreen() {
 function ProfileScreenContent() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, expiringSoon: 0, expired: 0 });
   const [hasAccess, setHasAccess] = useState(false);
@@ -151,6 +158,29 @@ function ProfileScreenContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
+        
+        // Fetch user profile from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, full_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('Error loading profile:', profileError);
+        }
+
+        if (profileData) {
+          // Use full_name if available, otherwise construct from first_name and last_name
+          if (profileData.full_name) {
+            setUserName(profileData.full_name);
+          } else if (profileData.first_name || profileData.last_name) {
+            const name = [profileData.first_name, profileData.last_name]
+              .filter(Boolean)
+              .join(' ');
+            setUserName(name);
+          }
+        }
       }
 
       const items = await loadPantryItems();
@@ -269,7 +299,14 @@ function ProfileScreenContent() {
               color={colors.primary}
             />
           </View>
-          <Text style={styles.email}>{userEmail}</Text>
+          {userName ? (
+            <>
+              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.email}>{userEmail}</Text>
+            </>
+          ) : (
+            <Text style={styles.email}>{userEmail}</Text>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -287,6 +324,31 @@ function ProfileScreenContent() {
               <Text style={styles.statLabel}>Expired</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <IconSymbol
+              ios_icon_name="person.circle.fill"
+              android_material_icon_name="account-circle"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>Edit Profile</Text>
+              <Text style={styles.menuItemSubtitle}>Update your name and info</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
