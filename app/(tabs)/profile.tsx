@@ -26,38 +26,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: Platform.OS === 'android' ? spacing.xl : spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontWeight: '600',
-  },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     paddingBottom: 100,
   },
-  profileCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+  header: {
+    padding: spacing.xl,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   avatar: {
     width: 80,
@@ -68,111 +44,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  userName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  userEmail: {
-    fontSize: 14,
+  email: {
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
-    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
-  premiumBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.round,
-  },
-  premiumBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginHorizontal: spacing.xs,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '600',
+  section: {
+    padding: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.text,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
+    fontSize: typography.sizes.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  menuIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  menuContent: {
+  menuItemContent: {
     flex: 1,
+    marginLeft: spacing.md,
   },
-  menuTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  menuSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
+  menuItemTitle: {
+    fontSize: typography.sizes.md,
     fontWeight: '500',
+    color: colors.text,
+  },
+  menuItemSubtitle: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: typography.sizes.xl,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  statLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   signOutButton: {
-    backgroundColor: colors.error + '20',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginTop: spacing.lg,
+    backgroundColor: colors.error + '15',
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.error,
+    marginTop: spacing.md,
   },
-  signOutButtonText: {
+  signOutText: {
     color: colors.error,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  premiumBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    marginLeft: spacing.sm,
+  },
+  premiumText: {
+    color: '#fff',
+    fontSize: typography.sizes.xs,
+    fontWeight: '600',
   },
 });
 
@@ -187,44 +140,53 @@ function ProfileScreen() {
 
 function ProfileScreenContent() {
   const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState('');
-  const [pantryCount, setPantryCount] = useState(0);
-  const [expiringCount, setExpiringCount] = useState(0);
-  const [subscriptionStatus, setSubscriptionStatus] = useState('');
-  const [signingOut, setSigningOut] = useState(false);
+  const [stats, setStats] = useState({ total: 0, expiringSoon: 0, expired: 0 });
+  const [hasAccess, setHasAccess] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
 
-  const loadProfileData = useCallback(async () => {
+  const loadUserData = useCallback(async () => {
     try {
-      setLoading(true);
-
-      // Get user email
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
       }
 
-      // Get pantry stats
       const items = await loadPantryItems();
-      setPantryCount(items.length);
-
-      const expiring = items.filter(item => {
+      const expiringSoon = items.filter(item => {
         const status = getExpirationStatus(item.expirationDate);
-        return status === 'expiring-soon' || status === 'warning';
-      });
-      setExpiringCount(expiring.length);
+        return status === 'warning';
+      }).length;
+      const expired = items.filter(item => {
+        const status = getExpirationStatus(item.expirationDate);
+        return status === 'expired';
+      }).length;
 
-      // Get subscription status
-      const subscription = await getSubscription();
-      if (subscription.status === 'trial') {
-        setSubscriptionStatus('🎉 Free Trial Active!');
-      } else if (subscription.status === 'active') {
-        setSubscriptionStatus('⭐ Premium Member');
+      setStats({
+        total: items.length,
+        expiringSoon,
+        expired,
+      });
+
+      const access = await hasActiveAccess();
+      setHasAccess(access);
+
+      const sub = await getSubscription();
+      if (sub) {
+        if (sub.status === 'trial') {
+          const daysLeft = Math.ceil((new Date(sub.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          setSubscriptionStatus(`Free Trial (${daysLeft} days left)`);
+        } else if (sub.status === 'active') {
+          setSubscriptionStatus('Premium Active');
+        } else {
+          setSubscriptionStatus('Free');
+        }
       } else {
-        setSubscriptionStatus('Free Plan');
+        setSubscriptionStatus('Free');
       }
     } catch (error) {
-      console.error('Error loading profile data:', error);
+      console.error('Error loading user data:', error);
     } finally {
       setLoading(false);
     }
@@ -232,9 +194,34 @@ function ProfileScreenContent() {
 
   useFocusEffect(
     useCallback(() => {
-      loadProfileData();
-    }, [loadProfileData])
+      loadUserData();
+    }, [loadUserData])
   );
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await supabase.auth.signOut();
+              await AsyncStorage.clear();
+              Toast.show('Signed out successfully', 'success');
+              router.replace('/auth');
+            } catch (error) {
+              console.error('Error signing out:', error);
+              Toast.show('Failed to sign out', 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleResetSubscription = async () => {
     Alert.alert(
@@ -248,47 +235,11 @@ function ProfileScreenContent() {
           onPress: async () => {
             try {
               await resetSubscription();
-              await loadProfileData();
-              Toast.show({
-                message: '✅ Subscription reset successfully!',
-                type: 'success',
-              });
+              Toast.show('Subscription reset successfully', 'success');
+              await loadUserData();
             } catch (error) {
               console.error('Error resetting subscription:', error);
-              Toast.show({
-                message: 'Failed to reset subscription',
-                type: 'error',
-              });
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setSigningOut(true);
-              await supabase.auth.signOut();
-              await AsyncStorage.clear();
-              router.replace('/auth');
-            } catch (error) {
-              console.error('Error signing out:', error);
-              Toast.show({
-                message: 'Failed to sign out',
-                type: 'error',
-              });
-            } finally {
-              setSigningOut(false);
+              Toast.show('Failed to reset subscription', 'error');
             }
           },
         },
@@ -298,8 +249,8 @@ function ProfileScreenContent() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
@@ -308,154 +259,136 @@ function ProfileScreenContent() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>👤 My Profile</Text>
-        <Text style={styles.headerSubtitle}>
-          {subscriptionStatus}
-        </Text>
-      </View>
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.profileCard}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
           <View style={styles.avatar}>
-            <IconSymbol
-              ios_icon_name="person.circle.fill"
-              android_material_icon_name="person"
-              size={48}
-              color={colors.primary}
-            />
-          </View>
-          <Text style={styles.userName}>🌟 Amazing User!</Text>
-          <Text style={styles.userEmail}>{userEmail || 'user@nutrion.app'}</Text>
-          <View style={styles.premiumBadge}>
-            <Text style={styles.premiumBadgeText}>{subscriptionStatus}</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{pantryCount}</Text>
-            <Text style={styles.statLabel}>🥗 Items Tracked</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{expiringCount}</Text>
-            <Text style={styles.statLabel}>⚡ Need Attention</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>⚙️ Quick Actions</Text>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/subscription-management')}
-        >
-          <View style={[styles.menuIconContainer, { backgroundColor: colors.primary + '20' }]}>
-            <IconSymbol
-              ios_icon_name="star.fill"
-              android_material_icon_name="star"
-              size={20}
-              color={colors.primary}
-            />
-          </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>💎 Manage Subscription</Text>
-            <Text style={styles.menuSubtitle}>View your plan and billing details</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron_right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/notification-settings')}
-        >
-          <View style={[styles.menuIconContainer, { backgroundColor: colors.warning + '20' }]}>
-            <IconSymbol
-              ios_icon_name="bell.fill"
-              android_material_icon_name="notifications"
-              size={20}
-              color={colors.warning}
-            />
-          </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>🔔 Notification Settings</Text>
-            <Text style={styles.menuSubtitle}>Customize your alerts and reminders</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron_right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/edit-profile')}
-        >
-          <View style={[styles.menuIconContainer, { backgroundColor: colors.info + '20' }]}>
             <IconSymbol
               ios_icon_name="person.fill"
               android_material_icon_name="person"
-              size={20}
-              color={colors.info}
+              size={40}
+              color={colors.primary}
             />
           </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>✏️ Edit Profile</Text>
-            <Text style={styles.menuSubtitle}>Update your personal information</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron_right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
+          <Text style={styles.email}>{userEmail}</Text>
+        </View>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleResetSubscription}
-        >
-          <View style={[styles.menuIconContainer, { backgroundColor: colors.success + '20' }]}>
+        <View style={styles.section}>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{stats.total}</Text>
+              <Text style={styles.statLabel}>Total Items</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.warning }]}>{stats.expiringSoon}</Text>
+              <Text style={styles.statLabel}>Expiring Soon</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.error }]}>{stats.expired}</Text>
+              <Text style={styles.statLabel}>Expired</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Subscription</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/subscription-management')}
+          >
             <IconSymbol
-              ios_icon_name="arrow.clockwise"
-              android_material_icon_name="refresh"
-              size={20}
-              color={colors.success}
+              ios_icon_name="crown.fill"
+              android_material_icon_name="workspace-premium"
+              size={24}
+              color={hasAccess ? colors.primary : colors.textSecondary}
             />
-          </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>🔄 Reset Subscription</Text>
-            <Text style={styles.menuSubtitle}>Start a fresh trial (Dev only)</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron_right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
+            <View style={styles.menuItemContent}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.menuItemTitle}>Manage Subscription</Text>
+                {hasAccess && (
+                  <View style={styles.premiumBadge}>
+                    <Text style={styles.premiumText}>PREMIUM</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.menuItemSubtitle}>{subscriptionStatus}</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-          disabled={signingOut}
-        >
-          {signingOut ? (
-            <ActivityIndicator color={colors.error} />
-          ) : (
-            <Text style={styles.signOutButtonText}>🚪 Sign Out</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/notification-settings')}
+          >
+            <IconSymbol
+              ios_icon_name="bell.fill"
+              android_material_icon_name="notifications"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>Notifications</Text>
+              <Text style={styles.menuItemSubtitle}>Manage expiration alerts</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/change-password')}
+          >
+            <IconSymbol
+              ios_icon_name="lock.fill"
+              android_material_icon_name="lock"
+              size={24}
+              color={colors.primary}
+            />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemTitle}>Change Password</Text>
+              <Text style={styles.menuItemSubtitle}>Update your password</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleResetSubscription}
+            >
+              <IconSymbol
+                ios_icon_name="arrow.counterclockwise"
+                android_material_icon_name="refresh"
+                size={24}
+                color={colors.warning}
+              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Reset Subscription</Text>
+                <Text style={styles.menuItemSubtitle}>Dev only: Reset trial</Text>
+              </View>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+
+          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
