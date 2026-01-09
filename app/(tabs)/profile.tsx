@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getExpirationStatus } from '@/utils/expirationHelper';
-import { getSubscription, hasActiveAccess } from '@/utils/subscription';
+import { getSubscription, hasActiveAccess, resetSubscription } from '@/utils/subscription';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/utils/supabase';
@@ -176,6 +176,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  resetButton: {
+    backgroundColor: colors.warning + '15',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.warning + '30',
+    marginTop: spacing.md,
+  },
+  resetButtonText: {
+    color: colors.warning,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 function ProfileScreen() {
@@ -245,6 +259,33 @@ function ProfileScreenContent() {
     }, [loadData])
   );
 
+  const handleResetSubscription = async () => {
+    Alert.alert(
+      'Reset Subscription',
+      'This will reset your subscription to day one and restart your free trial. Are you sure?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await resetSubscription();
+              Toast.show('Subscription reset successfully', 'success');
+              loadData();
+            } catch (error) {
+              console.error('Error resetting subscription:', error);
+              Toast.show('Failed to reset subscription', 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
@@ -273,19 +314,13 @@ function ProfileScreenContent() {
               }
               
               console.log('✅ Sign out successful');
-              Toast.show({
-                message: 'Signed out successfully',
-                type: 'success',
-              });
+              Toast.show('Signed out successfully', 'success');
               
               // Navigate to auth screen
               router.replace('/auth');
             } catch (error) {
               console.error('❌ Sign out error:', error);
-              Toast.show({
-                message: 'Failed to sign out',
-                type: 'error',
-              });
+              Toast.show('Failed to sign out', 'error');
             }
           },
         },
@@ -470,12 +505,21 @@ function ProfileScreenContent() {
         {/* Sign Out / Sign In */}
         <View style={styles.section}>
           {isAuthenticated ? (
-            <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={handleSignOut}
-            >
-              <Text style={styles.signOutButtonText}>Sign Out</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.signOutButton}
+                onPress={handleSignOut}
+              >
+                <Text style={styles.signOutButtonText}>Sign Out</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={handleResetSubscription}
+              >
+                <Text style={styles.resetButtonText}>Reset Subscription (Dev)</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             <TouchableOpacity
               style={styles.signInButton}

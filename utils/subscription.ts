@@ -121,6 +121,25 @@ export async function cancelSubscription(): Promise<void> {
 }
 
 /**
+ * Reset subscription to day one (for testing/development)
+ */
+export async function resetSubscription(): Promise<void> {
+  try {
+    // Remove subscription data
+    await AsyncStorage.removeItem(SUBSCRIPTION_KEY);
+    await AsyncStorage.removeItem(TRIAL_START_KEY);
+    
+    // Start a new trial
+    await startFreeTrial();
+    
+    console.log('Subscription reset to day one');
+  } catch (error) {
+    console.error('Error resetting subscription:', error);
+    throw error;
+  }
+}
+
+/**
  * Check if user has active access (trial or premium)
  */
 export async function hasActiveAccess(): Promise<boolean> {

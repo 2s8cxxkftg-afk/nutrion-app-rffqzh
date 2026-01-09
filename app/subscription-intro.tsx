@@ -141,24 +141,28 @@ const styles = StyleSheet.create({
 const features = [
   {
     icon: 'leaf.fill',
+    androidIcon: 'eco',
     color: colors.success,
     title: 'Smart Pantry Tracking',
     description: 'Scan barcodes or manually add items to track your food inventory',
   },
   {
     icon: 'bell.fill',
+    androidIcon: 'notifications',
     color: colors.warning,
     title: 'Expiration Alerts',
     description: 'Get notified before food expires so nothing goes to waste',
   },
   {
     icon: 'chart.bar.fill',
+    androidIcon: 'bar_chart',
     color: colors.info,
     title: 'Waste Analytics',
     description: 'See how much money and food you\'re saving over time',
   },
   {
     icon: 'fork.knife',
+    androidIcon: 'restaurant',
     color: colors.primary,
     title: 'Meal Planning',
     description: 'Get recipe suggestions based on what\'s in your pantry',
@@ -182,9 +186,14 @@ export default function SubscriptionIntroScreen() {
       >
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <IconSymbol name="leaf.fill" size={40} color={colors.primary} />
+            <IconSymbol 
+              ios_icon_name="leaf.fill" 
+              android_material_icon_name="eco" 
+              size={40} 
+              color={colors.primary} 
+            />
           </View>
-          <Text style={styles.title}>Welcome to Nutrion Premium</Text>
+          <Text style={styles.title}>Welcome to Nutrion</Text>
           <Text style={styles.subtitle}>
             Track your pantry, reduce waste, and save money with smart food management
           </Text>
@@ -199,7 +208,12 @@ export default function SubscriptionIntroScreen() {
                   { backgroundColor: `${feature.color}20` },
                 ]}
               >
-                <IconSymbol name={feature.icon} size={20} color={feature.color} />
+                <IconSymbol 
+                  ios_icon_name={feature.icon} 
+                  android_material_icon_name={feature.androidIcon} 
+                  size={20} 
+                  color={feature.color} 
+                />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -213,7 +227,7 @@ export default function SubscriptionIntroScreen() {
           <View style={styles.badge}>
             <Text style={styles.badgeText}>15 DAYS FREE TRIAL</Text>
           </View>
-          <Text style={styles.pricingText}>$2/month after trial</Text>
+          <Text style={styles.pricingText}>$1.99/month after trial</Text>
           <Text style={styles.cancelText}>Cancel anytime</Text>
         </View>
 

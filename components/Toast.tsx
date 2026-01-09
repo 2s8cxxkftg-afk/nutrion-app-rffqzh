@@ -1,175 +1,150 @@
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors } from '@/styles/commonStyles';
-import * as Haptics from 'expo-haptics';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
+import { IconSymbol } from './IconSymbol';
+import { colors, spacing, borderRadius } from '@/styles/commonStyles';
+
+type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+interface ToastProps {
+  message: string;
+  type?: ToastType;
+  duration?: number;
+  onHide?: () => void;
+}
 
 interface ToastConfig {
-  message: string;
-  type?: 'success' | 'error' | 'info';
-  duration?: number;
-  text?: string; // Backward compatibility
+  icon: string;
+  androidIcon: string;
+  color: string;
+  backgroundColor: string;
 }
 
-interface ToastState extends ToastConfig {
-  visible: boolean;
-  id: number;
-}
+const toastConfigs: Record<ToastType, ToastConfig> = {
+  success: {
+    icon: 'checkmark.circle.fill',
+    androidIcon: 'check_circle',
+    color: colors.success,
+    backgroundColor: colors.success + '15',
+  },
+  error: {
+    icon: 'xmark.circle.fill',
+    androidIcon: 'error',
+    color: colors.error,
+    backgroundColor: colors.error + '15',
+  },
+  info: {
+    icon: 'info.circle.fill',
+    androidIcon: 'info',
+    color: colors.info,
+    backgroundColor: colors.info + '15',
+  },
+  warning: {
+    icon: 'exclamationmark.triangle.fill',
+    androidIcon: 'warning',
+    color: colors.warning,
+    backgroundColor: colors.warning + '15',
+  },
+};
 
-let toastListener: ((config: ToastState) => void) | null = null;
-let toastId = 0;
+let toastRef: ((message: string, type?: ToastType, duration?: number) => void) | null = null;
 
-// Static Toast API
-const Toast = {
-  show: (config: ToastConfig | string, type?: 'success' | 'error' | 'info', duration?: number) => {
-    const id = ++toastId;
-    
-    // Handle both object and string parameters for backward compatibility
-    let toastConfig: ToastConfig;
-    if (typeof config === 'string') {
-      toastConfig = {
-        message: config,
-        type: type || 'success',
-        duration: duration || 3000,
-      };
-    } else {
-      toastConfig = {
-        message: config.message || config.text || '',
-        type: config.type || 'success',
-        duration: config.duration || 3000,
-      };
-    }
-    
-    if (toastListener) {
-      toastListener({
-        ...toastConfig,
-        visible: true,
-        id,
-      });
+export const Toast = {
+  show: (message: string, type: ToastType = 'info', duration: number = 3000) => {
+    if (toastRef) {
+      toastRef(message, type, duration);
     }
   },
 };
 
-// Toast Component
-export function ToastComponent() {
-  const [toastState, setToastState] = useState<ToastState>({
-    visible: false,
-    message: '',
-    type: 'success',
-    duration: 3000,
-    id: 0,
-  });
-
-  const translateY = React.useRef(new Animated.Value(100)).current;
-  const opacity = React.useRef(new Animated.Value(0)).current;
+export function ToastContainer() {
+  const [visible, setVisible] = React.useState(false);
+  const [message, setMessage] = React.useState('');
+  const [type, setType] = React.useState<ToastType>('info');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    toastListener = (config: ToastState) => {
-      setToastState(config);
-    };
-
-    return () => {
-      toastListener = null;
-    };
-  }, []);
-
-  const hideToast = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: 100,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setToastState((prev) => ({ ...prev, visible: false }));
-    });
-  }, [translateY, opacity]);
-
-  useEffect(() => {
-    if (toastState.visible) {
-      // Trigger haptic feedback
-      try {
-        Haptics.notificationAsync(
-          toastState.type === 'success'
-            ? Haptics.NotificationFeedbackType.Success
-            : toastState.type === 'error'
-            ? Haptics.NotificationFeedbackType.Error
-            : Haptics.NotificationFeedbackType.Warning
-        );
-      } catch (error) {
-        console.log('Haptics not available:', error);
+    toastRef = (msg: string, toastType: ToastType = 'info', duration: number = 3000) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
 
-      // Animate in
+      setMessage(msg);
+      setType(toastType);
+      setVisible(true);
+
       Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
+        Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 65,
+          friction: 8,
+          useNativeDriver: true,
+        }),
       ]).start();
 
-      // Auto hide after duration
-      const timer = setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         hideToast();
-      }, toastState.duration || 3000);
+      }, duration);
+    };
 
-      return () => clearTimeout(timer);
-    }
-  }, [toastState.visible, toastState.type, toastState.duration, toastState.id, translateY, opacity, hideToast]);
+    return () => {
+      toastRef = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
-  if (!toastState.visible) return null;
-
-  const getIconName = () => {
-    switch (toastState.type) {
-      case 'success':
-        return 'checkmark.circle.fill';
-      case 'error':
-        return 'xmark.circle.fill';
-      case 'info':
-        return 'info.circle.fill';
-      default:
-        return 'checkmark.circle.fill';
-    }
+  const hideToast = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: -100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setVisible(false);
+    });
   };
 
-  const getBackgroundColor = () => {
-    switch (toastState.type) {
-      case 'success':
-        return colors.success;
-      case 'error':
-        return colors.error;
-      case 'info':
-        return colors.primary;
-      default:
-        return colors.success;
-    }
-  };
+  if (!visible) {
+    return null;
+  }
+
+  const config = toastConfigs[type];
 
   return (
     <Animated.View
       style={[
         styles.container,
         {
+          opacity: fadeAnim,
           transform: [{ translateY }],
-          opacity,
-          backgroundColor: getBackgroundColor(),
+          backgroundColor: config.backgroundColor,
+          borderColor: config.color + '30',
         },
       ]}
     >
-      <IconSymbol name={getIconName()} size={24} color="#FFFFFF" />
-      <Text style={styles.message}>{toastState.message}</Text>
+      <IconSymbol
+        ios_icon_name={config.icon}
+        android_material_icon_name={config.androidIcon}
+        size={24}
+        color={config.color}
+        style={styles.icon}
+      />
+      <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
     </Animated.View>
   );
 }
@@ -177,24 +152,34 @@ export function ToastComponent() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: spacing.md,
+    right: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 12,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-    elevation: 5,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
     zIndex: 9999,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  icon: {
+    marginRight: spacing.sm,
   },
   message: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
 
