@@ -55,7 +55,7 @@ export default function NumberInput({
           <IconSymbol
             ios_icon_name="chevron.up"
             android_material_icon_name="arrow-drop-up"
-            size={20}
+            size={24}
             color={colors.text}
           />
         </TouchableOpacity>
@@ -68,7 +68,7 @@ export default function NumberInput({
           <IconSymbol
             ios_icon_name="chevron.down"
             android_material_icon_name="arrow-drop-down"
-            size={20}
+            size={24}
             color={colors.text}
           />
         </TouchableOpacity>
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
@@ -90,19 +90,21 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     padding: spacing.md,
-    fontSize: typography.sizes.md,
+    fontSize: typography.body,
     color: colors.text,
+    fontWeight: '500',
   },
   arrowContainer: {
-    width: 40,
+    width: 44,
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
+    backgroundColor: colors.backgroundAlt,
   },
   arrowButton: {
-    height: 24,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundAlt,
   },
   arrowDivider: {
     height: 1,
