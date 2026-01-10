@@ -384,7 +384,7 @@ export default function AuthScreen() {
               <Text style={[styles.buttonText, styles.secondaryButtonText]}>
                 {isSignUp
                   ? 'Already have an account? Sign In'
-                  : 'Don&apos;t have an account? Sign Up'}
+                  : "Don't have an account? Sign Up"}
               </Text>
             </TouchableOpacity>
 
