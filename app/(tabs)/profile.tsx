@@ -1,259 +1,89 @@
 
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { loadPantryItems } from '@/utils/storage';
-import AdBanner from '@/components/AdBanner';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { supabase } from '@/utils/supabase';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { getSubscription, hasActiveAccess, resetSubscription, isPremiumUser } from '@/utils/subscription';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { getExpirationStatus } from '@/utils/expirationHelper';
-import Toast from '@/components/Toast';
-import { IconSymbol } from '@/components/IconSymbol';
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, ScrollView, Platform, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { IconSymbol } from "@/components/IconSymbol";
+import { GlassView } from "expo-glass-effect";
+import { useTheme } from "@react-navigation/native";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/utils/supabase";
+import { Stack, useRouter, useFocusEffect } from "expo-router";
+import Toast from "@/components/Toast";
+import AdBanner from "@/components/AdBanner";
+import { colors, commonStyles, spacing, borderRadius, typography } from "@/styles/commonStyles";
+import { getSubscription, hasActiveAccess, resetSubscription, isPremiumUser } from "@/utils/subscription";
+import { getExpirationStatus } from "@/utils/expirationHelper";
+import { loadPantryItems } from "@/utils/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.md,
-    paddingBottom: 100,
-  },
-  header: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-    ...commonStyles.shadow,
-  },
-  profileIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  userName: {
-    ...typography.h2,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  userEmail: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  statsContainer: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    ...commonStyles.shadow,
-  },
-  statsTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    ...typography.h2,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  aiSection: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    ...commonStyles.shadow,
-  },
-  aiSectionTitle: {
-    ...typography.h4,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  aiSectionDescription: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  aiButtons: {
-    gap: spacing.sm,
-  },
-  aiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  aiButtonContent: {
-    flex: 1,
-  },
-  aiButtonTitle: {
-    ...typography.body,
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  aiButtonSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    ...commonStyles.shadow,
-  },
-  menuItemContent: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  menuItemTitle: {
-    ...typography.body,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  menuItemSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  signOutButton: {
-    backgroundColor: colors.error,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-    ...commonStyles.shadow,
-  },
-  signOutButtonText: {
-    ...typography.button,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  resetButton: {
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  resetButtonText: {
-    ...typography.button,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-
-function ProfileScreen() {
+export default function ProfileScreen() {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
       <ProfileScreenContent />
-    </SafeAreaView>
+    </>
   );
 }
 
 function ProfileScreenContent() {
+  const theme = useTheme();
+  const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
-  const { user } = useAuth();
+  const [profileData, setProfileData] = useState<{ firstName: string; lastName: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [totalItems, setTotalItems] = useState(0);
-  const [expiringItems, setExpiringItems] = useState(0);
-  const [expiredItems, setExpiredItems] = useState(0);
-  const [isPremium, setIsPremium] = useState(false);
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    expiringItems: 0,
+    expiredItems: 0,
+  });
 
-  const loadUserData = useCallback(async () => {
+  const loadProfile = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      setLoading(true);
-      
-      if (user) {
-        setUserEmail(user.email || '');
-        
-        // Try to get display name from multiple sources
-        const storedName = await AsyncStorage.getItem('user_name');
-        const displayName = storedName || 
-                          user.user_metadata?.full_name || 
-                          user.user_metadata?.name ||
-                          user.user_metadata?.display_name ||
-                          user.email?.split('@')[0] || 
-                          'User';
-        
-        setUserName(displayName);
+      // Fetch profile data from Supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading profile:', error);
       }
 
+      if (data) {
+        setProfileData({
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+        });
+      }
+
+      // Load pantry stats
       const items = await loadPantryItems();
-      setTotalItems(items.length);
+      const now = new Date();
+      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-      let expiring = 0;
-      let expired = 0;
-      items.forEach(item => {
-        const status = getExpirationStatus(item.expirationDate);
-        if (status === 'expiring') expiring++;
-        if (status === 'expired') expired++;
+      const expiringCount = items.filter(item => {
+        const expDate = new Date(item.expirationDate);
+        return expDate > now && expDate <= threeDaysFromNow;
+      }).length;
+
+      const expiredCount = items.filter(item => {
+        const expDate = new Date(item.expirationDate);
+        return expDate <= now;
+      }).length;
+
+      setStats({
+        totalItems: items.length,
+        expiringItems: expiringCount,
+        expiredItems: expiredCount,
       });
-      setExpiringItems(expiring);
-      setExpiredItems(expired);
-
-      const premium = await isPremiumUser();
-      setIsPremium(premium);
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -261,8 +91,8 @@ function ProfileScreenContent() {
 
   useFocusEffect(
     useCallback(() => {
-      loadUserData();
-    }, [loadUserData])
+      loadProfile();
+    }, [loadProfile])
   );
 
   const handleSignOut = async () => {
@@ -276,11 +106,10 @@ function ProfileScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await supabase.auth.signOut();
-              Toast.show('Signed out successfully', 'success');
+              await signOut();
               router.replace('/auth');
             } catch (error) {
-              console.error('Sign out error:', error);
+              console.error('Error signing out:', error);
               Toast.show('Failed to sign out', 'error');
             }
           },
@@ -292,7 +121,7 @@ function ProfileScreenContent() {
   const handleResetSubscription = async () => {
     Alert.alert(
       'Reset Subscription',
-      'This will reset your trial period. Are you sure?',
+      'This will reset your subscription to start a new trial. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -302,9 +131,9 @@ function ProfileScreenContent() {
             try {
               await resetSubscription();
               Toast.show('Subscription reset successfully', 'success');
-              loadUserData();
+              loadProfile();
             } catch (error) {
-              console.error('Reset error:', error);
+              console.error('Error resetting subscription:', error);
               Toast.show('Failed to reset subscription', 'error');
             }
           },
@@ -313,221 +142,287 @@ function ProfileScreenContent() {
     );
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
+  // Get the full name without any symbols
+  const fullName = profileData?.firstName && profileData?.lastName
+    ? `${profileData.firstName} ${profileData.lastName}`
+    : profileData?.firstName || profileData?.lastName || 'User';
+
   return (
-    <View style={styles.content}>
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
+        ]}
       >
-        <View style={styles.header}>
-          <View style={styles.profileIcon}>
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={40}
-              color="#fff"
-            />
-          </View>
-          <Text style={styles.userName}>{userName}</Text>
-          <Text style={styles.userEmail}>{userEmail}</Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsTitle}>Pantry Overview</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{totalItems}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.warning }]}>{expiringItems}</Text>
-              <Text style={styles.statLabel}>Expiring Soon</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.error }]}>{expiredItems}</Text>
-              <Text style={styles.statLabel}>Expired</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.aiSection}>
-          <IconSymbol
-            ios_icon_name="sparkles"
-            android_material_icon_name="auto-awesome"
-            size={24}
-            color={colors.primary}
+        {/* Profile Header */}
+        <GlassView style={[
+          styles.profileHeader,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <IconSymbol 
+            ios_icon_name="person.circle.fill" 
+            android_material_icon_name="account-circle" 
+            size={80} 
+            color={theme.colors.primary} 
           />
-          <Text style={styles.aiSectionTitle}>AI-Powered Features</Text>
-          <Text style={styles.aiSectionDescription}>
-            Enhance your pantry management with intelligent tools
+          <Text style={[styles.name, { color: theme.colors.text }]}>
+            {fullName}
           </Text>
-          <View style={styles.aiButtons}>
-            <TouchableOpacity
-              style={styles.aiButton}
-              onPress={() => router.push('/ai-recipes')}
-            >
-              <IconSymbol
-                ios_icon_name="fork.knife"
-                android_material_icon_name="restaurant"
-                size={24}
-                color={colors.primary}
+          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>
+            {user?.email || 'No email'}
+          </Text>
+          
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <IconSymbol 
+              ios_icon_name="pencil" 
+              android_material_icon_name="edit" 
+              size={16} 
+              color="#FFFFFF" 
+            />
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </GlassView>
+
+        {/* Stats Section */}
+        <GlassView style={[
+          styles.statsContainer,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: theme.colors.primary }]}>{stats.totalItems}</Text>
+            <Text style={[styles.statLabel, { color: theme.dark ? '#98989D' : '#666' }]}>Total Items</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#FFA500' }]}>{stats.expiringItems}</Text>
+            <Text style={[styles.statLabel, { color: theme.dark ? '#98989D' : '#666' }]}>Expiring Soon</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#FF4444' }]}>{stats.expiredItems}</Text>
+            <Text style={[styles.statLabel, { color: theme.dark ? '#98989D' : '#666' }]}>Expired</Text>
+          </View>
+        </GlassView>
+
+        {/* Settings Section */}
+        <GlassView style={[
+          styles.section,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/notification-settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol 
+                ios_icon_name="bell.fill" 
+                android_material_icon_name="notifications" 
+                size={24} 
+                color={theme.colors.primary} 
               />
-              <View style={styles.aiButtonContent}>
-                <Text style={styles.aiButtonTitle}>AI Recipe Generator</Text>
-                <Text style={styles.aiButtonSubtitle}>
-                  Get personalized recipes from your pantry • 90-95% accuracy
-                </Text>
-              </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron-right"
-                size={20}
-                color={colors.textSecondary}
+              <Text style={[styles.menuItemText, { color: theme.colors.text }]}>Notifications</Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={theme.dark ? '#98989D' : '#666'} 
+            />
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/subscription-management')}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol 
+                ios_icon_name="star.fill" 
+                android_material_icon_name="star" 
+                size={24} 
+                color={theme.colors.primary} 
               />
-            </TouchableOpacity>
+              <Text style={[styles.menuItemText, { color: theme.colors.text }]}>Subscription</Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={theme.dark ? '#98989D' : '#666'} 
+            />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.aiButton}
-              onPress={() => router.push('/scan-receipt')}
-            >
-              <IconSymbol
-                ios_icon_name="doc.text.viewfinder"
-                android_material_icon_name="receipt"
-                size={24}
-                color={colors.primary}
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/about')}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol 
+                ios_icon_name="info.circle.fill" 
+                android_material_icon_name="info" 
+                size={24} 
+                color={theme.colors.primary} 
               />
-              <View style={styles.aiButtonContent}>
-                <Text style={styles.aiButtonTitle}>Receipt Scanner</Text>
-                <Text style={styles.aiButtonSubtitle}>
-                  Scan receipts to add items instantly • 85-92% accuracy
-                </Text>
-              </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron-right"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+              <Text style={[styles.menuItemText, { color: theme.colors.text }]}>About</Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={theme.dark ? '#98989D' : '#666'} 
+            />
+          </TouchableOpacity>
+        </GlassView>
 
-        <Text style={styles.sectionTitle}>Settings</Text>
-
+        {/* Sign Out Button */}
         <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/edit-profile')}
+          style={[styles.signOutButton, { backgroundColor: '#FF4444' }]}
+          onPress={handleSignOut}
         >
-          <IconSymbol
-            ios_icon_name="person.circle"
-            android_material_icon_name="account-circle"
-            size={24}
-            color={colors.primary}
+          <IconSymbol 
+            ios_icon_name="arrow.right.square.fill" 
+            android_material_icon_name="logout" 
+            size={20} 
+            color="#FFFFFF" 
           />
-          <View style={styles.menuItemContent}>
-            <Text style={styles.menuItemTitle}>Edit Profile</Text>
-            <Text style={styles.menuItemSubtitle}>Update your personal information</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron-right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/notification-settings')}
-        >
-          <IconSymbol
-            ios_icon_name="bell.fill"
-            android_material_icon_name="notifications"
-            size={24}
-            color={colors.primary}
-          />
-          <View style={styles.menuItemContent}>
-            <Text style={styles.menuItemTitle}>Notifications</Text>
-            <Text style={styles.menuItemSubtitle}>Manage expiration alerts and reminders</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron-right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/subscription-management')}
-        >
-          <IconSymbol
-            ios_icon_name="star.fill"
-            android_material_icon_name="star"
-            size={24}
-            color={colors.primary}
-          />
-          <View style={styles.menuItemContent}>
-            <Text style={styles.menuItemTitle}>
-              {isPremium ? 'Premium Subscription' : 'Upgrade to Premium'}
-            </Text>
-            <Text style={styles.menuItemSubtitle}>
-              {isPremium ? 'Manage your subscription' : 'Remove ads and unlock features'}
-            </Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron-right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/change-password')}
-        >
-          <IconSymbol
-            ios_icon_name="lock.fill"
-            android_material_icon_name="lock"
-            size={24}
-            color={colors.primary}
-          />
-          <View style={styles.menuItemContent}>
-            <Text style={styles.menuItemTitle}>Change Password</Text>
-            <Text style={styles.menuItemSubtitle}>Update your account password</Text>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.right"
-            android_material_icon_name="chevron-right"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
 
-        {__DEV__ && (
-          <TouchableOpacity style={styles.resetButton} onPress={handleResetSubscription}>
-            <Text style={styles.resetButtonText}>Reset Subscription (Dev Only)</Text>
-          </TouchableOpacity>
-        )}
+        {/* Ad Banner */}
+        <AdBanner />
       </ScrollView>
-      <AdBanner />
-    </View>
+    </SafeAreaView>
   );
 }
 
-export default ProfileScreen;
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contentContainer: {
+    padding: 20,
+  },
+  contentContainerWithTabBar: {
+    paddingBottom: 100,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 32,
+    marginBottom: 16,
+    gap: 12,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  email: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  editButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+    marginHorizontal: 8,
+  },
+  section: {
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    marginLeft: 52,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  signOutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
