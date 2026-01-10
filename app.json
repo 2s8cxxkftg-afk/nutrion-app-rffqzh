@@ -1,57 +1,92 @@
+
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "Nutrion",
+    "slug": "nutrion-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/natively-dark.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E8F5E9"
+      "backgroundColor": "#4CAF50"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nutrion.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Nutrion needs camera access to scan barcodes",
-        "NSPhotoLibraryUsageDescription": "Nutrion needs photo library access to save images"
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Nutrion needs camera access to scan product barcodes for adding items to your pantry.",
+        "NSPhotoLibraryUsageDescription": "Nutrion needs photo library access to select product images.",
+        "NSMicrophoneUsageDescription": "Nutrion may need microphone access for certain features."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#E8F5E9"
+        "foregroundImage": "./assets/images/natively-dark.png",
+        "backgroundColor": "#4CAF50"
       },
+      "edgeToEdgeEnabled": true,
       "package": "com.nutrion.app",
+      "versionCode": 1,
       "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
         "CAMERA",
-        "READ_EXTERNAL_STORAGE"
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
       ]
+    },
+    "web": {
+      "favicon": "./assets/images/final_quest_240x240.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-font",
       "expo-router",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Nutrion to access your camera to scan product barcodes."
+        }
+      ],
       [
         "expo-barcode-scanner",
         {
-          "cameraPermission": "Allow Nutrion to scan barcodes"
+          "cameraPermission": "Allow Nutrion to access your camera to scan product barcodes."
         }
       ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/notification-icon.png",
-          "color": "#4CAF50"
+          "icon": "./assets/images/natively-dark.png",
+          "color": "#4CAF50",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Nutrion to access your photos to add product images.",
+          "cameraPermission": "Allow Nutrion to access your camera to take product photos."
         }
       ]
     ],
     "scheme": "nutrion",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "your-eas-project-id-here"
+      }
     }
-  },
-  "scheme": "Nutrion"
+  }
 }
