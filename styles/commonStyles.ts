@@ -9,53 +9,50 @@ export const colors = {
   backgroundAlt: '#162133',
   surface: '#1a2332',
   text: '#e3e3e3',
-  textSecondary: '#B0BEC5',
+  textSecondary: '#90CAF9',
   grey: '#90CAF9',
   card: '#193cb8',
-  success: '#4CAF50',
-  warning: '#FFC107',
   error: '#F44336',
-  border: '#37474F',
+  success: '#4CAF50',
+  warning: '#FF9800',
+  shadow: '#000000',
+};
+
+export const typography = {
+  sizes: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+  },
+  weights: {
+    regular: '400' as TextStyle['fontWeight'],
+    medium: '500' as TextStyle['fontWeight'],
+    semibold: '600' as TextStyle['fontWeight'],
+    bold: '700' as TextStyle['fontWeight'],
+  },
 };
 
 export const spacing = {
   xs: 4,
-  small: 8,
-  medium: 16,
+  sm: 8,
   md: 16,
-  large: 24,
+  lg: 24,
   xl: 32,
 };
 
 export const borderRadius = {
-  small: 8,
-  medium: 12,
+  sm: 8,
   md: 12,
-  large: 16,
+  lg: 16,
   xl: 20,
-};
-
-export const typography = {
-  fontSize: {
-    xs: 12,
-    small: 14,
-    medium: 16,
-    body: 16,
-    large: 18,
-    xl: 20,
-    xxl: 24,
-  },
-  fontWeight: {
-    regular: '400' as const,
-    medium: '500' as const,
-    semibold: '600' as const,
-    bold: '700' as const,
-  },
 };
 
 export const expirationColors = {
   fresh: '#4CAF50',
-  warning: '#FFC107',
+  warning: '#FF9800',
   expired: '#F44336',
 };
 
@@ -128,6 +125,13 @@ export const commonStyles = StyleSheet.create({
     width: '100%',
     boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+  },
+  shadow: {
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   icon: {
     width: 60,
