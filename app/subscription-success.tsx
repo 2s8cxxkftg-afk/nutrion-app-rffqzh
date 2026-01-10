@@ -2,27 +2,33 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import * as Haptics from 'expo-haptics';
 
 export default function SubscriptionSuccessScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackStyle.Success);
-  }, [t]); // Fixed: Added 't' to dependencies
+    // Trigger success haptic feedback
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Fixed: Use NotificationFeedbackType instead of NotificationFeedbackStyle
+  }, []); // Fixed: Added empty dependency array
 
   const handleContinue = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace('/(tabs)/(home)');
+    router.replace('/(tabs)/pantry');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: false,
@@ -30,74 +36,75 @@ export default function SubscriptionSuccessScreen() {
       />
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={styles.successCircle}>
-            <IconSymbol
-              ios_icon_name="checkmark"
-              android_material_icon_name="check"
-              size={64}
-              color={colors.background}
-            />
-          </View>
+          <IconSymbol
+            ios_icon_name="checkmark.circle.fill"
+            android_material_icon_name="check-circle"
+            size={80}
+            color={colors.success}
+          />
         </View>
 
         <Text style={styles.title}>{t('subscription.success.title', 'Welcome to Premium!')}</Text>
         <Text style={styles.subtitle}>
-          {t('subscription.success.subtitle', 'You now have access to all premium features')}
+          {t('subscription.success.subtitle', 'You now have access to all premium features including:')}
         </Text>
 
-        <View style={styles.featuresContainer}>
+        <View style={styles.featuresList}>
           <View style={styles.featureItem}>
             <IconSymbol
-              ios_icon_name="checkmark.circle.fill"
+              ios_icon_name="checkmark.circle"
               android_material_icon_name="check-circle"
               size={24}
-              color={colors.success}
+              color={colors.primary}
             />
             <Text style={styles.featureText}>
-              {t('subscription.success.feature1', 'No ads')}
+              {t('subscription.success.feature1', 'AI Recipe Generator')}
             </Text>
           </View>
 
           <View style={styles.featureItem}>
             <IconSymbol
-              ios_icon_name="checkmark.circle.fill"
+              ios_icon_name="checkmark.circle"
               android_material_icon_name="check-circle"
               size={24}
-              color={colors.success}
+              color={colors.primary}
             />
             <Text style={styles.featureText}>
-              {t('subscription.success.feature2', 'AI Recipe Generator')}
+              {t('subscription.success.feature2', 'Receipt Scanner')}
             </Text>
           </View>
 
           <View style={styles.featureItem}>
             <IconSymbol
-              ios_icon_name="checkmark.circle.fill"
+              ios_icon_name="checkmark.circle"
               android_material_icon_name="check-circle"
               size={24}
-              color={colors.success}
+              color={colors.primary}
             />
             <Text style={styles.featureText}>
-              {t('subscription.success.feature3', 'Receipt Scanner')}
+              {t('subscription.success.feature3', 'Ad-Free Experience')}
             </Text>
           </View>
 
           <View style={styles.featureItem}>
             <IconSymbol
-              ios_icon_name="checkmark.circle.fill"
+              ios_icon_name="checkmark.circle"
               android_material_icon_name="check-circle"
               size={24}
-              color={colors.success}
+              color={colors.primary}
             />
             <Text style={styles.featureText}>
-              {t('subscription.success.feature4', 'Unlimited items')}
+              {t('subscription.success.feature4', 'Priority Support')}
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={handleContinue}
+        >
           <Text style={styles.continueButtonText}>
-            {t('subscription.success.continue', 'Continue')}
+            {t('subscription.success.continue', 'Continue to App')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -113,20 +120,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: spacing.xl,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   iconContainer: {
     marginBottom: spacing.xl,
-  },
-  successCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...commonStyles.shadow,
   },
   title: {
     fontSize: typography.sizes.xxl,
@@ -140,25 +138,26 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
+    lineHeight: 24,
   },
-  featuresContainer: {
+  featuresList: {
     width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
     gap: spacing.md,
-    ...commonStyles.shadow,
+    marginBottom: spacing.xl,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    ...commonStyles.shadow,
   },
   featureText: {
     fontSize: typography.sizes.md,
     color: colors.text,
-    fontWeight: typography.weights.medium as any,
+    flex: 1,
   },
   continueButton: {
     width: '100%',

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { IconSymbol } from './IconSymbol';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
@@ -12,15 +12,35 @@ interface ToastProps {
   onHide?: () => void;
 }
 
-export default function Toast({
-  visible,
-  message,
-  type = 'success',
+export default function Toast({ 
+  visible, 
+  message, 
+  type = 'success', 
   duration = 3000,
-  onHide,
+  onHide 
 }: ToastProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const translateY = React.useRef(new Animated.Value(-100)).current;
+
+  // Wrap hideToast with useCallback to stabilize its reference
+  const hideToast = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      if (onHide) {
+        onHide();
+      }
+    });
+  }, [fadeAnim, translateY, onHide]);
 
   useEffect(() => {
     if (visible) {
@@ -31,90 +51,53 @@ export default function Toast({
           duration: 300,
           useNativeDriver: true,
         }),
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
-          tension: 50,
-          friction: 7,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start();
 
       // Auto hide after duration
-      const timer = setTimeout(() => {
-        hideToast();
-      }, duration);
-
+      const timer = setTimeout(hideToast, duration);
       return () => clearTimeout(timer);
     }
-  }, [visible, fadeAnim, translateY, duration]); // Fixed: Added all dependencies
-
-  const hideToast = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: -100,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      if (onHide) {
-        onHide();
-      }
-    });
-  };
+  }, [visible, duration, hideToast, fadeAnim, translateY]); // Fixed: Added all dependencies
 
   if (!visible && fadeAnim._value === 0) {
     return null;
   }
 
-  const getIcon = () => {
+  const getIconName = () => {
     switch (type) {
       case 'success':
-        return (
-          <IconSymbol
-            ios_icon_name="checkmark.circle.fill"
-            android_material_icon_name="check-circle"
-            size={24}
-            color={colors.success}
-          />
-        );
+        return {
+          ios: 'checkmark.circle.fill',
+          android: 'check-circle',
+          color: colors.success,
+        };
       case 'error':
-        return (
-          <IconSymbol
-            ios_icon_name="xmark.circle.fill"
-            android_material_icon_name="error"
-            size={24}
-            color={colors.error}
-          />
-        );
+        return {
+          ios: 'xmark.circle.fill',
+          android: 'error',
+          color: colors.error,
+        };
       case 'info':
-        return (
-          <IconSymbol
-            ios_icon_name="info.circle.fill"
-            android_material_icon_name="info"
-            size={24}
-            color={colors.primary}
-          />
-        );
+        return {
+          ios: 'info.circle.fill',
+          android: 'info',
+          color: colors.primary,
+        };
+      default:
+        return {
+          ios: 'checkmark.circle.fill',
+          android: 'check-circle',
+          color: colors.success,
+        };
     }
   };
 
-  const getBackgroundColor = () => {
-    switch (type) {
-      case 'success':
-        return colors.successLight || '#d4edda';
-      case 'error':
-        return colors.errorLight || '#f8d7da';
-      case 'info':
-        return colors.primaryLight;
-      default:
-        return colors.surface;
-    }
-  };
+  const icon = getIconName();
 
   return (
     <Animated.View
@@ -123,15 +106,36 @@ export default function Toast({
         {
           opacity: fadeAnim,
           transform: [{ translateY }],
-          backgroundColor: getBackgroundColor(),
         },
       ]}
     >
-      {getIcon()}
-      <Text style={styles.message}>{message}</Text>
+      <View style={[styles.toast, styles[`toast${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof styles]]}>
+        <IconSymbol
+          ios_icon_name={icon.ios}
+          android_material_icon_name={icon.android}
+          size={24}
+          color={icon.color}
+        />
+        <Text style={styles.message}>{message}</Text>
+      </View>
     </Animated.View>
   );
 }
+
+// Static method for imperative usage
+let toastCallback: ((message: string, type: 'success' | 'error' | 'info') => void) | null = null;
+
+export function setToastCallback(callback: (message: string, type: 'success' | 'error' | 'info') => void) {
+  toastCallback = callback;
+}
+
+Toast.show = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  if (toastCallback) {
+    toastCallback(message, type);
+  } else {
+    console.warn('Toast callback not set. Make sure to use ToastProvider.');
+  }
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -139,22 +143,44 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 60 : 40,
     left: spacing.md,
     right: spacing.md,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  toast: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.md,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 9999,
+    padding: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  toastSuccess: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
+  },
+  toastError: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  toastInfo: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
   },
   message: {
     flex: 1,
     fontSize: typography.sizes.sm,
     color: colors.text,
-    fontWeight: typography.weights.medium as any,
+    lineHeight: 20,
   },
 });
