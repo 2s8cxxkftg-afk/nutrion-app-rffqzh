@@ -1,9 +1,13 @@
 
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import { categorizeFoodItem } from '@/utils/categoryHelper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
-import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
+import { IconSymbol } from '@/components/IconSymbol';
+import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
+import { addPantryItem } from '@/utils/storage';
 import { Stack, useRouter } from 'expo-router';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,13 +19,10 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
+  Modal,
 } from 'react-native';
 import Toast from '@/components/Toast';
-import React, { useState, useRef, useEffect } from 'react';
-import { addPantryItem } from '@/utils/storage';
-import { IconSymbol } from '@/components/IconSymbol';
-import { categorizeFoodItem } from '@/utils/categoryHelper';
-import NumberInput from '@/components/NumberInput';
+import * as Haptics from 'expo-haptics';
 
 const styles = StyleSheet.create({
   container: {
@@ -29,32 +30,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: 100,
   },
   section: {
     marginBottom: 24,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
+    letterSpacing: 0.3,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.grey + '30',
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  flex1: {
+    flex: 1,
   },
   pickerButton: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.grey + '30',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -63,457 +77,460 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  pickerModal: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  pickerCloseButton: {
-    padding: 4,
-  },
-  pickerOption: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  pickerOptionText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quantityInput: {
-    flex: 1,
-  },
-  unitButton: {
-    flex: 1,
-  },
-  quantityPresets: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  presetButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetButtonText: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  aiHint: {
-    backgroundColor: colors.primary + '20',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aiHintText: {
-    fontSize: 14,
-    color: colors.primary,
-    marginLeft: 8,
-    flex: 1,
-  },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
-    padding: 16,
+    padding: 18,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 8,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.grey + '20',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  optionButton: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.grey + '10',
+  },
+  optionButtonSelected: {
+    backgroundColor: colors.primary + '20',
+  },
+  optionText: {
     fontSize: 16,
-    fontWeight: '600',
+    color: colors.text,
+  },
+  optionTextSelected: {
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  hint: {
+    fontSize: 13,
+    color: colors.grey,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  numberInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.grey + '30',
+    overflow: 'hidden',
+  },
+  numberInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  numberButton: {
+    padding: 16,
+    backgroundColor: colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 50,
+  },
+  numberButtonText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primary,
   },
 });
 
 export default function AddItemScreen() {
+  const nameInputRef = useRef<TextInput>(null);
+  const quantityInputRef = useRef<TextInput>(null);
+  const dateInputRef = useRef<TextInput>(null);
+
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState('pieces');
-  const [category, setCategory] = useState('Other');
+  const [unit, setUnit] = useState<string>('pieces');
+  const [category, setCategory] = useState<string>('other');
   const [expirationDate, setExpirationDate] = useState('');
+  const [dateText, setDateText] = useState('');
+
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
-  const [showQuantityPicker, setShowQuantityPicker] = useState(false);
-  const [aiHint, setAiHint] = useState('');
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+
   const router = useRouter();
 
   useEffect(() => {
-    if (name.length > 2) {
-      const detectedCategory = categorizeFoodItem(name);
-      if (detectedCategory !== category) {
-        setCategory(detectedCategory);
-        const predictedDate = predictExpirationDate(detectedCategory);
-        const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-        setExpirationDate(formattedDate);
-        
-        const estimation = getExpirationEstimation(detectedCategory);
-        setAiHint(`AI suggests: ${estimation.label} (${estimation.days} days)`);
+    if (name.trim()) {
+      const suggestedCategory = categorizeFoodItem(name);
+      if (suggestedCategory !== 'other') {
+        setCategory(suggestedCategory);
       }
-    } else {
-      setAiHint('');
+
+      const estimation = getExpirationEstimation(name);
+      if (estimation) {
+        const predictedDate = predictExpirationDate(name, true);
+        setExpirationDate(predictedDate);
+        setDateText(predictedDate);
+      }
     }
   }, [category, name]);
 
-  function handleNameChange(text: string) {
+  const handleNameChange = (text: string) => {
     setName(text);
-  }
+  };
 
-  function handleDateChange(text: string) {
-    let cleaned = text.replace(/[^0-9]/g, '');
-    
-    if (cleaned.length >= 2) {
-      cleaned = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
-    }
-    if (cleaned.length >= 5) {
-      cleaned = cleaned.slice(0, 5) + '/' + cleaned.slice(5, 9);
-    }
-    
-    setExpirationDate(cleaned);
-  }
+  const handleQuantityChange = (text: string) => {
+    // Allow only numbers and decimal point
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    setQuantity(cleaned);
+  };
 
-  function validateAndParseDate(dateText: string): Date | null {
-    const parts = dateText.split('/');
-    if (parts.length !== 3) return null;
+  const incrementQuantity = () => {
+    const current = parseFloat(quantity) || 0;
+    setQuantity((current + 1).toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const decrementQuantity = () => {
+    const current = parseFloat(quantity) || 0;
+    if (current > 0) {
+      setQuantity(Math.max(0, current - 1).toString());
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleDateChange = (text: string) => {
+    setDateText(text);
+    const parsed = validateAndParseDate(text);
+    if (parsed) {
+      setExpirationDate(parsed);
+    }
+  };
+
+  const validateAndParseDate = (dateText: string): string | null => {
+    const cleaned = dateText.replace(/[^\d]/g, '');
     
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2024) {
-      return null;
+    if (cleaned.length === 8) {
+      const month = cleaned.substring(0, 2);
+      const day = cleaned.substring(2, 4);
+      const year = cleaned.substring(4, 8);
+      
+      const monthNum = parseInt(month);
+      const dayNum = parseInt(day);
+      const yearNum = parseInt(year);
+      
+      if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 2024) {
+        return `${year}-${month}-${day}`;
+      }
     }
     
-    return new Date(year, month - 1, day);
-  }
+    return null;
+  };
 
-  async function handleSave() {
+  const handleSave = async () => {
     if (!name.trim()) {
-      Toast.show('Please enter an item name', 'error');
-      return;
-    }
-
-    if (!expirationDate.trim()) {
-      Toast.show('Please enter an expiration date', 'error');
-      return;
-    }
-
-    const parsedDate = validateAndParseDate(expirationDate);
-    if (!parsedDate) {
-      Toast.show('Please enter a valid date (MM/DD/YYYY)', 'error');
+      Toast.show({ message: 'Please enter an item name', type: 'error' });
       return;
     }
 
     const quantityNum = parseFloat(quantity);
-    if (isNaN(quantityNum) || quantityNum <= 0) {
-      Toast.show('Please enter a valid quantity', 'error');
+    if (!quantityNum || quantityNum <= 0) {
+      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
       return;
     }
 
-    try {
-      const newItem: PantryItem = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        quantity: quantityNum,
-        unit,
-        category,
-        expirationDate: parsedDate.toISOString().split('T')[0],
-        dateAdded: new Date().toISOString().split('T')[0],
-      };
-
-      await addPantryItem(newItem);
-      Toast.show('Item added successfully', 'success');
-      router.back();
-    } catch (error) {
-      console.error('Error adding item:', error);
-      Toast.show('Failed to add item', 'error');
+    if (!expirationDate) {
+      Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
+      return;
     }
-  }
 
-  function handleQuantityPresetSelect(value: number) {
-    setQuantity(value.toString());
-    setShowQuantityPicker(false);
-  }
+    const newItem: PantryItem = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      quantity: quantityNum,
+      unit,
+      category,
+      expirationDate,
+      dateAdded: new Date().toISOString().split('T')[0],
+    };
 
-  function handleCustomQuantityMode() {
-    setShowQuantityPicker(false);
-  }
+    await addPantryItem(newItem);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Toast.show({ message: `${name} added to pantry!`, type: 'success' });
+    router.back();
+  };
 
-  function closeAllPickers() {
+  const closeAllPickers = () => {
     setShowCategoryPicker(false);
     setShowUnitPicker(false);
-    setShowQuantityPicker(false);
-    Keyboard.dismiss();
-  }
+  };
 
-  function openCategoryPicker() {
+  const openCategoryPicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
     setShowCategoryPicker(true);
-  }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
-  function openUnitPicker() {
+  const openUnitPicker = () => {
+    Keyboard.dismiss();
     closeAllPickers();
     setShowUnitPicker(true);
-  }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
-  function openQuantityPicker() {
-    closeAllPickers();
-    setShowQuantityPicker(true);
-  }
-
-  function getUnitLabel(unitValue: string): string {
+  const getUnitLabel = (unitValue: string): string => {
     const unitObj = UNITS.find(u => u.value === unitValue);
     return unitObj ? unitObj.label : unitValue;
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen 
-        options={{ 
-          headerShown: true,
-          title: 'Add Item',
-          headerLeft: () => (
-            <TouchableOpacity 
-              onPress={() => router.back()}
-              style={{ marginLeft: Platform.OS === 'ios' ? 0 : 16 }}
-            >
-              <IconSymbol 
-                ios_icon_name="chevron.left" 
-                android_material_icon_name="arrow-back"
-                size={24} 
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          ),
-        }} 
-      />
-
-      <KeyboardAvoidingView
+      <Stack.Screen options={{ title: 'Add Item', headerShown: true }} />
+      
+      <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.scrollContent}
+        <ScrollView 
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.section}>
-            <Text style={styles.label}>Item Name</Text>
+            <Text style={styles.label}>Item Name *</Text>
             <TextInput
-              style={styles.input}
+              ref={nameInputRef}
+              style={[styles.input, focusedInput === 'name' && styles.inputFocused]}
+              placeholder="e.g., Milk, Apples, Chicken"
+              placeholderTextColor={colors.grey}
               value={name}
               onChangeText={handleNameChange}
-              placeholder="e.g., Milk, Eggs, Chicken"
-              placeholderTextColor={colors.textSecondary}
+              onFocus={() => setFocusedInput('name')}
+              onBlur={() => setFocusedInput(null)}
               autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => quantityInputRef.current?.focus()}
             />
-            {aiHint ? (
-              <View style={styles.aiHint}>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={16}
-                  color={colors.primary}
-                />
-                <Text style={styles.aiHintText}>{aiHint}</Text>
-              </View>
-            ) : null}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>Quantity & Unit</Text>
-            <View style={styles.quantityRow}>
-              <View style={styles.quantityInput}>
-                <NumberInput
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  min={0}
-                  max={9999}
-                  step={1}
-                  placeholder="1"
-                />
+            <Text style={styles.label}>Quantity & Unit *</Text>
+            <View style={styles.row}>
+              <View style={[styles.flex1, { flex: 1.2 }]}>
+                <View style={styles.numberInputContainer}>
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={decrementQuantity}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.numberButtonText}>−</Text>
+                  </TouchableOpacity>
+                  
+                  <TextInput
+                    ref={quantityInputRef}
+                    style={styles.numberInput}
+                    value={quantity}
+                    onChangeText={handleQuantityChange}
+                    keyboardType="decimal-pad"
+                    placeholder="0"
+                    placeholderTextColor={colors.grey}
+                    returnKeyType="next"
+                    onSubmitEditing={() => dateInputRef.current?.focus()}
+                  />
+                  
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={incrementQuantity}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.numberButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity
-                style={[styles.pickerButton, styles.unitButton]}
+
+              <TouchableOpacity 
+                style={[styles.pickerButton, styles.flex1]}
                 onPress={openUnitPicker}
+                activeOpacity={0.7}
               >
                 <Text style={styles.pickerButtonText}>{getUnitLabel(unit)}</Text>
-                <IconSymbol
-                  ios_icon_name="chevron.down"
-                  android_material_icon_name="arrow-drop-down"
-                  size={20}
-                  color={colors.text}
-                />
+                <IconSymbol name="chevron.down" size={16} color={colors.grey} />
               </TouchableOpacity>
             </View>
-            <View style={styles.quantityPresets}>
-              {QUANTITY_PRESETS.map((preset) => (
-                <TouchableOpacity
-                  key={preset.value}
-                  style={styles.presetButton}
-                  onPress={() => setQuantity(preset.value.toString())}
-                >
-                  <Text style={styles.presetButtonText}>{preset.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.hint}>Type quantity directly or use +/− buttons</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.label}>Category</Text>
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.pickerButton}
               onPress={openCategoryPicker}
+              activeOpacity={0.7}
             >
-              <Text style={styles.pickerButtonText}>{category}</Text>
-              <IconSymbol
-                ios_icon_name="chevron.down"
-                android_material_icon_name="arrow-drop-down"
-                size={20}
-                color={colors.text}
-              />
+              <Text style={styles.pickerButtonText}>
+                {FOOD_CATEGORIES.find(c => c.value === category)?.label || 'Other'}
+              </Text>
+              <IconSymbol name="chevron.down" size={16} color={colors.grey} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>Expiration Date (MM/DD/YYYY)</Text>
+            <Text style={styles.label}>Expiration Date *</Text>
             <TextInput
-              style={styles.input}
-              value={expirationDate}
-              onChangeText={handleDateChange}
+              ref={dateInputRef}
+              style={[styles.input, focusedInput === 'date' && styles.inputFocused]}
               placeholder="MM/DD/YYYY"
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.grey}
+              value={dateText}
+              onChangeText={handleDateChange}
+              onFocus={() => setFocusedInput('date')}
+              onBlur={() => setFocusedInput(null)}
               keyboardType="number-pad"
               maxLength={10}
+              returnKeyType="done"
             />
+            <Text style={styles.hint}>Auto-suggested based on item type</Text>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity 
+            style={styles.saveButton}
+            onPress={handleSave}
+            activeOpacity={0.8}
+          >
             <Text style={styles.saveButtonText}>Add to Pantry</Text>
           </TouchableOpacity>
         </ScrollView>
-
-        {showCategoryPicker && (
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={closeAllPickers}
-          >
-            <View style={styles.pickerModal}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Select Category</Text>
-                <TouchableOpacity
-                  style={styles.pickerCloseButton}
-                  onPress={closeAllPickers}
-                >
-                  <IconSymbol
-                    ios_icon_name="xmark"
-                    android_material_icon_name="close"
-                    size={24}
-                    color={colors.text}
-                  />
-                </TouchableOpacity>
-              </View>
-              <ScrollView>
-                {FOOD_CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setCategory(cat);
-                      const predictedDate = predictExpirationDate(cat);
-                      const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-                      setExpirationDate(formattedDate);
-                      closeAllPickers();
-                    }}
-                  >
-                    <Text style={styles.pickerOptionText}>{cat}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {showUnitPicker && (
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={closeAllPickers}
-          >
-            <View style={styles.pickerModal}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Select Unit</Text>
-                <TouchableOpacity
-                  style={styles.pickerCloseButton}
-                  onPress={closeAllPickers}
-                >
-                  <IconSymbol
-                    ios_icon_name="xmark"
-                    android_material_icon_name="close"
-                    size={24}
-                    color={colors.text}
-                  />
-                </TouchableOpacity>
-              </View>
-              <ScrollView>
-                {UNITS.map((u) => (
-                  <TouchableOpacity
-                    key={u.value}
-                    style={styles.pickerOption}
-                    onPress={() => {
-                      setUnit(u.value);
-                      closeAllPickers();
-                    }}
-                  >
-                    <Text style={styles.pickerOptionText}>{u.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
-        )}
       </KeyboardAvoidingView>
+
+      {/* Category Picker Modal */}
+      <Modal
+        visible={showCategoryPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCategoryPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setShowCategoryPicker(false)}
+              >
+                <IconSymbol name="xmark" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {FOOD_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={[
+                    styles.optionButton,
+                    category === cat.value && styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setCategory(cat.value);
+                    setShowCategoryPicker(false);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    category === cat.value && styles.optionTextSelected,
+                  ]}>
+                    {cat.icon} {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Unit Picker Modal */}
+      <Modal
+        visible={showUnitPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowUnitPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowUnitPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Unit</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setShowUnitPicker(false)}
+              >
+                <IconSymbol name="xmark" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {UNITS.map((u) => (
+                <TouchableOpacity
+                  key={u.value}
+                  style={[
+                    styles.optionButton,
+                    unit === u.value && styles.optionButtonSelected,
+                  ]}
+                  onPress={() => {
+                    setUnit(u.value);
+                    setShowUnitPicker(false);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    unit === u.value && styles.optionTextSelected,
+                  ]}>
+                    {u.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

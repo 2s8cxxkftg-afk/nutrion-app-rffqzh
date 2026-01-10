@@ -97,7 +97,7 @@ export function useReceiptScanner() {
 
   return {
     scanReceipt,
-    scanning: state.status === 'scanning',
+    isLoading: state.status === 'scanning',
     error: state.status === 'error' ? state.error : null,
     scannedItems: state.status === 'success' ? state.data : null,
     reset

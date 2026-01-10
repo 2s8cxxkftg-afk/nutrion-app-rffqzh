@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -8,15 +8,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { supabase } from '@/utils/supabase';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,9 +19,10 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ONBOARDING_KEY = '@nutrion_onboarding_completed';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 
 interface OnboardingPage {
   titleKey: string;
@@ -37,58 +33,195 @@ interface OnboardingPage {
   isPremium?: boolean;
 }
 
-const pages: OnboardingPage[] = [
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ONBOARDING_KEY = '@nutrion_onboarding_completed';
+
+const ONBOARDING_PAGES: OnboardingPage[] = [
   {
-    titleKey: 'onboarding.welcome',
-    descriptionKey: 'onboarding.welcomeDesc',
-    iconName: 'leaf.fill',
-    androidIconName: 'eco',
+    titleKey: 'onboarding.page1.title',
+    descriptionKey: 'onboarding.page1.description',
+    iconName: 'refrigerator',
+    androidIconName: 'kitchen',
     color: '#4CAF50',
   },
   {
-    titleKey: 'onboarding.pantryTitle',
-    descriptionKey: 'onboarding.pantryDesc',
-    iconName: 'archivebox.fill',
-    androidIconName: 'inventory',
-    color: '#2196F3',
-  },
-  {
-    titleKey: 'onboarding.expirationTitle',
-    descriptionKey: 'onboarding.expirationDesc',
-    iconName: 'clock.badge.checkmark.fill',
-    androidIconName: 'schedule',
+    titleKey: 'onboarding.page2.title',
+    descriptionKey: 'onboarding.page2.description',
+    iconName: 'bell.badge',
+    androidIconName: 'notifications-active',
     color: '#FF9800',
   },
   {
-    titleKey: 'onboarding.receiptScannerTitle',
-    descriptionKey: 'onboarding.receiptScannerDesc',
+    titleKey: 'onboarding.page3.title',
+    descriptionKey: 'onboarding.page3.description',
     iconName: 'doc.text.viewfinder',
-    androidIconName: 'receipt',
+    androidIconName: 'receipt-long',
+    color: '#2196F3',
+    isPremium: true,
+  },
+  {
+    titleKey: 'onboarding.page4.title',
+    descriptionKey: 'onboarding.page4.description',
+    iconName: 'sparkles',
+    androidIconName: 'auto-awesome',
     color: '#9C27B0',
     isPremium: true,
   },
   {
-    titleKey: 'onboarding.aiRecipeTitle',
-    descriptionKey: 'onboarding.aiRecipeDesc',
-    iconName: 'sparkles',
-    androidIconName: 'auto-awesome',
-    color: '#E91E63',
-    isPremium: true,
-  },
-  {
-    titleKey: 'onboarding.shoppingTitle',
-    descriptionKey: 'onboarding.shoppingDesc',
-    iconName: 'cart.fill',
-    androidIconName: 'shopping-cart',
+    titleKey: 'onboarding.page5.title',
+    descriptionKey: 'onboarding.page5.description',
+    iconName: 'chart.bar',
+    androidIconName: 'bar-chart',
     color: '#00BCD4',
   },
 ];
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  pageContainer: {
+    width: SCREEN_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FFD700',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  premiumBadgeText: {
+    color: '#000',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  description: {
+    fontSize: 16,
+    color: colors.grey,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  footer: {
+    paddingHorizontal: 40,
+    paddingBottom: 40,
+    paddingTop: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.grey + '40',
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+  },
+  secondaryButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.grey + '30',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  primaryButtonText: {
+    color: '#fff',
+  },
+  secondaryButtonText: {
+    color: colors.text,
+  },
+});
+
+function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX: any; currentPage: number }) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * SCREEN_WIDTH, index * SCREEN_WIDTH, (index + 1) * SCREEN_WIDTH];
+    const scale = interpolate(scrollX.value, inputRange, [1, 1.5, 1], Extrapolate.CLAMP);
+    const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolate.CLAMP);
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        currentPage === index && styles.dotActive,
+        animatedStyle,
+      ]}
+    />
+  );
+}
+
 export default function OnboardingScreen() {
-  const router = useRouter();
   const { t } = useTranslation();
-  const [currentPage, setCurrentPage] = useState(0);
   const scrollX = useSharedValue(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const handleScroll = (event: any) => {
@@ -103,73 +236,31 @@ export default function OnboardingScreen() {
       x: pageIndex * SCREEN_WIDTH,
       animated: true,
     });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleNext = () => {
-    if (currentPage < pages.length - 1) {
+    if (currentPage < ONBOARDING_PAGES.length - 1) {
       scrollToPage(currentPage + 1);
     } else {
       handleGetStarted();
     }
   };
 
-  const handleSkip = () => {
-    handleGetStarted();
+  const handleSkip = async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.replace('/auth');
   };
 
   const handleGetStarted = async () => {
-    try {
-      console.log('Onboarding completed, saving to AsyncStorage');
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      
-      // Check if user is already logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // User is already logged in, redirect to the app
-        console.log('User is already logged in, navigating to pantry');
-        router.replace('/(tabs)/pantry');
-      } else {
-        // User is not logged in, redirect to auth
-        console.log('User is not logged in, navigating to auth screen');
-        router.replace('/auth');
-      }
-    } catch (error) {
-      console.error('Error saving onboarding status:', error);
-      // On error, check auth status and redirect accordingly
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          router.replace('/(tabs)/pantry');
-        } else {
-          router.replace('/auth');
-        }
-      } catch (authError) {
-        console.error('Error checking auth status:', authError);
-        router.replace('/auth');
-      }
-    }
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace('/auth');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header with Logo */}
-      <View style={styles.header}>
-        <Image
-          source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Skip Button */}
-      {currentPage < pages.length - 1 && (
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipButtonText}>{t('skip')}</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Pages */}
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -179,256 +270,61 @@ export default function OnboardingScreen() {
         scrollEventThrottle={16}
         style={styles.scrollView}
       >
-        {pages.map((page, index) => (
-          <View key={index} style={styles.page}>
+        {ONBOARDING_PAGES.map((page, index) => (
+          <View key={index} style={styles.pageContainer}>
             <View style={[styles.iconContainer, { backgroundColor: page.color + '20' }]}>
-              <View style={[styles.iconCircle, { backgroundColor: page.color }]}>
-                <IconSymbol 
-                  ios_icon_name={page.iconName}
-                  android_material_icon_name={page.androidIconName}
-                  size={64} 
-                  color="#FFFFFF" 
-                />
-              </View>
-            </View>
-
-            <View style={styles.content}>
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>{t(page.titleKey)}</Text>
-                {page.isPremium && (
-                  <View style={styles.premiumBadge}>
-                    <IconSymbol
-                      ios_icon_name="crown.fill"
-                      android_material_icon_name="star"
-                      size={14}
-                      color="#FFD700"
-                    />
-                    <Text style={styles.premiumText}>PREMIUM</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.description}>{t(page.descriptionKey)}</Text>
-              
+              <IconSymbol
+                name={page.iconName}
+                androidName={page.androidIconName}
+                size={60}
+                color={page.color}
+              />
               {page.isPremium && (
-                <View style={styles.premiumNote}>
-                  <Text style={styles.premiumNoteText}>
-                    ✨ Unlock with Premium subscription
-                  </Text>
+                <View style={styles.premiumBadge}>
+                  <IconSymbol name="crown.fill" size={12} color="#000" />
+                  <Text style={styles.premiumBadgeText}>PREMIUM</Text>
                 </View>
               )}
             </View>
+            <Text style={styles.title}>{t(page.titleKey)}</Text>
+            <Text style={styles.description}>{t(page.descriptionKey)}</Text>
           </View>
         ))}
       </ScrollView>
 
-      {/* Pagination Dots */}
-      <View style={styles.pagination}>
-        {pages.map((_, index) => (
-          <PaginationDot
-            key={index}
-            index={index}
-            scrollX={scrollX}
-            currentPage={currentPage}
-          />
-        ))}
-      </View>
+      <View style={styles.footer}>
+        <View style={styles.paginationContainer}>
+          {ONBOARDING_PAGES.map((_, index) => (
+            <PaginationDot key={index} index={index} scrollX={scrollX} currentPage={currentPage} />
+          ))}
+        </View>
 
-      {/* Next/Get Started Button */}
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
-        <Text style={styles.nextButtonText}>
-          {currentPage === pages.length - 1 ? t('getStarted') : t('next')}
-        </Text>
-        <IconSymbol 
-          ios_icon_name="arrow.right" 
-          android_material_icon_name="arrow-forward"
-          size={20} 
-          color="#FFFFFF" 
-        />
-      </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          {currentPage < ONBOARDING_PAGES.length - 1 && (
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={handleSkip}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                {t('onboarding.skip')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={handleNext}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, styles.primaryButtonText]}>
+              {currentPage === ONBOARDING_PAGES.length - 1
+                ? t('onboarding.getStarted')
+                : t('onboarding.next')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
-
-function PaginationDot({ index, scrollX, currentPage }: { index: number; scrollX: any; currentPage: number }) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * SCREEN_WIDTH,
-      index * SCREEN_WIDTH,
-      (index + 1) * SCREEN_WIDTH,
-    ];
-
-    const width = interpolate(
-      scrollX.value,
-      inputRange,
-      [8, 24, 8],
-      Extrapolate.CLAMP
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.3, 1, 0.3],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      width: withSpring(width),
-      opacity: withSpring(opacity),
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.dot,
-        animatedStyle,
-        currentPage === index && styles.activeDot,
-      ]}
-    />
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 60 : 20,
-    right: 20,
-    zIndex: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  page: {
-    width: SCREEN_WIDTH,
-    flex: 1,
-    paddingTop: spacing.xl,
-    justifyContent: 'center',
-  },
-  iconContainer: {
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
-    alignSelf: 'center',
-    borderRadius: (SCREEN_WIDTH * 0.7) / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  iconCircle: {
-    width: SCREEN_WIDTH * 0.5,
-    height: SCREEN_WIDTH * 0.5,
-    borderRadius: (SCREEN_WIDTH * 0.5) / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
-    elevation: 8,
-  },
-  content: {
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
-    gap: 4,
-  },
-  premiumText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFD700',
-    letterSpacing: 0.5,
-  },
-  description: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: spacing.md,
-  },
-  premiumNote: {
-    marginTop: spacing.md,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
-  },
-  premiumNoteText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    gap: spacing.sm,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  activeDot: {
-    backgroundColor: colors.primary,
-  },
-  nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.xl,
-    paddingVertical: 18,
-    borderRadius: borderRadius.xl,
-    gap: spacing.sm,
-    boxShadow: '0px 8px 24px rgba(76, 175, 80, 0.3)',
-    elevation: 8,
-  },
-  nextButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-});
