@@ -1,0 +1,111 @@
+
+import React from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { IconSymbol } from './IconSymbol';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import * as Haptics from 'expo-haptics';
+
+interface NumberInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  placeholder?: string;
+}
+
+export default function NumberInput({
+  value,
+  onChangeText,
+  min = 0,
+  max = 9999,
+  step = 1,
+  placeholder = '0',
+}: NumberInputProps) {
+  const handleIncrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = Math.min(currentValue + step, max);
+    onChangeText(newValue.toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleDecrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = Math.max(currentValue - step, min);
+    onChangeText(newValue.toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textSecondary}
+        keyboardType="decimal-pad"
+      />
+      <View style={styles.arrowContainer}>
+        <TouchableOpacity
+          style={styles.arrowButton}
+          onPress={handleIncrement}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            ios_icon_name="chevron.up"
+            android_material_icon_name="arrow-drop-up"
+            size={20}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+        <View style={styles.arrowDivider} />
+        <TouchableOpacity
+          style={styles.arrowButton}
+          onPress={handleDecrement}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="arrow-drop-down"
+            size={20}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  input: {
+    flex: 1,
+    padding: spacing.md,
+    fontSize: typography.sizes.md,
+    color: colors.text,
+  },
+  arrowContainer: {
+    width: 40,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+  },
+  arrowButton: {
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  arrowDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+});

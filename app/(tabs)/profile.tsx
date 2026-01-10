@@ -21,6 +21,7 @@ import { getExpirationStatus } from '@/utils/expirationHelper';
 import Toast from '@/components/Toast';
 import { IconSymbol } from '@/components/IconSymbol';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const styles = StyleSheet.create({
   container: {
@@ -208,6 +209,7 @@ function ProfileScreen() {
 
 function ProfileScreenContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -219,12 +221,20 @@ function ProfileScreenContent() {
   const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
         setUserEmail(user.email || '');
+        
+        // Try to get display name from multiple sources
         const storedName = await AsyncStorage.getItem('user_name');
-        setUserName(storedName || user.user_metadata?.full_name || 'User');
+        const displayName = storedName || 
+                          user.user_metadata?.full_name || 
+                          user.user_metadata?.name ||
+                          user.user_metadata?.display_name ||
+                          user.email?.split('@')[0] || 
+                          'User';
+        
+        setUserName(displayName);
       }
 
       const items = await loadPantryItems();
@@ -247,7 +257,7 @@ function ProfileScreenContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -267,19 +277,11 @@ function ProfileScreenContent() {
           onPress: async () => {
             try {
               await supabase.auth.signOut();
-              Toast.show({
-                type: 'success',
-                text1: 'Signed Out',
-                text2: 'You have been signed out successfully',
-              });
+              Toast.show('Signed out successfully', 'success');
               router.replace('/auth');
             } catch (error) {
               console.error('Sign out error:', error);
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to sign out',
-              });
+              Toast.show('Failed to sign out', 'error');
             }
           },
         },
@@ -299,19 +301,11 @@ function ProfileScreenContent() {
           onPress: async () => {
             try {
               await resetSubscription();
-              Toast.show({
-                type: 'success',
-                text1: 'Subscription Reset',
-                text2: 'Your trial has been reset',
-              });
+              Toast.show('Subscription reset successfully', 'success');
               loadUserData();
             } catch (error) {
               console.error('Reset error:', error);
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to reset subscription',
-              });
+              Toast.show('Failed to reset subscription', 'error');
             }
           },
         },

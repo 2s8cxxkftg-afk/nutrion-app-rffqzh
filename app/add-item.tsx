@@ -21,6 +21,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { addPantryItem } from '@/utils/storage';
 import { IconSymbol } from '@/components/IconSymbol';
 import { categorizeFoodItem } from '@/utils/categoryHelper';
+import NumberInput from '@/components/NumberInput';
 
 const styles = StyleSheet.create({
   container: {
@@ -363,13 +364,13 @@ export default function AddItemScreen() {
             <Text style={styles.label}>Quantity & Unit</Text>
             <View style={styles.quantityRow}>
               <View style={styles.quantityInput}>
-                <TextInput
-                  style={styles.input}
+                <NumberInput
                   value={quantity}
                   onChangeText={setQuantity}
+                  min={0}
+                  max={9999}
+                  step={1}
                   placeholder="1"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="decimal-pad"
                 />
               </View>
               <TouchableOpacity

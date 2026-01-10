@@ -49,6 +49,30 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.md,
     color: colors.text,
   },
+  quickActionsContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    gap: spacing.xs,
+    ...commonStyles.shadow,
+  },
+  quickActionText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   listContainer: {
     paddingHorizontal: spacing.lg,
   },
@@ -254,6 +278,42 @@ function PantryScreenContent() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+        </View>
+      </View>
+
+      <View style={styles.quickActionsContainer}>
+        <View style={styles.quickActionsRow}>
+          <TouchableOpacity
+            style={styles.quickActionButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/scan-receipt');
+            }}
+          >
+            <IconSymbol
+              ios_icon_name="doc.text.viewfinder"
+              android_material_icon_name="receipt"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.quickActionText}>Scan Receipt</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/ai-recipes');
+            }}
+          >
+            <IconSymbol
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.quickActionText}>AI Recipes</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
