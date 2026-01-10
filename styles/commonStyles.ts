@@ -3,6 +3,7 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
   primary: '#162456',    // Material Blue
+  primaryLight: '#193cb8',  // Lighter Blue for switches
   secondary: '#193cb8',  // Darker Blue
   accent: '#64B5F6',     // Light Blue
   background: '#101824',  // Keeping dark background
@@ -14,29 +15,60 @@ export const colors = {
   card: '#193cb8',       // Keeping dark card background
   border: '#2a3544',     // Border color
   error: '#F44336',      // Error color
+  success: '#4CAF50',    // Success color
+  warning: '#FF9800',    // Warning color
+  warningLight: '#FFF3E0',  // Light warning background
 };
 
 export const typography = {
   fontSize: {
+    xs: 10,
     small: 12,
+    sm: 12,
     medium: 16,
+    md: 16,
     large: 20,
+    lg: 20,
     xl: 24,
     xlarge: 24,
+    xxl: 28,
+  },
+  sizes: {
+    xs: 10,
+    sm: 12,
+    md: 16,
+    lg: 20,
+    xl: 24,
+    xxl: 28,
+  },
+  weights: {
+    normal: '400',
+    medium: '500',
+    semibold: '600',
+    bold: '700',
   },
 };
 
 export const spacing = {
+  xs: 4,
   small: 8,
+  sm: 8,
   medium: 12,
+  md: 12,
   large: 16,
+  lg: 16,
   xl: 24,
+  xxl: 32,
 };
 
 export const borderRadius = {
+  sm: 4,
   small: 8,
   medium: 12,
+  md: 12,
   large: 16,
+  lg: 16,
+  xl: 20,
 };
 
 export const expirationColors = {
@@ -114,6 +146,13 @@ export const commonStyles = StyleSheet.create({
     width: '100%',
     boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
+  },
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   icon: {
     width: 60,

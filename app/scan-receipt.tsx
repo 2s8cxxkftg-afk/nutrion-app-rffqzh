@@ -59,11 +59,7 @@ export default function ScanReceiptScreen() {
     // Check premium status
     if (!isPremium) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Toast.show({
-        type: 'error',
-        text1: 'Premium Feature',
-        text2: 'Subscribe to Premium to use Receipt Scanner',
-      });
+      Toast.show('Subscribe to Premium to use Receipt Scanner', 'error');
       router.push('/subscription-management');
       return;
     }
@@ -87,11 +83,7 @@ export default function ScanReceiptScreen() {
     // Check premium status
     if (!isPremium) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Toast.show({
-        type: 'error',
-        text1: 'Premium Feature',
-        text2: 'Subscribe to Premium to use Receipt Scanner',
-      });
+      Toast.show('Subscribe to Premium to use Receipt Scanner', 'error');
       router.push('/subscription-management');
       return;
     }
@@ -144,12 +136,7 @@ export default function ScanReceiptScreen() {
       }
     }
 
-    Toast.show({
-      type: 'success',
-      text1: 'Items Added!',
-      text2: `${addedCount} items added to your pantry`,
-    });
-
+    Toast.show(`${addedCount} items added to your pantry`, 'success');
     router.back();
   };
 

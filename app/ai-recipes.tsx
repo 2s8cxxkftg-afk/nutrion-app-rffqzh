@@ -59,21 +59,13 @@ export default function AIRecipesScreen() {
     // Check premium status
     if (!isPremium) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Toast.show({
-        type: 'error',
-        text1: 'Premium Feature',
-        text2: 'Subscribe to Premium to use AI Recipe Generator',
-      });
+      Toast.show('Subscribe to Premium to use AI Recipe Generator', 'error');
       router.push('/subscription-management');
       return;
     }
 
     if (pantryItems.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'No Ingredients',
-        text2: 'Add items to your pantry first',
-      });
+      Toast.show('Add items to your pantry first', 'error');
       return;
     }
 
@@ -85,11 +77,7 @@ export default function AIRecipesScreen() {
     });
 
     if (result) {
-      Toast.show({
-        type: 'success',
-        text1: 'Recipes Generated!',
-        text2: `Found ${result.length} delicious recipes`,
-      });
+      Toast.show(`Found ${result.length} delicious recipes`, 'success');
     }
   };
 
