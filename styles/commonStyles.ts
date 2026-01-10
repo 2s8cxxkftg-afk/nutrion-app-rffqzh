@@ -2,52 +2,41 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
-  primary: '#162456',
-  secondary: '#193cb8',
-  accent: '#64B5F6',
-  background: '#101824',
-  backgroundAlt: '#162133',
-  surface: '#1a2332',
-  text: '#e3e3e3',
-  textSecondary: '#90CAF9',
-  grey: '#90CAF9',
-  card: '#193cb8',
-  error: '#F44336',
-  success: '#4CAF50',
-  warning: '#FF9800',
-  shadow: '#000000',
+  primary: '#162456',    // Material Blue
+  secondary: '#193cb8',  // Darker Blue
+  accent: '#64B5F6',     // Light Blue
+  background: '#101824',  // Keeping dark background
+  backgroundAlt: '#162133',  // Keeping dark background
+  surface: '#1a2332',    // Surface color for cards/modals
+  text: '#e3e3e3',       // Keeping light text
+  textSecondary: '#90CAF9',  // Secondary text color
+  grey: '#90CAF9',       // Light Blue Grey
+  card: '#193cb8',       // Keeping dark card background
+  border: '#2a3544',     // Border color
+  error: '#F44336',      // Error color
 };
 
 export const typography = {
-  sizes: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    xxl: 24,
-  },
-  weights: {
-    regular: '400' as TextStyle['fontWeight'],
-    medium: '500' as TextStyle['fontWeight'],
-    semibold: '600' as TextStyle['fontWeight'],
-    bold: '700' as TextStyle['fontWeight'],
+  fontSize: {
+    small: 12,
+    medium: 16,
+    large: 20,
+    xl: 24,
+    xlarge: 24,
   },
 };
 
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  small: 8,
+  medium: 12,
+  large: 16,
+  xl: 24,
 };
 
 export const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  small: 8,
+  medium: 12,
+  large: 16,
 };
 
 export const expirationColors = {
@@ -125,13 +114,6 @@ export const commonStyles = StyleSheet.create({
     width: '100%',
     boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
-  },
-  shadow: {
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   icon: {
     width: 60,
