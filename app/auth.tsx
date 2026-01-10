@@ -1,5 +1,12 @@
 
 import React, { useState } from "react";
+import { IconSymbol } from "@/components/IconSymbol";
+import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
+import { supabase } from "@/utils/supabase";
+import Toast from "@/components/Toast";
+import Logo from "@/components/Logo";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import {
   View,
   Text,
@@ -10,88 +17,129 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { IconSymbol } from "@/components/IconSymbol";
-import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
-import { supabase } from "@/utils/supabase";
-import Toast from "@/components/Toast";
-import * as Haptics from "expo-haptics";
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl * 2,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: typography.fontFamily.semibold,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  switchText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+  },
+  switchButton: {
+    marginLeft: spacing.xs,
+  },
+  switchButtonText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.semibold,
+    color: colors.primary,
+  },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginTop: spacing.md,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.primary,
+  },
+});
 
 export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
-  
   const router = useRouter();
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleEmailAuth = async () => {
-    if (!email || !password) {
-      Toast.show("Please fill in all fields", "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
     if (!validateEmail(email)) {
       Toast.show("Please enter a valid email address", "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (password.length < 6) {
       Toast.show("Password must be at least 6 characters", "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
-    if (isSignUp && !name.trim()) {
-      Toast.show("Please enter your name", "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
+    setLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      setLoading(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name,
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        if (data?.user?.identities?.length === 0) {
-          Toast.show("This email is already registered. Please sign in.", "error");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          setIsSignUp(false);
-          return;
-        }
-
-        Toast.show("Account created successfully! Please check your email to verify.", "success");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/confirm-email");
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -99,341 +147,133 @@ export default function AuthScreen() {
         if (error) throw error;
 
         Toast.show("Welcome back!", "success");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/(tabs)/(home)");
+        router.replace("/(tabs)/pantry");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        Toast.show("Account created! Please check your email to verify.", "success");
+        setIsLogin(true);
       }
     } catch (error: any) {
-      console.error("Auth error:", error);
       Toast.show(error.message || "Authentication failed", "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotPassword = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/forgot-password");
+  const handleForgotPassword = async () => {
+    if (!validateEmail(email)) {
+      Toast.show("Please enter your email address", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      Toast.show("Password reset email sent!", "success");
+    } catch (error: any) {
+      Toast.show(error.message || "Failed to send reset email", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo Section */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <Image
-                source={require("@/assets/images/88903441-5917-4d8b-97b1-4e2ce6fb57dd.png")}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.appName}>Nutrion</Text>
+            <Logo size="large" showText={true} />
           </View>
 
-          {/* Welcome Text */}
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>
-              {isSignUp ? "Create Account" : "Welcome Back"}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isSignUp 
-                ? "Join Nutrion to start managing your pantry" 
-                : "Sign in to continue to Nutrion"}
-            </Text>
+          <Text style={styles.title}>
+            {isLogin ? "Welcome Back" : "Create Account"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isLogin
+              ? "Sign in to manage your pantry"
+              : "Join Nutrion to reduce food waste"}
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="your@email.com"
+              placeholderTextColor={colors.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!loading}
+            />
           </View>
 
-          {/* Input Fields */}
-          <View style={styles.formContainer}>
-            {isSignUp && (
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Full Name</Text>
-                <View style={[
-                  styles.inputContainer,
-                  nameFocused && styles.inputContainerFocused
-                ]}>
-                  <IconSymbol
-                    ios_icon_name="person.fill"
-                    android_material_icon_name="person"
-                    size={20}
-                    color={nameFocused ? colors.primary : "#98989D"}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#98989D"
-                    value={name}
-                    onChangeText={setName}
-                    autoCapitalize="words"
-                    onFocus={() => setNameFocused(true)}
-                    onBlur={() => setNameFocused(false)}
-                  />
-                </View>
-              </View>
-            )}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+            />
+          </View>
 
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <View style={[
-                styles.inputContainer,
-                emailFocused && styles.inputContainerFocused
-              ]}>
-                <IconSymbol
-                  ios_icon_name="envelope.fill"
-                  android_material_icon_name="email"
-                  size={20}
-                  color={emailFocused ? colors.primary : "#98989D"}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="your@email.com"
-                  placeholderTextColor="#98989D"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={[
-                styles.inputContainer,
-                passwordFocused && styles.inputContainerFocused
-              ]}>
-                <IconSymbol
-                  ios_icon_name="lock.fill"
-                  android_material_icon_name="lock"
-                  size={20}
-                  color={passwordFocused ? colors.primary : "#98989D"}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#98989D"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                />
-                <TouchableOpacity 
-                  onPress={() => {
-                    setShowPassword(!showPassword);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <IconSymbol
-                    ios_icon_name={showPassword ? "eye.slash.fill" : "eye.fill"}
-                    android_material_icon_name={showPassword ? "visibility-off" : "visibility"}
-                    size={20}
-                    color={passwordFocused ? colors.primary : "#98989D"}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {!isSignUp && (
-              <TouchableOpacity 
-                style={styles.forgotPassword}
-                onPress={handleForgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Sign In/Up Button */}
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
-              onPress={handleEmailAuth}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  {isSignUp ? "Create Account" : "Sign In"}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Toggle Sign Up/In */}
-            <View style={styles.toggleContainer}>
-              <Text style={styles.toggleText}>
-                {isSignUp ? "Already have an account?" : "Don't have an account?"}
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleEmailAuth}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {isLogin ? "Sign In" : "Sign Up"}
               </Text>
-              <TouchableOpacity 
-                onPress={() => {
-                  setIsSignUp(!isSignUp);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.toggleButton}>
-                  {isSignUp ? " Sign In" : " Sign Up"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            )}
+          </TouchableOpacity>
+
+          {isLogin && (
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={handleForgotPassword}
+              disabled={loading}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchText}>
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
+            </Text>
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => setIsLogin(!isLogin)}
+              disabled={loading}
+            >
+              <Text style={styles.switchButtonText}>
+                {isLogin ? "Sign Up" : "Sign In"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 32,
-  },
-  logoWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  logo: {
-    width: 68,
-    height: 68,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: colors.text,
-    marginTop: 16,
-    letterSpacing: 0.5,
-  },
-  headerContainer: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 8,
-    textAlign: "center",
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 15,
-    textAlign: "center",
-    color: "#98989D",
-    lineHeight: 22,
-  },
-  formContainer: {
-    gap: 18,
-  },
-  inputWrapper: {
-    gap: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-    marginLeft: 4,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  inputContainerFocused: {
-    borderColor: colors.primary,
-    backgroundColor: "rgba(22, 36, 86, 0.1)",
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: -8,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginTop: 8,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  primaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-    alignItems: "center",
-  },
-  toggleText: {
-    fontSize: 14,
-    color: "#98989D",
-  },
-  toggleButton: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: colors.primary,
-  },
-});

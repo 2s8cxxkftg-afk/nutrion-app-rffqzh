@@ -101,11 +101,12 @@ export default function Index() {
       <View style={styles.loadingContainer}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
+            source={require('../assets/images/575cb505-3519-4304-a96f-a07004583fb2.png')}
             style={styles.logo}
             resizeMode="contain"
           />
         </View>
+        <Text style={styles.appName}>Nutrion</Text>
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
         {error && (
           <Text style={styles.errorText}>{error}</Text>
@@ -159,28 +160,34 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: '#F5F1E8',
   },
   logoContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.primary + '15',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
+    shadowColor: '#1F5F4E',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
   },
   logo: {
-    width: 160,
-    height: 160,
-    opacity: 0.95,
+    width: 120,
+    height: 120,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1F5F4E',
+    marginTop: 24,
+    letterSpacing: 0.5,
   },
   loader: {
-    marginTop: 20,
+    marginTop: 32,
   },
   errorText: {
     marginTop: 20,
@@ -202,7 +209,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   debugButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#1F5F4E',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
