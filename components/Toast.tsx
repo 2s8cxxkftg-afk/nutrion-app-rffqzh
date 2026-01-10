@@ -2,79 +2,29 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { IconSymbol } from './IconSymbol';
-import { colors, spacing, borderRadius } from '@/styles/commonStyles';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 
 interface ToastProps {
+  visible: boolean;
   message: string;
-  type?: ToastType;
+  type?: 'success' | 'error' | 'info';
   duration?: number;
   onHide?: () => void;
 }
 
-interface ToastConfig {
-  icon: string;
-  androidIcon: string;
-  color: string;
-  backgroundColor: string;
-}
-
-const toastConfigs: Record<ToastType, ToastConfig> = {
-  success: {
-    icon: 'checkmark.circle.fill',
-    androidIcon: 'check_circle',
-    color: colors.success,
-    backgroundColor: colors.success + '15',
-  },
-  error: {
-    icon: 'xmark.circle.fill',
-    androidIcon: 'error',
-    color: colors.error,
-    backgroundColor: colors.error + '15',
-  },
-  info: {
-    icon: 'info.circle.fill',
-    androidIcon: 'info',
-    color: colors.info,
-    backgroundColor: colors.info + '15',
-  },
-  warning: {
-    icon: 'exclamationmark.triangle.fill',
-    androidIcon: 'warning',
-    color: colors.warning,
-    backgroundColor: colors.warning + '15',
-  },
-};
-
-let toastRef: ((message: string, type?: ToastType, duration?: number) => void) | null = null;
-
-export const Toast = {
-  show: (message: string, type: ToastType = 'info', duration: number = 3000) => {
-    if (toastRef) {
-      toastRef(message, type, duration);
-    }
-  },
-};
-
-export function ToastContainer() {
-  const [visible, setVisible] = React.useState(false);
-  const [message, setMessage] = React.useState('');
-  const [type, setType] = React.useState<ToastType>('info');
+export default function Toast({
+  visible,
+  message,
+  type = 'success',
+  duration = 3000,
+  onHide,
+}: ToastProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-100)).current;
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    toastRef = (msg: string, toastType: ToastType = 'info', duration: number = 3000) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      setMessage(msg);
-      setType(toastType);
-      setVisible(true);
-
+    if (visible) {
+      // Show toast
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -83,24 +33,20 @@ export function ToastContainer() {
         }),
         Animated.spring(translateY, {
           toValue: 0,
-          tension: 65,
-          friction: 8,
+          tension: 50,
+          friction: 7,
           useNativeDriver: true,
         }),
       ]).start();
 
-      timeoutRef.current = setTimeout(() => {
+      // Auto hide after duration
+      const timer = setTimeout(() => {
         hideToast();
       }, duration);
-    };
 
-    return () => {
-      toastRef = null;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, fadeAnim, translateY, duration]); // Fixed: Added all dependencies
 
   const hideToast = () => {
     Animated.parallel([
@@ -115,15 +61,60 @@ export function ToastContainer() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setVisible(false);
+      if (onHide) {
+        onHide();
+      }
     });
   };
 
-  if (!visible) {
+  if (!visible && fadeAnim._value === 0) {
     return null;
   }
 
-  const config = toastConfigs[type];
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return (
+          <IconSymbol
+            ios_icon_name="checkmark.circle.fill"
+            android_material_icon_name="check-circle"
+            size={24}
+            color={colors.success}
+          />
+        );
+      case 'error':
+        return (
+          <IconSymbol
+            ios_icon_name="xmark.circle.fill"
+            android_material_icon_name="error"
+            size={24}
+            color={colors.error}
+          />
+        );
+      case 'info':
+        return (
+          <IconSymbol
+            ios_icon_name="info.circle.fill"
+            android_material_icon_name="info"
+            size={24}
+            color={colors.primary}
+          />
+        );
+    }
+  };
+
+  const getBackgroundColor = () => {
+    switch (type) {
+      case 'success':
+        return colors.successLight || '#d4edda';
+      case 'error':
+        return colors.errorLight || '#f8d7da';
+      case 'info':
+        return colors.primaryLight;
+      default:
+        return colors.surface;
+    }
+  };
 
   return (
     <Animated.View
@@ -132,19 +123,12 @@ export function ToastContainer() {
         {
           opacity: fadeAnim,
           transform: [{ translateY }],
-          backgroundColor: config.backgroundColor,
-          borderColor: config.color + '30',
+          backgroundColor: getBackgroundColor(),
         },
       ]}
     >
-      <IconSymbol
-        ios_icon_name={config.icon}
-        android_material_icon_name={config.androidIcon}
-        size={24}
-        color={config.color}
-        style={styles.icon}
-      />
-      <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
+      {getIcon()}
+      <Text style={styles.message}>{message}</Text>
     </Animated.View>
   );
 }
@@ -157,30 +141,20 @@ const styles = StyleSheet.create({
     right: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
     zIndex: 9999,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  icon: {
-    marginRight: spacing.sm,
   },
   message: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    fontWeight: typography.weights.medium as any,
   },
 });
-
-export default Toast;

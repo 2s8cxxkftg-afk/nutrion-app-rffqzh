@@ -1,134 +1,104 @@
 
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { clearSubscriptionCache } from '@/utils/subscription';
-import Toast from '@/components/Toast';
+import * as Haptics from 'expo-haptics';
 
 export default function SubscriptionSuccessScreen() {
   const router = useRouter();
   const { t } = useTranslation();
 
   useEffect(() => {
-    // Clear subscription cache to force reload
-    clearSubscriptionCache();
-    
-    // Show success toast
-    Toast.show({
-      type: 'success',
-      message: t('subscription.paymentSuccess') || 'Payment successful! Welcome to Premium!',
-      duration: 3000,
-    });
-  }, []);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackStyle.Success);
+  }, [t]); // Fixed: Added 't' to dependencies
 
   const handleContinue = () => {
-    router.replace('/(tabs)/pantry');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.replace('/(tabs)/(home)');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
       <View style={styles.content}>
-        {/* Success Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.successCircle}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
-              size={100} 
-              color={colors.success} 
+            <IconSymbol
+              ios_icon_name="checkmark"
+              android_material_icon_name="check"
+              size={64}
+              color={colors.background}
             />
           </View>
         </View>
 
-        {/* Title */}
-        <Text style={styles.title}>
-          {t('subscription.paymentSuccess') || 'Payment Successful!'}
-        </Text>
-
-        {/* Subtitle */}
+        <Text style={styles.title}>{t('subscription.success.title', 'Welcome to Premium!')}</Text>
         <Text style={styles.subtitle}>
-          Welcome to Nutrion Premium! You now have access to all premium features.
+          {t('subscription.success.subtitle', 'You now have access to all premium features')}
         </Text>
 
-        {/* Features List */}
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
-              size={24} 
-              color={colors.success} 
+            <IconSymbol
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={24}
+              color={colors.success}
             />
-            <Text style={styles.featureText}>Smart Pantry Management</Text>
+            <Text style={styles.featureText}>
+              {t('subscription.success.feature1', 'No ads')}
+            </Text>
           </View>
-          
+
           <View style={styles.featureItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
-              size={24} 
-              color={colors.success} 
+            <IconSymbol
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={24}
+              color={colors.success}
             />
-            <Text style={styles.featureText}>AI Recipe Suggestions</Text>
+            <Text style={styles.featureText}>
+              {t('subscription.success.feature2', 'AI Recipe Generator')}
+            </Text>
           </View>
-          
+
           <View style={styles.featureItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
-              size={24} 
-              color={colors.success} 
+            <IconSymbol
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={24}
+              color={colors.success}
             />
-            <Text style={styles.featureText}>Expiration Date Tracking</Text>
+            <Text style={styles.featureText}>
+              {t('subscription.success.feature3', 'Receipt Scanner')}
+            </Text>
           </View>
-          
+
           <View style={styles.featureItem}>
-            <IconSymbol 
-              ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
-              size={24} 
-              color={colors.success} 
+            <IconSymbol
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={24}
+              color={colors.success}
             />
-            <Text style={styles.featureText}>Shopping List Sync</Text>
+            <Text style={styles.featureText}>
+              {t('subscription.success.feature4', 'Unlimited items')}
+            </Text>
           </View>
         </View>
 
-        {/* Info Box */}
-        <View style={styles.infoBox}>
-          <IconSymbol 
-            ios_icon_name="info.circle.fill" 
-            android_material_icon_name="info"
-            size={20} 
-            color={colors.primary} 
-          />
-          <Text style={styles.infoText}>
-            Your subscription is now active. You&apos;ll be charged $1.99 USD monthly. You can manage or cancel your subscription anytime from your profile.
-          </Text>
-        </View>
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={styles.continueButton}
-          onPress={handleContinue}
-        >
+        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
           <Text style={styles.continueButtonText}>
-            {t('continue') || 'Continue to App'}
+            {t('subscription.success.continue', 'Continue')}
           </Text>
-          <IconSymbol 
-            ios_icon_name="arrow.right" 
-            android_material_icon_name="arrow_forward"
-            size={20} 
-            color="#FFFFFF" 
-          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -142,46 +112,43 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.xxxl,
-    paddingBottom: spacing.huge,
+    padding: spacing.xl,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   iconContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
   },
   successCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: colors.success + '15',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.success,
     justifyContent: 'center',
     alignItems: 'center',
+    ...commonStyles.shadow,
   },
   title: {
-    ...typography.displayMedium,
-    fontSize: 32,
+    fontSize: typography.sizes.xxl,
+    fontWeight: typography.weights.bold as any,
     color: colors.text,
-    textAlign: 'center',
     marginBottom: spacing.md,
-    lineHeight: 40,
+    textAlign: 'center',
   },
   subtitle: {
-    ...typography.bodyLarge,
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxxl,
-    lineHeight: 24,
+    marginBottom: spacing.xl,
   },
   featuresContainer: {
-    backgroundColor: colors.card,
+    width: '100%',
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    marginBottom: spacing.xxl,
-    gap: spacing.lg,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 2,
+    marginBottom: spacing.xl,
+    gap: spacing.md,
+    ...commonStyles.shadow,
   },
   featureItem: {
     flexDirection: 'row',
@@ -189,38 +156,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   featureText: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.text,
-    flex: 1,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.primary + '10',
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    gap: spacing.md,
-    marginBottom: spacing.xxl,
-  },
-  infoText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    flex: 1,
-    lineHeight: 20,
+    fontWeight: typography.weights.medium as any,
   },
   continueButton: {
+    width: '100%',
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    height: 56,
-    flexDirection: 'row',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    boxShadow: `0px 8px 24px ${colors.primary}40`,
-    elevation: 6,
+    ...commonStyles.shadow,
   },
   continueButtonText: {
-    ...typography.h3,
-    color: '#FFFFFF',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
+    color: colors.background,
   },
 });

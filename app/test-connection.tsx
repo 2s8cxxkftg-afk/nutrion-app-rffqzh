@@ -1,128 +1,224 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { supabase, checkSupabaseConnection } from '@/utils/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/utils/supabase';
+import * as Network from 'expo-network';
+
+interface TestResult {
+  name: string;
+  status: 'pending' | 'success' | 'error';
+  message: string;
+}
 
 export default function TestConnectionScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<string[]>([]);
+  const [testing, setTesting] = useState(false);
+  const [results, setResults] = useState<TestResult[]>([]);
 
-  const addResult = (message: string) => {
-    setResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  };
+  // Wrap runTests with useCallback to stabilize its reference
+  const runTests = useCallback(async () => {
+    setTesting(true);
+    const testResults: TestResult[] = [];
 
-  const runTests = async () => {
-    setLoading(true);
-    setResults([]);
+    // Test 1: Network connectivity
+    testResults.push({ name: 'Network Connection', status: 'pending', message: 'Testing...' });
+    setResults([...testResults]);
 
     try {
-      // Test 1: AsyncStorage
-      addResult('✅ Testing AsyncStorage...');
-      await AsyncStorage.setItem('@test_key', 'test_value');
-      const value = await AsyncStorage.getItem('@test_key');
-      if (value === 'test_value') {
-        addResult('✅ AsyncStorage working');
+      const networkState = await Network.getNetworkStateAsync();
+      if (networkState.isConnected) {
+        testResults[0] = { 
+          name: 'Network Connection', 
+          status: 'success', 
+          message: `Connected (${networkState.type})` 
+        };
       } else {
-        addResult('❌ AsyncStorage failed');
+        testResults[0] = { 
+          name: 'Network Connection', 
+          status: 'error', 
+          message: 'No internet connection' 
+        };
       }
-      await AsyncStorage.removeItem('@test_key');
+    } catch (error) {
+      testResults[0] = { 
+        name: 'Network Connection', 
+        status: 'error', 
+        message: 'Failed to check network' 
+      };
+    }
+    setResults([...testResults]);
 
-      // Test 2: Supabase Connection
-      addResult('✅ Testing Supabase connection...');
-      const isHealthy = await checkSupabaseConnection();
-      if (isHealthy) {
-        addResult('✅ Supabase connection healthy');
+    // Test 2: Supabase connection
+    testResults.push({ name: 'Supabase Connection', status: 'pending', message: 'Testing...' });
+    setResults([...testResults]);
+
+    try {
+      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      if (error) {
+        testResults[1] = { 
+          name: 'Supabase Connection', 
+          status: 'error', 
+          message: error.message 
+        };
       } else {
-        addResult('⚠️ Supabase connection issue');
+        testResults[1] = { 
+          name: 'Supabase Connection', 
+          status: 'success', 
+          message: 'Connected successfully' 
+        };
       }
+    } catch (error: any) {
+      testResults[1] = { 
+        name: 'Supabase Connection', 
+        status: 'error', 
+        message: error.message || 'Connection failed' 
+      };
+    }
+    setResults([...testResults]);
 
-      // Test 3: Auth Session
-      addResult('✅ Checking auth session...');
+    // Test 3: Authentication status
+    testResults.push({ name: 'Authentication', status: 'pending', message: 'Testing...' });
+    setResults([...testResults]);
+
+    try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        addResult(`⚠️ Auth error: ${error.message}`);
+        testResults[2] = { 
+          name: 'Authentication', 
+          status: 'error', 
+          message: error.message 
+        };
       } else if (session) {
-        addResult(`✅ User logged in: ${session.user.email}`);
+        testResults[2] = { 
+          name: 'Authentication', 
+          status: 'success', 
+          message: `Logged in as ${session.user.email}` 
+        };
       } else {
-        addResult('ℹ️ No active session');
+        testResults[2] = { 
+          name: 'Authentication', 
+          status: 'error', 
+          message: 'Not authenticated' 
+        };
       }
-
-      // Test 4: Database Query
-      addResult('✅ Testing database query...');
-      const { data: tables, error: dbError } = await supabase
-        .from('pantry_items')
-        .select('count')
-        .limit(1);
-      
-      if (dbError) {
-        addResult(`⚠️ Database error: ${dbError.message}`);
-      } else {
-        addResult('✅ Database query successful');
-      }
-
-      addResult('🎉 All tests completed!');
     } catch (error: any) {
-      addResult(`❌ Test error: ${error.message}`);
-    } finally {
-      setLoading(false);
+      testResults[2] = { 
+        name: 'Authentication', 
+        status: 'error', 
+        message: error.message || 'Auth check failed' 
+      };
     }
-  };
+    setResults([...testResults]);
+
+    setTesting(false);
+  }, []);
 
   useEffect(() => {
     runTests();
-  }, []);
+  }, [runTests]); // Fixed: Added runTests to dependencies
+
+  const getStatusIcon = (status: TestResult['status']) => {
+    switch (status) {
+      case 'success':
+        return (
+          <IconSymbol
+            ios_icon_name="checkmark.circle.fill"
+            android_material_icon_name="check-circle"
+            size={24}
+            color={colors.success}
+          />
+        );
+      case 'error':
+        return (
+          <IconSymbol
+            ios_icon_name="xmark.circle.fill"
+            android_material_icon_name="error"
+            size={24}
+            color={colors.error}
+          />
+        );
+      case 'pending':
+        return <ActivityIndicator size="small" color={colors.primary} />;
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol
-            ios_icon_name="chevron.left"
-            android_material_icon_name="arrow_back"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <Text style={styles.title}>Connection Test</Text>
-        <TouchableOpacity onPress={runTests} style={styles.refreshButton} disabled={loading}>
-          <IconSymbol
-            ios_icon_name="arrow.clockwise"
-            android_material_icon_name="refresh"
-            size={24}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Connection Test',
+          headerBackTitle: 'Back',
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+        }}
+      />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Connection Diagnostics</Text>
+          <Text style={styles.subtitle}>
+            Testing your connection to Nutrion services
+          </Text>
+        </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {loading && results.length === 0 && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Running tests...</Text>
-          </View>
-        )}
+        <View style={styles.resultsContainer}>
+          {results.map((result, index) => (
+            <View key={index} style={styles.resultItem}>
+              <View style={styles.resultHeader}>
+                {getStatusIcon(result.status)}
+                <Text style={styles.resultName}>{result.name}</Text>
+              </View>
+              <Text style={[
+                styles.resultMessage,
+                result.status === 'error' && styles.resultMessageError,
+                result.status === 'success' && styles.resultMessageSuccess,
+              ]}>
+                {result.message}
+              </Text>
+            </View>
+          ))}
+        </View>
 
-        {results.map((result, index) => (
-          <View key={index} style={styles.resultItem}>
-            <Text style={styles.resultText}>{result}</Text>
-          </View>
-        ))}
-
-        {results.length > 0 && (
+        {!testing && (
           <TouchableOpacity
             style={styles.retryButton}
             onPress={runTests}
-            disabled={loading}
           >
+            <IconSymbol
+              ios_icon_name="arrow.clockwise"
+              android_material_icon_name="refresh"
+              size={20}
+              color={colors.background}
+            />
             <Text style={styles.retryButtonText}>Run Tests Again</Text>
           </TouchableOpacity>
         )}
+
+        <View style={styles.infoBox}>
+          <IconSymbol
+            ios_icon_name="info.circle.fill"
+            android_material_icon_name="info"
+            size={20}
+            color={colors.primary}
+          />
+          <Text style={styles.infoText}>
+            If any tests fail, please check your internet connection and try again.
+            If problems persist, contact support.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -133,64 +229,84 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: spacing.sm,
-  },
-  title: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  refreshButton: {
-    padding: spacing.sm,
-  },
-  content: {
+  scrollView: {
     flex: 1,
   },
-  contentContainer: {
+  scrollContent: {
     padding: spacing.lg,
   },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.huge,
+  header: {
+    marginBottom: spacing.xl,
   },
-  loadingText: {
-    ...typography.body,
+  title: {
+    fontSize: typography.sizes.xxl,
+    fontWeight: typography.weights.bold as any,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
-    marginTop: spacing.md,
+  },
+  resultsContainer: {
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
   resultItem: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...commonStyles.shadow,
   },
-  resultText: {
-    ...typography.bodySmall,
+  resultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  resultName: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
     color: colors.text,
-    fontFamily: 'monospace',
+  },
+  resultMessage: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginLeft: 32,
+  },
+  resultMessageError: {
+    color: colors.error,
+  },
+  resultMessageSuccess: {
+    color: colors.success,
   },
   retryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xl,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    ...commonStyles.shadow,
   },
   retryButtonText: {
-    ...typography.body,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as any,
+    color: colors.background,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    lineHeight: 20,
   },
 });
