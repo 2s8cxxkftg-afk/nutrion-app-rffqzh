@@ -1,57 +1,62 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Brighter, modern color palette
 export const colors = {
-  primary: '#4A90E2',      // Bright Blue
-  secondary: '#5BA3F5',    // Light Blue
-  accent: '#64B5F6',       // Accent Blue
-  background: '#F8F9FA',   // Light Grey Background
-  backgroundAlt: '#FFFFFF', // White
-  surface: '#FFFFFF',      // White Surface
-  text: '#1A1A1A',         // Dark Text
-  textSecondary: '#6B7280', // Grey Text
-  grey: '#9CA3AF',         // Medium Grey
-  card: '#FFFFFF',         // White Card
-  border: '#E5E7EB',       // Light Border
-  success: '#10B981',      // Green
-  warning: '#F59E0B',      // Orange
-  error: '#EF4444',        // Red
-  expired: '#EF4444',
-  expiringSoon: '#F59E0B',
-  fresh: '#10B981',
+  primary: '#162456',
+  secondary: '#193cb8',
+  accent: '#64B5F6',
+  background: '#101824',
+  backgroundAlt: '#162133',
+  surface: '#1a2332',
+  text: '#e3e3e3',
+  textSecondary: '#B0BEC5',
+  grey: '#90CAF9',
+  card: '#193cb8',
+  success: '#4CAF50',
+  warning: '#FFC107',
+  error: '#F44336',
+  border: '#37474F',
 };
 
 export const spacing = {
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
+  small: 8,
+  medium: 16,
+  md: 16,
+  large: 24,
+  xl: 32,
 };
 
 export const borderRadius = {
-  sm: 8,
+  small: 8,
+  medium: 12,
   md: 12,
-  lg: 16,
+  large: 16,
   xl: 20,
-  full: 9999,
 };
 
 export const typography = {
-  h1: 32,
-  h2: 24,
-  h3: 20,
-  body: 16,
-  caption: 14,
-  small: 12,
+  fontSize: {
+    xs: 12,
+    small: 14,
+    medium: 16,
+    body: 16,
+    large: 18,
+    xl: 20,
+    xxl: 24,
+  },
+  fontWeight: {
+    regular: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+  },
 };
 
 export const expirationColors = {
-  expired: colors.expired,
-  expiringSoon: colors.expiringSoon,
-  fresh: colors.fresh,
+  fresh: '#4CAF50',
+  warning: '#FFC107',
+  expired: '#F44336',
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -59,17 +64,11 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignSelf: 'center',
     width: '100%',
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
   },
   backButton: {
     backgroundColor: colors.backgroundAlt,
     alignSelf: 'center',
     width: '100%',
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 });
 
@@ -95,46 +94,44 @@ export const commonStyles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    fontSize: typography.h1,
+    fontSize: 24,
     fontWeight: '800',
     textAlign: 'center',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: 10
   },
   text: {
-    fontSize: typography.body,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: 8,
     lineHeight: 24,
     textAlign: 'center',
   },
   section: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: colors.backgroundAlt,
+    borderColor: colors.grey,
     borderWidth: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    marginVertical: spacing.sm,
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 8,
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   icon: {
     width: 60,
     height: 60,
+    tintColor: "white",
   },
 });

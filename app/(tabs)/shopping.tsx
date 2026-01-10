@@ -21,7 +21,8 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ShoppingItem } from '@/types/pantry';
+import { ShoppingItem, UNITS } from '@/types/pantry';
+import NumberInput from '@/components/NumberInput';
 
 const styles = StyleSheet.create({
   container: {
@@ -32,15 +33,15 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    padding: spacing.lg,
+    padding: spacing.large,
   },
   headerTitle: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.fontSize.xl,
     fontWeight: 'bold',
     color: colors.text,
   },
   addItemContainer: {
-    padding: spacing.lg,
+    padding: spacing.large,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -48,31 +49,31 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.small,
   },
   input: {
     flex: 1,
     backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.sizes.md,
+    borderRadius: borderRadius.medium,
+    padding: spacing.medium,
+    fontSize: typography.fontSize.medium,
     color: colors.text,
   },
   addButton: {
     backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    borderRadius: borderRadius.medium,
+    padding: spacing.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   listContainer: {
-    padding: spacing.lg,
+    padding: spacing.large,
   },
   shoppingItem: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+    borderRadius: borderRadius.large,
+    padding: spacing.large,
+    marginBottom: spacing.medium,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.primary,
-    marginRight: spacing.md,
+    marginRight: spacing.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: typography.sizes.md,
+    fontSize: typography.fontSize.medium,
     fontWeight: '500',
     color: colors.text,
   },
@@ -102,16 +103,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   itemQuantity: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.fontSize.small,
     color: colors.textSecondary,
     marginTop: 4,
   },
   itemActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.small,
   },
   actionButton: {
-    padding: spacing.sm,
+    padding: spacing.small,
   },
   emptyContainer: {
     flex: 1,
@@ -120,21 +121,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl * 2,
   },
   emptyText: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.fontSize.large,
     color: colors.textSecondary,
-    marginTop: spacing.lg,
+    marginTop: spacing.large,
     textAlign: 'center',
   },
   clearButton: {
-    margin: spacing.lg,
+    margin: spacing.large,
     backgroundColor: colors.error + '15',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
+    padding: spacing.medium,
+    borderRadius: borderRadius.medium,
     alignItems: 'center',
   },
   clearButtonText: {
     color: colors.error,
-    fontSize: typography.sizes.md,
+    fontSize: typography.fontSize.medium,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -145,34 +146,55 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.large,
     padding: spacing.xl,
     width: '80%',
     maxWidth: 400,
   },
   modalTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.fontSize.large,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.large,
     textAlign: 'center',
   },
-  modalInput: {
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.sizes.md,
+  modalLabel: {
+    fontSize: typography.fontSize.small,
+    fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.small,
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    gap: spacing.small,
+    marginBottom: spacing.medium,
+  },
+  modalQuantityInput: {
+    flex: 1,
+  },
+  modalUnitPicker: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.medium,
+    padding: spacing.medium,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalUnitText: {
+    fontSize: typography.fontSize.medium,
+    color: colors.text,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.medium,
   },
   modalButton: {
     flex: 1,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
+    padding: spacing.medium,
+    borderRadius: borderRadius.medium,
     alignItems: 'center',
   },
   modalButtonCancel: {
@@ -182,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   modalButtonText: {
-    fontSize: typography.sizes.md,
+    fontSize: typography.fontSize.medium,
     fontWeight: '600',
   },
   modalButtonTextCancel: {
@@ -190,6 +212,52 @@ const styles = StyleSheet.create({
   },
   modalButtonTextSave: {
     color: '#fff',
+  },
+  unitPickerModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  pickerCloseButton: {
+    padding: 4,
+  },
+  pickerOption: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pickerOptionText: {
+    fontSize: 16,
+    color: colors.text,
   },
 });
 
@@ -209,6 +277,8 @@ function ShoppingScreenContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [editQuantity, setEditQuantity] = useState('');
+  const [editUnit, setEditUnit] = useState('item');
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
 
   const loadItems = async () => {
     try {
@@ -293,19 +363,21 @@ function ShoppingScreenContent() {
   const handleEditQuantity = (item: ShoppingItem) => {
     setEditingItem(item);
     setEditQuantity(item.quantity?.toString() || '1');
+    setEditUnit(item.unit || 'item');
   };
 
   const handleSaveQuantity = async () => {
     if (!editingItem) return;
 
     try {
-      const quantity = parseInt(editQuantity) || 1;
+      const quantity = parseFloat(editQuantity) || 1;
       const updatedItems = items.map(item =>
-        item.id === editingItem.id ? { ...item, quantity } : item
+        item.id === editingItem.id ? { ...item, quantity, unit: editUnit } : item
       );
       await saveShoppingItems(updatedItems);
       setItems(updatedItems);
       setEditingItem(null);
+      setShowUnitPicker(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -339,6 +411,11 @@ function ShoppingScreenContent() {
     );
   };
 
+  const getUnitLabel = (unitValue: string): string => {
+    const unitObj = UNITS.find(u => u.value === unitValue);
+    return unitObj ? unitObj.label : unitValue;
+  };
+
   const renderShoppingItem = (item: ShoppingItem) => (
     <View key={item.id} style={styles.shoppingItem}>
       <TouchableOpacity
@@ -358,9 +435,9 @@ function ShoppingScreenContent() {
         <Text style={[styles.itemName, item.completed && styles.itemNameCompleted]}>
           {item.name}
         </Text>
-        {item.quantity && item.quantity > 1 && (
+        {item.quantity && item.quantity > 0 && (
           <Text style={styles.itemQuantity}>
-            Quantity: {item.quantity} {item.unit || 'items'}
+            Quantity: {item.quantity} {getUnitLabel(item.unit || 'item')}
           </Text>
         )}
       </View>
@@ -431,7 +508,7 @@ function ShoppingScreenContent() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <AdBanner onUpgradePress={() => router.push('/subscription-management')} />
+          <AdBanner />
 
           {items.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -467,29 +544,56 @@ function ShoppingScreenContent() {
         visible={editingItem !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setEditingItem(null)}
+        onRequestClose={() => {
+          setEditingItem(null);
+          setShowUnitPicker(false);
+        }}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setEditingItem(null)}
+          onPress={() => {
+            setEditingItem(null);
+            setShowUnitPicker(false);
+          }}
         >
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Quantity</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Quantity"
-                placeholderTextColor={colors.textSecondary}
-                value={editQuantity}
-                onChangeText={setEditQuantity}
-                keyboardType="number-pad"
-                autoFocus
-              />
+              <Text style={styles.modalTitle}>Edit Quantity & Unit</Text>
+              
+              <Text style={styles.modalLabel}>Quantity</Text>
+              <View style={styles.modalInputRow}>
+                <View style={styles.modalQuantityInput}>
+                  <NumberInput
+                    value={editQuantity}
+                    onChangeText={setEditQuantity}
+                    min={0}
+                    max={9999}
+                    step={1}
+                    placeholder="1"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.modalUnitPicker}
+                  onPress={() => setShowUnitPicker(true)}
+                >
+                  <Text style={styles.modalUnitText}>{getUnitLabel(editUnit)}</Text>
+                  <IconSymbol
+                    ios_icon_name="chevron.down"
+                    android_material_icon_name="arrow-drop-down"
+                    size={20}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={() => setEditingItem(null)}
+                  onPress={() => {
+                    setEditingItem(null);
+                    setShowUnitPicker(false);
+                  }}
                 >
                   <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
                     Cancel
@@ -508,6 +612,52 @@ function ShoppingScreenContent() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {showUnitPicker && (
+        <Modal
+          visible={showUnitPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowUnitPicker(false)}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowUnitPicker(false)}
+          >
+            <View style={styles.unitPickerModal}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Unit</Text>
+                <TouchableOpacity
+                  style={styles.pickerCloseButton}
+                  onPress={() => setShowUnitPicker(false)}
+                >
+                  <IconSymbol
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+              <ScrollView>
+                {UNITS.map((u) => (
+                  <TouchableOpacity
+                    key={u.value}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setEditUnit(u.value);
+                      setShowUnitPicker(false);
+                    }}
+                  >
+                    <Text style={styles.pickerOptionText}>{u.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
