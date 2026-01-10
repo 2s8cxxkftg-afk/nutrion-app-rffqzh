@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getExpirationStatus } from '@/utils/expirationHelper';
 import { IconSymbol } from '@/components/IconSymbol';
-import { getSubscription, hasActiveAccess, resetSubscription } from '@/utils/subscription';
+import AdBanner from '@/components/AdBanner';
+import { getSubscription, hasActiveAccess, resetSubscription, isPremiumUser } from '@/utils/subscription';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
@@ -150,7 +151,7 @@ function ProfileScreenContent() {
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, expiringSoon: 0, expired: 0 });
-  const [hasAccess, setHasAccess] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
 
   const loadUserData = useCallback(async () => {
@@ -199,21 +200,27 @@ function ProfileScreenContent() {
         expired,
       });
 
-      const access = await hasActiveAccess();
-      setHasAccess(access);
+      const premium = await isPremiumUser();
+      setIsPremium(premium);
 
       const sub = await getSubscription();
       if (sub) {
         if (sub.status === 'trial') {
-          const daysLeft = Math.ceil((new Date(sub.trialEndsAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-          setSubscriptionStatus(`Free Trial (${daysLeft} days left)`);
-        } else if (sub.status === 'active') {
+          const trialEnd = new Date(sub.trialEndDate!);
+          const now = new Date();
+          const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysLeft > 0) {
+            setSubscriptionStatus(`Free Trial (${daysLeft} days left)`);
+          } else {
+            setSubscriptionStatus('Trial Ended');
+          }
+        } else if (sub.isPremium) {
           setSubscriptionStatus('Premium Active');
         } else {
-          setSubscriptionStatus('Free');
+          setSubscriptionStatus('Free (with ads)');
         }
       } else {
-        setSubscriptionStatus('Free');
+        setSubscriptionStatus('Free (with ads)');
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -326,6 +333,8 @@ function ProfileScreenContent() {
           </View>
         </View>
 
+        <AdBanner onUpgradePress={() => router.push('/subscription-management')} />
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity
@@ -361,12 +370,12 @@ function ProfileScreenContent() {
               ios_icon_name="crown.fill"
               android_material_icon_name="workspace-premium"
               size={24}
-              color={hasAccess ? colors.primary : colors.textSecondary}
+              color={isPremium ? colors.primary : colors.textSecondary}
             />
             <View style={styles.menuItemContent}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.menuItemTitle}>Manage Subscription</Text>
-                {hasAccess && (
+                {isPremium && (
                   <View style={styles.premiumBadge}>
                     <Text style={styles.premiumText}>PREMIUM</Text>
                   </View>

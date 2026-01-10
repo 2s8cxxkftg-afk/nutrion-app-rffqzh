@@ -16,7 +16,15 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import { IconSymbol } from '@/components/IconSymbol';
-import { getSubscription, hasActiveAccess, resetSubscription, getSubscriptionPrice } from '@/utils/subscription';
+import { 
+  getSubscription, 
+  isPremiumUser, 
+  resetSubscription, 
+  getSubscriptionPrice,
+  activatePremiumSubscription,
+  cancelSubscription,
+  getTrialDaysRemaining
+} from '@/utils/subscription';
 import * as Haptics from 'expo-haptics';
 
 const styles = StyleSheet.create({
@@ -90,12 +98,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  featuresList: {
+    marginTop: spacing.md,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  featureText: {
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    marginLeft: spacing.sm,
+  },
+  priceText: {
+    fontSize: typography.sizes.xl,
+    fontWeight: 'bold',
+    color: colors.primary,
+    textAlign: 'center',
+    marginVertical: spacing.md,
+  },
+  description: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
 });
 
 export default function SubscriptionManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<any>(null);
-  const [hasAccess, setHasAccess] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -105,9 +140,12 @@ export default function SubscriptionManagementScreen() {
   async function loadSubscriptionData() {
     try {
       const sub = await getSubscription();
-      const access = await hasActiveAccess();
+      const premium = await isPremiumUser();
+      const daysLeft = await getTrialDaysRemaining();
+      
       setSubscription(sub);
-      setHasAccess(access);
+      setIsPremium(premium);
+      setTrialDaysLeft(daysLeft);
     } catch (error) {
       console.error('Error loading subscription:', error);
       Toast.show('Failed to load subscription data', 'error');
@@ -116,19 +154,46 @@ export default function SubscriptionManagementScreen() {
     }
   }
 
+  async function handleUpgradeToPremium() {
+    Alert.alert(
+      'Upgrade to Premium',
+      'Remove ads and enjoy an ad-free experience for $1.99/month',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Subscribe',
+          onPress: async () => {
+            try {
+              // TODO: Backend Integration - Integrate with payment provider (Stripe, etc.)
+              // For now, we'll just activate premium locally
+              await activatePremiumSubscription();
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Toast.show('Premium activated! Ads removed.', 'success');
+              await loadSubscriptionData();
+            } catch (error) {
+              console.error('Error upgrading to premium:', error);
+              Toast.show('Failed to upgrade to premium', 'error');
+            }
+          },
+        },
+      ]
+    );
+  }
+
   async function handleCancelSubscription() {
     Alert.alert(
-      'Cancel Subscription',
-      'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.',
+      'Cancel Premium',
+      'Are you sure you want to cancel your premium subscription? You will see ads after cancellation.',
       [
-        { text: 'Keep Subscription', style: 'cancel' },
+        { text: 'Keep Premium', style: 'cancel' },
         {
-          text: 'Cancel Subscription',
+          text: 'Cancel Premium',
           style: 'destructive',
           onPress: async () => {
             try {
+              await cancelSubscription();
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              Toast.show('Subscription cancelled', 'success');
+              Toast.show('Premium cancelled', 'success');
               await loadSubscriptionData();
             } catch (error) {
               console.error('Error cancelling subscription:', error);
@@ -164,16 +229,6 @@ export default function SubscriptionManagementScreen() {
     );
   }
 
-  function formatDate(dateString: string) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-
   const subscriptionPrice = getSubscriptionPrice();
 
   return (
@@ -191,7 +246,7 @@ export default function SubscriptionManagementScreen() {
                 ios_icon_name="chevron.left" 
                 android_material_icon_name="arrow-back"
                 size={24} 
-                color="#FFFFFF"
+                color={colors.text}
               />
             </TouchableOpacity>
           ),
@@ -210,65 +265,109 @@ export default function SubscriptionManagementScreen() {
             <View
               style={[
                 styles.statusBadge,
-                { backgroundColor: hasAccess ? colors.success : colors.error },
+                { backgroundColor: isPremium ? colors.success : colors.warning },
               ]}
             >
               <Text style={styles.statusText}>
-                {hasAccess ? 'Active' : 'Inactive'}
+                {isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free (with ads)'}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Plan</Text>
               <Text style={styles.infoValue}>
-                {subscription?.plan || 'Free Trial'}
+                {isPremium ? 'Premium' : 'Free'}
               </Text>
             </View>
 
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Price</Text>
-              <Text style={styles.infoValue}>
-                ${subscriptionPrice.toFixed(2)} USD/month
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Started</Text>
-              <Text style={styles.infoValue}>
-                {formatDate(subscription?.startDate)}
-              </Text>
-            </View>
+            {subscription?.status === 'trial' && trialDaysLeft > 0 && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Trial Days Remaining</Text>
+                <Text style={styles.infoValue}>{trialDaysLeft} days</Text>
+              </View>
+            )}
 
             <View style={[styles.infoRow, styles.infoRowLast]}>
-              <Text style={styles.infoLabel}>Next Billing</Text>
+              <Text style={styles.infoLabel}>Ads</Text>
               <Text style={styles.infoValue}>
-                {formatDate(subscription?.nextBillingDate)}
+                {isPremium ? 'Removed' : 'Enabled'}
               </Text>
             </View>
           </View>
 
-          {hasAccess && (
+          {!isPremium && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Manage Plan</Text>
+              <Text style={styles.sectionTitle}>Upgrade to Premium</Text>
+              
+              <Text style={styles.description}>
+                Remove all ads and enjoy an uninterrupted experience
+              </Text>
+
+              <Text style={styles.priceText}>
+                ${subscriptionPrice.toFixed(2)}/month
+              </Text>
+
+              <View style={styles.featuresList}>
+                <View style={styles.featureItem}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.featureText}>No advertisements</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.featureText}>Uninterrupted experience</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.featureText}>Support app development</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.featureText}>Cancel anytime</Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleUpgradeToPremium}
+              >
+                <Text style={styles.buttonText}>Upgrade to Premium</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isPremium && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Manage Premium</Text>
+              
+              <Text style={styles.description}>
+                You are currently subscribed to Premium. Cancel anytime to return to the free version with ads.
+              </Text>
               
               <TouchableOpacity
                 style={[styles.button, styles.dangerButton]}
                 onPress={handleCancelSubscription}
               >
-                <Text style={styles.buttonText}>Cancel Subscription</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {!hasAccess && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Upgrade</Text>
-              
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push('/paywall')}
-              >
-                <Text style={styles.buttonText}>Subscribe Now</Text>
+                <Text style={styles.buttonText}>Cancel Premium</Text>
               </TouchableOpacity>
             </View>
           )}

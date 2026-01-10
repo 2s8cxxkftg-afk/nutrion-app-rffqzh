@@ -1,8 +1,14 @@
 
-import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import React, { useState, useCallback } from 'react';
+import { IconSymbol } from '@/components/IconSymbol';
+import Toast from '@/components/Toast';
+import AdBanner from '@/components/AdBanner';
+import { loadPantryItems, deletePantryItem } from '@/utils/storage';
+import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
 import { PantryItem } from '@/types/pantry';
+import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 import {
   View,
   Text,
@@ -14,170 +20,111 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
+import React, { useState, useCallback } from 'react';
 import { colors, commonStyles, expirationColors, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from '@/components/Toast';
-import { loadPantryItems, deletePantryItem } from '@/utils/storage';
-import * as Haptics from 'expo-haptics';
-import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
-import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    flex: 1,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  content: {
-    flex: 1,
-  },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
     paddingBottom: 100,
   },
-  emptyContainer: {
-    flex: 1,
+  searchContainer: {
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  searchBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl * 2,
-  },
-  emptyIcon: {
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyDescription: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-    lineHeight: 24,
-  },
-  itemCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
   },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  itemInfo: {
+  searchInput: {
     flex: 1,
-    marginRight: spacing.sm,
+    marginLeft: spacing.sm,
+    fontSize: typography.sizes.md,
+    color: colors.text,
+  },
+  listContainer: {
+    paddingHorizontal: spacing.lg,
+  },
+  pantryItem: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemContent: {
+    flex: 1,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  itemCategory: {
-    fontSize: 13,
+  itemDetails: {
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  itemExpiration: {
+    fontSize: typography.sizes.sm,
     fontWeight: '500',
   },
   itemActions: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.background,
-    alignItems: 'center',
+    padding: spacing.sm,
+  },
+  emptyContainer: {
+    flex: 1,
     justifyContent: 'center',
-  },
-  itemDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    paddingVertical: spacing.xl * 2,
   },
-  itemQuantity: {
-    fontSize: 15,
+  emptyText: {
+    fontSize: typography.sizes.lg,
     color: colors.textSecondary,
-    fontWeight: '600',
+    marginTop: spacing.lg,
+    textAlign: 'center',
   },
-  expirationBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+  emptySubtext: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    textAlign: 'center',
   },
-  expirationText: {
-    fontSize: 12,
-    fontWeight: '700',
+  addButton: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xl + 80,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
 
 function PantryScreen() {
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <PantryScreenContent />
     </>
   );
@@ -193,12 +140,10 @@ function PantryScreenContent() {
     try {
       const loadedItems = await loadPantryItems();
       setItems(loadedItems);
-      
-      // Check for expiring items and send notifications
       await checkAndNotifyExpiringItems(loadedItems);
     } catch (error) {
       console.error('Error loading pantry items:', error);
-      Toast.show('Failed to load pantry items', 'error');
+      Toast.show('Failed to load items', 'error');
     }
   }, []);
 
@@ -215,36 +160,24 @@ function PantryScreenContent() {
   }, [loadItems]);
 
   const handleEditItem = (itemId: string) => {
-    console.log('Edit button pressed for item:', itemId);
-    router.push(`/edit-item?id=${itemId}`);
+    router.push(`/edit-item?itemId=${itemId}`);
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    console.log('Delete button pressed for item:', itemId);
-    
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      console.log('Haptics not available:', error);
-    }
-
+  const handleDeleteItem = useCallback(async (itemId: string) => {
     Alert.alert(
       'Delete Item',
       'Are you sure you want to delete this item?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deleting item:', itemId);
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               await deletePantryItem(itemId);
               await loadItems();
-              Toast.show('Item deleted successfully!', 'success');
+              Toast.show('Item deleted', 'success');
             } catch (error) {
               console.error('Error deleting item:', error);
               Toast.show('Failed to delete item', 'error');
@@ -253,7 +186,7 @@ function PantryScreenContent() {
         },
       ]
     );
-  };
+  }, [loadItems]);
 
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -261,60 +194,44 @@ function PantryScreenContent() {
   );
 
   const renderPantryItem = (item: PantryItem) => {
-    const status = getExpirationStatus(item.expirationDate);
+    const expirationStatus = getExpirationStatus(item.expirationDate);
     const expirationText = formatExpirationText(item.expirationDate);
-    
-    const statusColors = {
-      fresh: expirationColors.fresh,
-      warning: expirationColors.warning,
-      'expiring-soon': expirationColors.expiringSoon,
-      expired: expirationColors.expired,
-    };
+    const expirationColor = expirationColors[expirationStatus];
 
     return (
-      <View key={item.id} style={styles.itemCard}>
-        <View style={styles.itemHeader}>
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemCategory}>{item.category}</Text>
-          </View>
-          <View style={styles.itemActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleEditItem(item.id)}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="pencil"
-                android_material_icon_name="edit"
-                size={20}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleDeleteItem(item.id)}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="trash"
-                android_material_icon_name="delete"
-                size={20}
-                color={colors.error}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.itemDetails}>
-          <Text style={styles.itemQuantity}>
-            {item.quantity} {item.unit}
+      <View key={item.id} style={styles.pantryItem}>
+        <View style={styles.itemContent}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemDetails}>
+            {item.quantity} {item.unit} • {item.category}
           </Text>
-          <View style={[styles.expirationBadge, { backgroundColor: statusColors[status] + '20' }]}>
-            <Text style={[styles.expirationText, { color: statusColors[status] }]}>
-              {expirationText}
-            </Text>
-          </View>
+          <Text style={[styles.itemExpiration, { color: expirationColor }]}>
+            {expirationText}
+          </Text>
+        </View>
+        <View style={styles.itemActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleEditItem(item.id)}
+          >
+            <IconSymbol
+              ios_icon_name="pencil"
+              android_material_icon_name="edit"
+              size={20}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDeleteItem(item.id)}
+          >
+            <IconSymbol
+              ios_icon_name="trash"
+              android_material_icon_name="delete"
+              size={20}
+              color={colors.error}
+            />
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -322,69 +239,66 @@ function PantryScreenContent() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>🥗 My Pantry</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => router.push('/food-search')}
-          >
-            <IconSymbol
-              ios_icon_name="magnifyingglass"
-              android_material_icon_name="search"
-              size={20}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => router.push('/add-item')}
-          >
-            <IconSymbol
-              ios_icon_name="plus"
-              android_material_icon_name="add"
-              size={20}
-              color={colors.text}
-            />
-          </TouchableOpacity>
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <IconSymbol
+            ios_icon_name="magnifyingglass"
+            android_material_icon_name="search"
+            size={20}
+            color={colors.textSecondary}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search pantry items..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
       </View>
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Search your pantry..."
-          placeholderTextColor={colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
       <ScrollView
-        style={styles.content}
+        style={styles.container}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        <AdBanner onUpgradePress={() => router.push('/subscription-management')} />
+
         {filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
-              ios_icon_name="archivebox"
+              ios_icon_name="tray"
               android_material_icon_name="inventory"
-              size={80}
+              size={64}
               color={colors.textSecondary}
-              style={styles.emptyIcon}
             />
-            <Text style={styles.emptyTitle}>🚀 Let&apos;s Get Started!</Text>
-            <Text style={styles.emptyDescription}>
-              Your pantry is empty! Start adding items now to track your food inventory and never waste food again!
+            <Text style={styles.emptyText}>
+              {searchQuery ? 'No items found' : 'Your pantry is empty'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {searchQuery ? 'Try a different search' : 'Add items to get started'}
             </Text>
           </View>
         ) : (
-          filteredItems.map(renderPantryItem)
+          <View style={styles.listContainer}>
+            {filteredItems.map(renderPantryItem)}
+          </View>
         )}
       </ScrollView>
+
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push('/add-item')}
+      >
+        <IconSymbol
+          ios_icon_name="plus"
+          android_material_icon_name="add"
+          size={28}
+          color="#fff"
+        />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

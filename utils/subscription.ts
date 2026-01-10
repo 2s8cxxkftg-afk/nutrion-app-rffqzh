@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 
 const SUBSCRIPTION_KEY = '@nutrion_subscription';
 const TRIAL_START_KEY = '@nutrion_trial_start';
+const PREMIUM_KEY = '@nutrion_premium';
 const TRIAL_DURATION_DAYS = 15;
 
 export interface Subscription {
@@ -13,6 +14,7 @@ export interface Subscription {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   plan: 'free' | 'premium';
+  isPremium: boolean; // For ad removal
 }
 
 /**
@@ -21,9 +23,12 @@ export interface Subscription {
 export async function getSubscription(): Promise<Subscription> {
   try {
     const subscriptionData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
+    const isPremiumData = await AsyncStorage.getItem(PREMIUM_KEY);
+    const isPremium = isPremiumData === 'true';
     
     if (subscriptionData) {
       const subscription: Subscription = JSON.parse(subscriptionData);
+      subscription.isPremium = isPremium;
       
       // Check if trial has expired
       if (subscription.status === 'trial' && subscription.trialEndDate) {
@@ -31,9 +36,11 @@ export async function getSubscription(): Promise<Subscription> {
         const now = new Date();
         
         if (now > trialEnd) {
-          // Trial has expired
+          // Trial has expired - user can still use app but will see ads
           subscription.status = 'expired';
-          subscription.plan = 'free';
+          if (!isPremium) {
+            subscription.plan = 'free';
+          }
           await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
         }
       }
@@ -45,12 +52,14 @@ export async function getSubscription(): Promise<Subscription> {
     return {
       status: 'expired',
       plan: 'free',
+      isPremium: false,
     };
   } catch (error) {
     console.error('Error getting subscription:', error);
     return {
       status: 'expired',
       plan: 'free',
+      isPremium: false,
     };
   }
 }
@@ -68,6 +77,7 @@ export async function startFreeTrial(): Promise<void> {
       plan: 'premium',
       trialStartDate: now.toISOString(),
       trialEndDate: trialEnd.toISOString(),
+      isPremium: false,
     };
     
     await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
@@ -81,7 +91,7 @@ export async function startFreeTrial(): Promise<void> {
 }
 
 /**
- * Activate premium subscription
+ * Activate premium subscription (removes ads)
  */
 export async function activatePremiumSubscription(): Promise<void> {
   try {
@@ -91,9 +101,11 @@ export async function activatePremiumSubscription(): Promise<void> {
       status: 'active',
       plan: 'premium',
       subscriptionStartDate: now.toISOString(),
+      isPremium: true,
     };
     
     await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    await AsyncStorage.setItem(PREMIUM_KEY, 'true');
     
     console.log('Premium subscription activated:', subscription);
   } catch (error) {
@@ -103,15 +115,17 @@ export async function activatePremiumSubscription(): Promise<void> {
 }
 
 /**
- * Cancel subscription
+ * Cancel subscription (user will see ads but can still use app)
  */
 export async function cancelSubscription(): Promise<void> {
   try {
     const subscription = await getSubscription();
     subscription.status = 'cancelled';
     subscription.plan = 'free';
+    subscription.isPremium = false;
     
     await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
+    await AsyncStorage.setItem(PREMIUM_KEY, 'false');
     
     console.log('Subscription cancelled:', subscription);
   } catch (error) {
@@ -128,6 +142,7 @@ export async function resetSubscription(): Promise<void> {
     // Remove subscription data
     await AsyncStorage.removeItem(SUBSCRIPTION_KEY);
     await AsyncStorage.removeItem(TRIAL_START_KEY);
+    await AsyncStorage.removeItem(PREMIUM_KEY);
     
     // Start a new trial
     await startFreeTrial();
@@ -140,14 +155,36 @@ export async function resetSubscription(): Promise<void> {
 }
 
 /**
- * Check if user has active access (trial or premium)
+ * Check if user has active access (always true now - no paywall)
  */
 export async function hasActiveAccess(): Promise<boolean> {
+  // Everyone has access to the app now
+  return true;
+}
+
+/**
+ * Check if user is premium (no ads)
+ */
+export async function isPremiumUser(): Promise<boolean> {
   try {
     const subscription = await getSubscription();
-    return subscription.status === 'trial' || subscription.status === 'active';
+    return subscription.isPremium || subscription.status === 'trial' || subscription.status === 'active';
   } catch (error) {
-    console.error('Error checking active access:', error);
+    console.error('Error checking premium status:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if user should see ads
+ */
+export async function shouldShowAds(): Promise<boolean> {
+  try {
+    const subscription = await getSubscription();
+    // Show ads if trial expired and user is not premium
+    return subscription.status === 'expired' && !subscription.isPremium;
+  } catch (error) {
+    console.error('Error checking if should show ads:', error);
     return false;
   }
 }
@@ -183,14 +220,9 @@ export function getSubscriptionPrice(): number {
 }
 
 /**
- * Check if user should see paywall
+ * Check if user should see paywall (always false now - no paywall)
  */
 export async function shouldShowPaywall(): Promise<boolean> {
-  try {
-    const subscription = await getSubscription();
-    return subscription.status === 'expired' || subscription.status === 'cancelled';
-  } catch (error) {
-    console.error('Error checking if should show paywall:', error);
-    return false;
-  }
+  // No more paywall - users can always access the app
+  return false;
 }

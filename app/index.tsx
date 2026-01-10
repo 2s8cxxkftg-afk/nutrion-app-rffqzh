@@ -5,7 +5,6 @@ import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
-import { shouldShowPaywall } from '@/utils/subscription';
 
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
 
@@ -13,7 +12,6 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -52,17 +50,9 @@ export default function Index() {
         authenticated = !!session;
         console.log('Authenticated:', authenticated);
         setIsAuthenticated(authenticated);
-
-        // Check if should show paywall
-        if (authenticated) {
-          const needsPaywall = await shouldShowPaywall();
-          console.log('Needs paywall:', needsPaywall);
-          setShowPaywall(needsPaywall);
-        }
       } catch (authError: any) {
         console.error('Auth check error:', authError.message);
         setIsAuthenticated(false);
-        setShowPaywall(false);
       }
       
       // Show splash screen for 1 second
@@ -76,7 +66,6 @@ export default function Index() {
       // On error, assume nothing completed
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
-      setShowPaywall(false);
       setTimeout(() => {
         setIsLoading(false);
       }, 1000);
@@ -149,7 +138,6 @@ export default function Index() {
   console.log('=== Navigation Decision ===');
   console.log('Onboarding:', hasCompletedOnboarding);
   console.log('Authenticated:', isAuthenticated);
-  console.log('Show paywall:', showPaywall);
 
   if (!hasCompletedOnboarding) {
     console.log('→ /introduction');
@@ -161,12 +149,7 @@ export default function Index() {
     return <Redirect href="/auth" />;
   }
 
-  // Check if user needs to see paywall
-  if (showPaywall) {
-    console.log('→ /paywall');
-    return <Redirect href="/paywall" />;
-  }
-
+  // No more paywall - everyone can access the app
   console.log('→ /(tabs)/pantry');
   return <Redirect href="/(tabs)/pantry" />;
 }
