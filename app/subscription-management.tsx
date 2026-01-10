@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.grey,
   },
   infoRowLast: {
     borderBottomWidth: 0,
@@ -124,6 +124,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.md,
   },
+  premiumFeatureHighlight: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFD700',
+  },
 });
 
 export default function SubscriptionManagementScreen() {
@@ -157,7 +165,7 @@ export default function SubscriptionManagementScreen() {
   async function handleUpgradeToPremium() {
     Alert.alert(
       'Upgrade to Premium',
-      'Remove ads and enjoy an ad-free experience for $1.99/month',
+      'Unlock AI Recipe Generator, Receipt Scanner, and remove all ads for $1.99/month',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -168,7 +176,7 @@ export default function SubscriptionManagementScreen() {
               // For now, we'll just activate premium locally
               await activatePremiumSubscription();
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Toast.show('Premium activated! Ads removed.', 'success');
+              Toast.show('Premium activated! All features unlocked.', 'success');
               await loadSubscriptionData();
             } catch (error) {
               console.error('Error upgrading to premium:', error);
@@ -183,7 +191,7 @@ export default function SubscriptionManagementScreen() {
   async function handleCancelSubscription() {
     Alert.alert(
       'Cancel Premium',
-      'Are you sure you want to cancel your premium subscription? You will see ads after cancellation.',
+      'Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator, Receipt Scanner, and ads will return.',
       [
         { text: 'Keep Premium', style: 'cancel' },
         {
@@ -287,10 +295,24 @@ export default function SubscriptionManagementScreen() {
               </View>
             )}
 
-            <View style={[styles.infoRow, styles.infoRowLast]}>
+            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Ads</Text>
               <Text style={styles.infoValue}>
                 {isPremium ? 'Removed' : 'Enabled'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>AI Recipe Generator</Text>
+              <Text style={styles.infoValue}>
+                {isPremium ? 'Unlocked' : 'Locked'}
+              </Text>
+            </View>
+
+            <View style={[styles.infoRow, styles.infoRowLast]}>
+              <Text style={styles.infoLabel}>Receipt Scanner</Text>
+              <Text style={styles.infoValue}>
+                {isPremium ? 'Unlocked' : 'Locked'}
               </Text>
             </View>
           </View>
@@ -300,7 +322,7 @@ export default function SubscriptionManagementScreen() {
               <Text style={styles.sectionTitle}>Upgrade to Premium</Text>
               
               <Text style={styles.description}>
-                Remove all ads and enjoy an uninterrupted experience
+                Unlock powerful AI features and enjoy an ad-free experience
               </Text>
 
               <Text style={styles.priceText}>
@@ -308,6 +330,24 @@ export default function SubscriptionManagementScreen() {
               </Text>
 
               <View style={styles.featuresList}>
+                <View style={[styles.featureItem, styles.premiumFeatureHighlight]}>
+                  <IconSymbol
+                    ios_icon_name="sparkles"
+                    android_material_icon_name="auto-awesome"
+                    size={20}
+                    color="#FFD700"
+                  />
+                  <Text style={styles.featureText}>AI Recipe Generator</Text>
+                </View>
+                <View style={[styles.featureItem, styles.premiumFeatureHighlight]}>
+                  <IconSymbol
+                    ios_icon_name="doc.text.viewfinder"
+                    android_material_icon_name="receipt"
+                    size={20}
+                    color="#FFD700"
+                  />
+                  <Text style={styles.featureText}>Receipt Scanner</Text>
+                </View>
                 <View style={styles.featureItem}>
                   <IconSymbol
                     ios_icon_name="checkmark.circle.fill"
@@ -324,7 +364,16 @@ export default function SubscriptionManagementScreen() {
                     size={20}
                     color={colors.success}
                   />
-                  <Text style={styles.featureText}>Uninterrupted experience</Text>
+                  <Text style={styles.featureText}>Personalized recipe suggestions</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.featureText}>Automatic receipt scanning</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <IconSymbol
@@ -360,7 +409,7 @@ export default function SubscriptionManagementScreen() {
               <Text style={styles.sectionTitle}>Manage Premium</Text>
               
               <Text style={styles.description}>
-                You are currently subscribed to Premium. Cancel anytime to return to the free version with ads.
+                You are currently subscribed to Premium. Cancel anytime to return to the free version with ads and limited features.
               </Text>
               
               <TouchableOpacity

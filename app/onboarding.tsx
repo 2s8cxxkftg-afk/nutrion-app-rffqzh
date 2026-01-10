@@ -34,6 +34,7 @@ interface OnboardingPage {
   iconName: string;
   androidIconName: string;
   color: string;
+  isPremium?: boolean;
 }
 
 const pages: OnboardingPage[] = [
@@ -59,11 +60,27 @@ const pages: OnboardingPage[] = [
     color: '#FF9800',
   },
   {
+    titleKey: 'onboarding.receiptScannerTitle',
+    descriptionKey: 'onboarding.receiptScannerDesc',
+    iconName: 'doc.text.viewfinder',
+    androidIconName: 'receipt',
+    color: '#9C27B0',
+    isPremium: true,
+  },
+  {
+    titleKey: 'onboarding.aiRecipeTitle',
+    descriptionKey: 'onboarding.aiRecipeDesc',
+    iconName: 'sparkles',
+    androidIconName: 'auto-awesome',
+    color: '#E91E63',
+    isPremium: true,
+  },
+  {
     titleKey: 'onboarding.shoppingTitle',
     descriptionKey: 'onboarding.shoppingDesc',
     iconName: 'cart.fill',
-    androidIconName: 'shopping_cart',
-    color: '#9C27B0',
+    androidIconName: 'shopping-cart',
+    color: '#00BCD4',
   },
 ];
 
@@ -176,8 +193,29 @@ export default function OnboardingScreen() {
             </View>
 
             <View style={styles.content}>
-              <Text style={styles.title}>{t(page.titleKey)}</Text>
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>{t(page.titleKey)}</Text>
+                {page.isPremium && (
+                  <View style={styles.premiumBadge}>
+                    <IconSymbol
+                      ios_icon_name="crown.fill"
+                      android_material_icon_name="star"
+                      size={14}
+                      color="#FFD700"
+                    />
+                    <Text style={styles.premiumText}>PREMIUM</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.description}>{t(page.descriptionKey)}</Text>
+              
+              {page.isPremium && (
+                <View style={styles.premiumNote}>
+                  <Text style={styles.premiumNoteText}>
+                    ✨ Unlock with Premium subscription
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         ))}
@@ -202,7 +240,7 @@ export default function OnboardingScreen() {
         </Text>
         <IconSymbol 
           ios_icon_name="arrow.right" 
-          android_material_icon_name="arrow_forward"
+          android_material_icon_name="arrow-forward"
           size={20} 
           color="#FFFFFF" 
         />
@@ -293,7 +331,7 @@ const styles = StyleSheet.create({
     borderRadius: (SCREEN_WIDTH * 0.7) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
   },
   iconCircle: {
     width: SCREEN_WIDTH * 0.5,
@@ -305,31 +343,66 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   content: {
-    paddingHorizontal: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   title: {
-    ...typography.displayMedium,
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.lg,
     letterSpacing: -0.5,
   },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    gap: 4,
+  },
+  premiumText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFD700',
+    letterSpacing: 0.5,
+  },
   description: {
-    ...typography.bodyLarge,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 24,
     paddingHorizontal: spacing.md,
+  },
+  premiumNote: {
+    marginTop: spacing.md,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  premiumNoteText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
+    paddingVertical: spacing.xl,
     gap: spacing.sm,
   },
   dot: {
@@ -345,8 +418,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    marginHorizontal: spacing.xxxl,
-    marginBottom: spacing.xxxl,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.xl,
     paddingVertical: 18,
     borderRadius: borderRadius.xl,
     gap: spacing.sm,

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { loadPantryItems } from '@/utils/storage';
 import { PantryItem } from '@/types/pantry';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
+import { isPremiumUser } from '@/utils/subscription';
 
 const CUISINES = ['Any', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'American', 'Indian'];
 const DIETARY_RESTRICTIONS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free'];
@@ -32,12 +33,22 @@ export default function AIRecipesScreen() {
   const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([]);
   const [showPreferences, setShowPreferences] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
+  const [checkingPremium, setCheckingPremium] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       loadItems();
+      checkPremiumStatus();
     }, [])
   );
+
+  const checkPremiumStatus = async () => {
+    setCheckingPremium(true);
+    const premium = await isPremiumUser();
+    setIsPremium(premium);
+    setCheckingPremium(false);
+  };
 
   const loadItems = async () => {
     const items = await loadPantryItems();
@@ -45,6 +56,18 @@ export default function AIRecipesScreen() {
   };
 
   const handleGenerateRecipes = async () => {
+    // Check premium status
+    if (!isPremium) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Toast.show({
+        type: 'error',
+        text1: 'Premium Feature',
+        text2: 'Subscribe to Premium to use AI Recipe Generator',
+      });
+      router.push('/subscription-management');
+      return;
+    }
+
     if (pantryItems.length === 0) {
       Toast.show({
         type: 'error',
@@ -77,6 +100,131 @@ export default function AIRecipesScreen() {
         : [...prev, restriction]
     );
   };
+
+  if (checkingPremium) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'AI Recipe Generator',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'AI Recipe Generator',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="arrow-back"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <View style={styles.premiumGateContainer}>
+          <View style={styles.premiumGateIcon}>
+            <IconSymbol
+              ios_icon_name="crown.fill"
+              android_material_icon_name="star"
+              size={64}
+              color="#FFD700"
+            />
+          </View>
+          <Text style={styles.premiumGateTitle}>Premium Feature</Text>
+          <Text style={styles.premiumGateDescription}>
+            AI Recipe Generator is a premium feature. Subscribe to unlock:
+          </Text>
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text style={styles.featureText}>AI-powered recipe suggestions</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text style={styles.featureText}>Personalized based on your pantry</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text style={styles.featureText}>Dietary restrictions support</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text style={styles.featureText}>Receipt Scanner included</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color={colors.success}
+              />
+              <Text style={styles.featureText}>Ad-free experience</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/subscription-management');
+            }}
+          >
+            <IconSymbol
+              ios_icon_name="crown.fill"
+              android_material_icon_name="star"
+              size={20}
+              color="#FFFFFF"
+            />
+            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.backButtonAlt}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backButtonAltText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -349,6 +497,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   backButton: {
     padding: spacing.sm,
     marginLeft: spacing.xs,
@@ -356,6 +509,70 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: spacing.md,
+  },
+  premiumGateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  premiumGateIcon: {
+    marginBottom: spacing.lg,
+  },
+  premiumGateTitle: {
+    fontSize: typography.sizes.xxl,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  premiumGateDescription: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 22,
+  },
+  featuresList: {
+    width: '100%',
+    marginBottom: spacing.xl,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  featureText: {
+    fontSize: typography.sizes.md,
+    color: colors.text,
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
+    width: '100%',
+    marginBottom: spacing.md,
+  },
+  upgradeButtonText: {
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  backButtonAlt: {
+    paddingVertical: spacing.sm,
+  },
+  backButtonAltText: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   infoCard: {
     backgroundColor: colors.card,
@@ -366,19 +583,20 @@ const styles = StyleSheet.create({
     ...commonStyles.shadow,
   },
   infoTitle: {
-    ...typography.h3,
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
     color: colors.text,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
   infoText: {
-    ...typography.body,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   pantryCount: {
-    ...typography.caption,
+    fontSize: typography.sizes.sm,
     color: colors.primary,
     fontWeight: '600',
   },
@@ -393,7 +611,7 @@ const styles = StyleSheet.create({
     ...commonStyles.shadow,
   },
   preferencesButtonText: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.text,
     flex: 1,
     fontWeight: '500',
@@ -406,7 +624,8 @@ const styles = StyleSheet.create({
     ...commonStyles.shadow,
   },
   sectionTitle: {
-    ...typography.h4,
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.sm,
   },
@@ -418,17 +637,17 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.grey,
   },
   chipSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   chipText: {
-    ...typography.caption,
+    fontSize: typography.sizes.sm,
     color: colors.text,
     fontWeight: '500',
   },
@@ -450,21 +669,21 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   generateButtonText: {
-    ...typography.button,
+    fontSize: typography.sizes.md,
     color: '#fff',
     fontWeight: '600',
   },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.errorBackground,
+    backgroundColor: colors.backgroundAlt,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
     gap: spacing.sm,
   },
   errorText: {
-    ...typography.body,
+    fontSize: typography.sizes.sm,
     color: colors.error,
     flex: 1,
   },
@@ -472,7 +691,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   recipesTitle: {
-    ...typography.h3,
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.md,
   },
@@ -490,7 +710,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   recipeName: {
-    ...typography.h4,
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
     color: colors.text,
     flex: 1,
     marginRight: spacing.sm,
@@ -510,12 +731,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFEBEE',
   },
   difficultyText: {
-    ...typography.caption,
+    fontSize: typography.sizes.xs,
     fontWeight: '600',
     color: colors.text,
   },
   recipeDescription: {
-    ...typography.body,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
@@ -530,22 +751,22 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   recipeMetaText: {
-    ...typography.caption,
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
   },
   ingredientMatch: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.grey,
   },
   matchText: {
-    ...typography.caption,
+    fontSize: typography.sizes.xs,
     color: colors.success,
     marginBottom: spacing.xs,
   },
   missingText: {
-    ...typography.caption,
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
   },
   modalContainer: {
@@ -558,10 +779,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.grey,
   },
   modalTitle: {
-    ...typography.h2,
+    fontSize: typography.sizes.xl,
+    fontWeight: '600',
     color: colors.text,
     flex: 1,
     marginRight: spacing.md,
@@ -571,7 +793,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   modalDescription: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.textSecondary,
     marginBottom: spacing.lg,
   },
@@ -587,17 +809,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalMetaLabel: {
-    ...typography.caption,
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   modalMetaValue: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.text,
     fontWeight: '600',
   },
   modalSectionTitle: {
-    ...typography.h3,
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
     color: colors.text,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
@@ -607,13 +830,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   ingredientBullet: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.primary,
     marginRight: spacing.sm,
     fontWeight: 'bold',
   },
   ingredientText: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.text,
     flex: 1,
   },
@@ -622,14 +845,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   instructionNumber: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.primary,
     fontWeight: 'bold',
     marginRight: spacing.sm,
     minWidth: 24,
   },
   instructionText: {
-    ...typography.body,
+    fontSize: typography.sizes.md,
     color: colors.text,
     flex: 1,
   },

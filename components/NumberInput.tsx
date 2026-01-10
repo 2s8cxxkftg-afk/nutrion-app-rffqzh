@@ -82,22 +82,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.medium,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.grey,
     overflow: 'hidden',
   },
   input: {
     flex: 1,
-    padding: spacing.medium,
-    fontSize: typography.fontSize.medium,
+    padding: spacing.md,
+    fontSize: typography.sizes.md,
     color: colors.text,
     fontWeight: '500',
   },
   arrowContainer: {
     width: 44,
     borderLeftWidth: 1,
-    borderLeftColor: colors.border,
+    borderLeftColor: colors.grey,
     backgroundColor: colors.surface,
   },
   arrowButton: {
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   },
   arrowDivider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.grey,
   },
 });
