@@ -16,7 +16,7 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import { IconSymbol } from '@/components/IconSymbol';
-import { getSubscription, hasActiveAccess, resetSubscription } from '@/utils/subscription';
+import { getSubscription, hasActiveAccess, resetSubscription, getSubscriptionPrice } from '@/utils/subscription';
 import * as Haptics from 'expo-haptics';
 
 const styles = StyleSheet.create({
@@ -174,6 +174,8 @@ export default function SubscriptionManagementScreen() {
     });
   }
 
+  const subscriptionPrice = getSubscriptionPrice();
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen 
@@ -189,7 +191,7 @@ export default function SubscriptionManagementScreen() {
                 ios_icon_name="chevron.left" 
                 android_material_icon_name="arrow-back"
                 size={24} 
-                color={colors.text} 
+                color="#FFFFFF"
               />
             </TouchableOpacity>
           ),
@@ -226,7 +228,7 @@ export default function SubscriptionManagementScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Price</Text>
               <Text style={styles.infoValue}>
-                {subscription?.price || '$2.00/month'}
+                ${subscriptionPrice.toFixed(2)} USD/month
               </Text>
             </View>
 

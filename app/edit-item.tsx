@@ -344,7 +344,7 @@ export default function EditItemScreen() {
                 ios_icon_name="chevron.left" 
                 android_material_icon_name="arrow-back"
                 size={24} 
-                color={colors.text} 
+                color="#FFFFFF"
               />
             </TouchableOpacity>
           ),
