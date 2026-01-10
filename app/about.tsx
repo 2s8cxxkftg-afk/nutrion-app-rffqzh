@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 
@@ -47,7 +47,7 @@ export default function AboutScreen() {
   };
 
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
+    <SafeAreaView style={commonStyles.safeArea} edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -55,6 +55,19 @@ export default function AboutScreen() {
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           presentation: 'modal',
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={{ marginLeft: Platform.OS === 'ios' ? 0 : spacing.md, padding: 8 }}
+            >
+              <IconSymbol 
+                ios_icon_name="chevron.left" 
+                android_material_icon_name="arrow-back"
+                size={24} 
+                color={colors.text} 
+              />
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -87,54 +100,104 @@ export default function AboutScreen() {
         <View style={styles.section}>
           <TouchableOpacity style={styles.linkItem} onPress={handleOpenWebsite}>
             <View style={styles.linkIcon}>
-              <IconSymbol name="globe" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="globe" 
+                android_material_icon_name="language" 
+                size={24} 
+                color={colors.primary} 
+              />
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.website')}</Text>
               <Text style={styles.linkSubtitle}>nutrion.app</Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textSecondary} 
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkItem} onPress={handleOpenPrivacy}>
             <View style={styles.linkIcon}>
-              <IconSymbol name="lock.shield.fill" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="lock.shield.fill" 
+                android_material_icon_name="lock" 
+                size={24} 
+                color={colors.primary} 
+              />
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.privacy')}</Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textSecondary} 
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkItem} onPress={handleOpenTerms}>
             <View style={styles.linkIcon}>
-              <IconSymbol name="doc.text.fill" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="doc.text.fill" 
+                android_material_icon_name="description" 
+                size={24} 
+                color={colors.primary} 
+              />
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.terms')}</Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textSecondary} 
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkItem} onPress={handleOpenSupport}>
             <View style={styles.linkIcon}>
-              <IconSymbol name="envelope.fill" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="envelope.fill" 
+                android_material_icon_name="email" 
+                size={24} 
+                color={colors.primary} 
+              />
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.support')}</Text>
               <Text style={styles.linkSubtitle}>support@nutrion.app</Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textSecondary} 
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkItem} onPress={handleRateApp}>
             <View style={styles.linkIcon}>
-              <IconSymbol name="star.fill" size={24} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="star.fill" 
+                android_material_icon_name="star" 
+                size={24} 
+                color={colors.primary} 
+              />
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.rateApp')}</Text>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.textSecondary} 
+            />
           </TouchableOpacity>
         </View>
 

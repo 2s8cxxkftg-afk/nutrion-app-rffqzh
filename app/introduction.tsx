@@ -60,10 +60,24 @@ export default function IntroductionScreen() {
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      router.replace('/auth');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      router.replace('/auth');
+    }
+  };
+
   const currentData = onboardingData[currentPage];
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+        <Text style={styles.skipButtonText}>Skip</Text>
+      </TouchableOpacity>
+
       <Animated.View 
         key={currentPage}
         entering={FadeInRight}
@@ -110,6 +124,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
+  },
+  skipButton: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 10,
+    padding: spacing.sm,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
   content: {
     flex: 1,

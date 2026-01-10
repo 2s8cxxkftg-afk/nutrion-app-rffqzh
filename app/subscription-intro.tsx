@@ -146,6 +146,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     lineHeight: 18,
   },
+  backButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    zIndex: 10,
+    padding: 8,
+  },
 });
 
 const features = [
@@ -165,7 +172,7 @@ const features = [
   },
   {
     icon: 'chart.bar.fill',
-    androidIcon: 'bar_chart',
+    androidIcon: 'bar-chart',
     color: colors.info,
     title: '📊 Amazing Waste Analytics',
     description: 'Watch your savings grow! See exactly how much money and food you\'re saving over time!',
@@ -186,9 +193,23 @@ export default function SubscriptionIntroScreen() {
     router.push('/auth');
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
+      
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <IconSymbol 
+          ios_icon_name="chevron.left" 
+          android_material_icon_name="arrow-back"
+          size={24} 
+          color={colors.text} 
+        />
+      </TouchableOpacity>
+
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}

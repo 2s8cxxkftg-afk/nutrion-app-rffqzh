@@ -38,7 +38,7 @@ export default function EmailConfirmedScreen() {
           <View style={styles.iconCircle}>
             <IconSymbol 
               ios_icon_name="checkmark.circle.fill" 
-              android_material_icon_name="check_circle"
+              android_material_icon_name="check-circle"
               size={80} 
               color={colors.success} 
             />
@@ -65,7 +65,7 @@ export default function EmailConfirmedScreen() {
           <Text style={styles.continueButtonText}>{t('emailConfirmed.continueToSignIn')}</Text>
           <IconSymbol 
             ios_icon_name="arrow.right" 
-            android_material_icon_name="arrow_forward"
+            android_material_icon_name="arrow-forward"
             size={20} 
             color="#FFFFFF" 
           />
