@@ -1,5 +1,5 @@
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,18 +11,292 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
-} from 'react-native';
-import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { supabase } from '@/utils/supabase';
-import Toast from '@/components/Toast';
-import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { IconSymbol } from "@/components/IconSymbol";
+import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
+import { supabase } from "@/utils/supabase";
+import Toast from "@/components/Toast";
+import * as Haptics from "expo-haptics";
 
-interface PasswordRequirement {
-  label: string;
-  met: boolean;
-  key: string;
+export default function AuthScreen() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
+  
+  const router = useRouter();
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailAuth = async () => {
+    if (!email || !password) {
+      Toast.show("Please fill in all fields", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Toast.show("Please enter a valid email address", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (password.length < 6) {
+      Toast.show("Password must be at least 6 characters", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (isSignUp && !name.trim()) {
+      Toast.show("Please enter your name", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.user?.identities?.length === 0) {
+          Toast.show("This email is already registered. Please sign in.", "error");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          setIsSignUp(false);
+          return;
+        }
+
+        Toast.show("Account created successfully! Please check your email to verify.", "success");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/confirm-email");
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        Toast.show("Welcome back!", "success");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/(tabs)/(home)");
+      }
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      Toast.show(error.message || "Authentication failed", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/forgot-password");
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo Section */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoWrapper}>
+              <Image
+                source={require("@/assets/images/88903441-5917-4d8b-97b1-4e2ce6fb57dd.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.appName}>Nutrion</Text>
+          </View>
+
+          {/* Welcome Text */}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>
+              {isSignUp ? "Create Account" : "Welcome Back"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isSignUp 
+                ? "Join Nutrion to start managing your pantry" 
+                : "Sign in to continue to Nutrion"}
+            </Text>
+          </View>
+
+          {/* Input Fields */}
+          <View style={styles.formContainer}>
+            {isSignUp && (
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <View style={[
+                  styles.inputContainer,
+                  nameFocused && styles.inputContainerFocused
+                ]}>
+                  <IconSymbol
+                    ios_icon_name="person.fill"
+                    android_material_icon_name="person"
+                    size={20}
+                    color={nameFocused ? colors.primary : "#98989D"}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#98989D"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                    onFocus={() => setNameFocused(true)}
+                    onBlur={() => setNameFocused(false)}
+                  />
+                </View>
+              </View>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <View style={[
+                styles.inputContainer,
+                emailFocused && styles.inputContainerFocused
+              ]}>
+                <IconSymbol
+                  ios_icon_name="envelope.fill"
+                  android_material_icon_name="email"
+                  size={20}
+                  color={emailFocused ? colors.primary : "#98989D"}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="your@email.com"
+                  placeholderTextColor="#98989D"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={[
+                styles.inputContainer,
+                passwordFocused && styles.inputContainerFocused
+              ]}>
+                <IconSymbol
+                  ios_icon_name="lock.fill"
+                  android_material_icon_name="lock"
+                  size={20}
+                  color={passwordFocused ? colors.primary : "#98989D"}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#98989D"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                />
+                <TouchableOpacity 
+                  onPress={() => {
+                    setShowPassword(!showPassword);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <IconSymbol
+                    ios_icon_name={showPassword ? "eye.slash.fill" : "eye.fill"}
+                    android_material_icon_name={showPassword ? "visibility-off" : "visibility"}
+                    size={20}
+                    color={passwordFocused ? colors.primary : "#98989D"}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {!isSignUp && (
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Sign In/Up Button */}
+            <TouchableOpacity
+              style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+              onPress={handleEmailAuth}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {isSignUp ? "Create Account" : "Sign In"}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Toggle Sign Up/In */}
+            <View style={styles.toggleContainer}>
+              <Text style={styles.toggleText}>
+                {isSignUp ? "Already have an account?" : "Don't have an account?"}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  setIsSignUp(!isSignUp);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.toggleButton}>
+                  {isSignUp ? " Sign In" : " Sign Up"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -30,375 +304,136 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.xl,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  backButton: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    zIndex: 10,
+  logoContainer: {
+    alignItems: "center",
+    marginTop: 40,
+    marginBottom: 32,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
+  logoWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: spacing.md,
+    width: 68,
+    height: 68,
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: colors.text,
+    marginTop: 16,
+    letterSpacing: 0.5,
+  },
+  headerContainer: {
+    marginBottom: 32,
+    alignItems: "center",
   },
   title: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 8,
+    textAlign: "center",
     color: colors.text,
-    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: typography.sizes.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    fontSize: 15,
+    textAlign: "center",
+    color: "#98989D",
+    lineHeight: 22,
   },
-  form: {
-    marginBottom: spacing.lg,
+  formContainer: {
+    gap: 18,
+  },
+  inputWrapper: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    marginLeft: 4,
   },
   inputContainer: {
-    marginBottom: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  label: {
-    fontSize: typography.sizes.sm,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
+  inputContainerFocused: {
+    borderColor: colors.primary,
+    backgroundColor: "rgba(22, 36, 86, 0.1)",
   },
   input: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.sizes.md,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  passwordRequirements: {
-    marginTop: spacing.sm,
-  },
-  requirement: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  requirementText: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginLeft: spacing.xs,
-  },
-  requirementMet: {
-    color: colors.success,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: typography.sizes.md,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryButtonText: {
+    flex: 1,
+    fontSize: 16,
     color: colors.text,
   },
   forgotPassword: {
-    alignItems: 'center',
-    marginTop: spacing.md,
+    alignSelf: "flex-end",
+    marginTop: -8,
   },
   forgotPasswordText: {
-    fontSize: typography.sizes.sm,
+    fontSize: 14,
+    fontWeight: "600",
     color: colors.primary,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing.lg,
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
-  dividerText: {
-    marginHorizontal: spacing.md,
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+    alignItems: "center",
+  },
+  toggleText: {
+    fontSize: 14,
+    color: "#98989D",
+  },
+  toggleButton: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: colors.primary,
   },
 });
-
-export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  function validateEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  function getPasswordRequirements(pwd: string): PasswordRequirement[] {
-    return [
-      { key: 'length', label: 'At least 8 characters', met: pwd.length >= 8 },
-      { key: 'uppercase', label: 'One uppercase letter', met: /[A-Z]/.test(pwd) },
-      { key: 'lowercase', label: 'One lowercase letter', met: /[a-z]/.test(pwd) },
-      { key: 'number', label: 'One number', met: /[0-9]/.test(pwd) },
-    ];
-  }
-
-  async function handleEmailAuth() {
-    if (!validateEmail(email)) {
-      Toast.show('Please enter a valid email address', 'error');
-      return;
-    }
-
-    if (password.length < 8) {
-      Toast.show('Password must be at least 8 characters', 'error');
-      return;
-    }
-
-    if (isSignUp && password !== confirmPassword) {
-      Toast.show('Passwords do not match', 'error');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
-        if (error) {
-          console.error('Sign up error:', error);
-          Toast.show(error.message, 'error');
-          return;
-        }
-
-        if (data.user) {
-          Toast.show('Account created! Please check your email to verify.', 'success');
-          router.push({
-            pathname: '/confirm-email',
-            params: { email },
-          });
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          console.error('Sign in error:', error);
-          Toast.show('Invalid email or password', 'error');
-          return;
-        }
-
-        Toast.show('Welcome back!', 'success');
-        router.replace('/(tabs)/pantry');
-      }
-    } catch (error) {
-      console.error('Auth error:', error);
-      Toast.show('An error occurred. Please try again.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleForgotPassword() {
-    if (!validateEmail(email)) {
-      Toast.show('Please enter your email address', 'error');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-
-      if (error) {
-        console.error('Password reset error:', error);
-        Toast.show('Failed to send reset email', 'error');
-        return;
-      }
-
-      Toast.show('Password reset email sent!', 'success');
-    } catch (error) {
-      console.error('Error sending reset email:', error);
-      Toast.show('Failed to send reset email', 'error');
-    }
-  }
-
-  const passwordRequirements = getPasswordRequirements(password);
-  const allRequirementsMet = passwordRequirements.every(req => req.met);
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <IconSymbol 
-          ios_icon_name="chevron.left" 
-          android_material_icon_name="arrow-back"
-          size={24} 
-          color={colors.text} 
-        />
-      </TouchableOpacity>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.header}>
-            <IconSymbol
-              ios_icon_name="leaf.fill"
-              android_material_icon_name="eco"
-              size={64}
-              color={colors.primary}
-            />
-            <Text style={styles.title}>
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isSignUp
-                ? 'Sign up to start managing your pantry'
-                : 'Sign in to continue to Nutrion'}
-            </Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="your@email.com"
-                placeholderTextColor={colors.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor={colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="password"
-              />
-              {isSignUp && password.length > 0 && (
-                <View style={styles.passwordRequirements}>
-                  {passwordRequirements.map((req) => (
-                    <View key={req.key} style={styles.requirement}>
-                      <IconSymbol
-                        ios_icon_name={req.met ? 'checkmark.circle.fill' : 'circle'}
-                        android_material_icon_name={req.met ? 'check-circle' : 'radio-button-unchecked'}
-                        size={16}
-                        color={req.met ? colors.success : colors.textSecondary}
-                      />
-                      <Text
-                        style={[
-                          styles.requirementText,
-                          req.met && styles.requirementMet,
-                        ]}
-                      >
-                        {req.label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {isSignUp && (
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={colors.textSecondary}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoComplete="password"
-                />
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                (loading || (isSignUp && !allRequirementsMet)) && styles.buttonDisabled,
-              ]}
-              onPress={handleEmailAuth}
-              disabled={loading || (isSignUp && !allRequirementsMet)}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  {isSignUp ? 'Sign Up' : 'Sign In'}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={() => setIsSignUp(!isSignUp)}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                {isSignUp
-                  ? 'Already have an account? Sign In'
-                  : "Don't have an account? Sign Up"}
-              </Text>
-            </TouchableOpacity>
-
-            {!isSignUp && (
-              <TouchableOpacity
-                style={styles.forgotPassword}
-                onPress={handleForgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
-}
