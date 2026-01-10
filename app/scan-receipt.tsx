@@ -29,18 +29,18 @@ export default function ScanReceiptScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [checkingPremium, setCheckingPremium] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      checkPremiumStatus();
-    }, [])
-  );
-
-  const checkPremiumStatus = async () => {
+  const checkPremiumStatus = useCallback(async () => {
     setCheckingPremium(true);
     const premium = await isPremiumUser();
     setIsPremium(premium);
     setCheckingPremium(false);
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkPremiumStatus();
+    }, [checkPremiumStatus])
+  );
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();

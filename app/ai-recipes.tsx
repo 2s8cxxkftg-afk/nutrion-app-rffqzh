@@ -36,24 +36,24 @@ export default function AIRecipesScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [checkingPremium, setCheckingPremium] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadItems();
-      checkPremiumStatus();
-    }, [])
-  );
-
-  const checkPremiumStatus = async () => {
+  const checkPremiumStatus = useCallback(async () => {
     setCheckingPremium(true);
     const premium = await isPremiumUser();
     setIsPremium(premium);
     setCheckingPremium(false);
-  };
+  }, []);
 
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     const items = await loadPantryItems();
     setPantryItems(items);
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadItems();
+      checkPremiumStatus();
+    }, [loadItems, checkPremiumStatus])
+  );
 
   const handleGenerateRecipes = async () => {
     // Check premium status
