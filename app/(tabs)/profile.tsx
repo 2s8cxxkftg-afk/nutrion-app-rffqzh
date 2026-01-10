@@ -1,101 +1,16 @@
 
-import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
-import { Stack, useRouter, useFocusEffect } from "expo-router";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/utils/supabase";
-import { colors, commonStyles, spacing, borderRadius, typography } from "@/styles/commonStyles";
+import { GlassView } from "expo-glass-effect";
+import { useTheme } from "@react-navigation/native";
 
 export default function ProfileScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <ProfileScreenContent />
-    </>
-  );
-}
-
-function ProfileScreenContent() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-
-  useFocusEffect(
-    useCallback(() => {
-      loadUserProfile();
-    }, [user])
-  );
-
-  const loadUserProfile = async () => {
-    try {
-      setLoading(true);
-      
-      if (user) {
-        // Get email from user object
-        setEmail(user.email || "");
-        
-        // Try to get display name from user metadata or profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('display_name, full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile?.display_name) {
-          setDisplayName(profile.display_name);
-        } else if (profile?.full_name) {
-          setDisplayName(profile.full_name);
-        } else if (user.user_metadata?.full_name) {
-          setDisplayName(user.user_metadata.full_name);
-        } else if (user.user_metadata?.name) {
-          setDisplayName(user.user_metadata.name);
-        } else {
-          // Extract name from email
-          const emailName = user.email?.split('@')[0] || "";
-          setDisplayName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
-        }
-      }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: async () => {
-            await supabase.auth.signOut();
-            router.replace("/auth");
-          },
-        },
-      ]
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const theme = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={[
@@ -103,40 +18,28 @@ function ProfileScreenContent() {
           Platform.OS !== 'ios' && styles.contentContainerWithTabBar
         ]}
       >
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <IconSymbol 
-              ios_icon_name="person.circle.fill" 
-              android_material_icon_name="account-circle" 
-              size={80} 
-              color={colors.primary} 
-            />
+        <GlassView style={[
+          styles.profileHeader,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="person" size={80} color={theme.colors.primary} />
+          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
+          <Text style={[styles.email, { color: theme.colors.text }]}>john.doe@example.com</Text>
+        </GlassView>
+
+        <GlassView style={[
+          styles.section,
+          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+        ]} glassEffectStyle="regular">
+          <View style={styles.infoRow}>
+            <IconSymbol ios_icon_name="phone.fill" android_material_icon_name="phone" size={20} color={theme.colors.text} />
+            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
           </View>
-          <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.email}>{email}</Text>
-        </View>
-
-        {/* Menu Options */}
-        <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/subscription-management")}>
-            <IconSymbol ios_icon_name="star.fill" android_material_icon_name="star" size={24} color={colors.primary} />
-            <Text style={styles.menuText}>Subscription</Text>
-            <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={colors.grey} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/notification-settings")}>
-            <IconSymbol ios_icon_name="bell.fill" android_material_icon_name="notifications" size={24} color={colors.primary} />
-            <Text style={styles.menuText}>Notifications</Text>
-            <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={colors.grey} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
-            <IconSymbol ios_icon_name="arrow.right.square.fill" android_material_icon_name="logout" size={24} color="#FF3B30" />
-            <Text style={[styles.menuText, { color: "#FF3B30" }]}>Sign Out</Text>
-            <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={colors.grey} />
-          </TouchableOpacity>
-        </View>
+          <View style={styles.infoRow}>
+            <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={20} color={theme.colors.text} />
+            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+          </View>
+        </GlassView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -145,69 +48,41 @@ function ProfileScreenContent() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
   },
   contentContainer: {
-    padding: spacing.lg,
+    padding: 20,
   },
   contentContainerWithTabBar: {
     paddingBottom: 100,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   profileHeader: {
     alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  avatarContainer: {
-    marginBottom: spacing.md,
+    borderRadius: 12,
+    padding: 32,
+    marginBottom: 16,
+    gap: 12,
   },
   name: {
     fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.xs,
+    fontWeight: 'bold',
   },
   email: {
     fontSize: 16,
-    color: colors.grey,
   },
-  menuSection: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  section: {
+    borderRadius: 12,
+    padding: 20,
+    gap: 12,
   },
-  menuItem: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    gap: 12,
   },
-  menuText: {
-    flex: 1,
+  infoText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginLeft: spacing.md,
   },
 });
