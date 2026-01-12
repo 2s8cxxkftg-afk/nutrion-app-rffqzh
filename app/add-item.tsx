@@ -44,13 +44,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   input: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.grey + '30',
+    borderColor: colors.border,
   },
   inputFocused: {
     borderColor: colors.primary,
@@ -64,11 +64,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickerButton: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.grey + '30',
+    borderColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.grey + '20',
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   optionButton: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.grey + '10',
+    borderBottomColor: colors.border,
   },
   optionButtonSelected: {
     backgroundColor: colors.primary + '20',
@@ -138,17 +138,17 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 13,
-    color: colors.grey,
+    color: colors.textSecondary,
     marginTop: 6,
     fontStyle: 'italic',
   },
   numberInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.grey + '30',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   numberInput: {
@@ -337,7 +337,7 @@ export default function AddItemScreen() {
               ref={nameInputRef}
               style={[styles.input, focusedInput === 'name' && styles.inputFocused]}
               placeholder="e.g., Milk, Apples, Chicken"
-              placeholderTextColor={colors.grey}
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={handleNameChange}
               onFocus={() => setFocusedInput('name')}
@@ -368,7 +368,7 @@ export default function AddItemScreen() {
                     onChangeText={handleQuantityChange}
                     keyboardType="decimal-pad"
                     placeholder="0"
-                    placeholderTextColor={colors.grey}
+                    placeholderTextColor={colors.textSecondary}
                     returnKeyType="next"
                     onSubmitEditing={() => dateInputRef.current?.focus()}
                   />
@@ -393,7 +393,7 @@ export default function AddItemScreen() {
                   ios_icon_name="chevron.down" 
                   android_material_icon_name="arrow-drop-down" 
                   size={16} 
-                  color={colors.grey} 
+                  color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -414,7 +414,7 @@ export default function AddItemScreen() {
                 ios_icon_name="chevron.down" 
                 android_material_icon_name="arrow-drop-down" 
                 size={16} 
-                color={colors.grey} 
+                color={colors.textSecondary} 
               />
             </TouchableOpacity>
           </View>
@@ -425,7 +425,7 @@ export default function AddItemScreen() {
               ref={dateInputRef}
               style={[styles.input, focusedInput === 'date' && styles.inputFocused]}
               placeholder="MM/DD/YYYY"
-              placeholderTextColor={colors.grey}
+              placeholderTextColor={colors.textSecondary}
               value={dateText}
               onChangeText={handleDateChange}
               onFocus={() => setFocusedInput('date')}

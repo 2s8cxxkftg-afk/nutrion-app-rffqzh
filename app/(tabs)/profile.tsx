@@ -145,7 +145,7 @@ export default function ProfileScreen() {
                 ios_icon_name="person.fill" 
                 android_material_icon_name="person" 
                 size={48} 
-                color={colors.primary} 
+                color="#FFFFFF" 
               />
             </View>
             {isPremium && (
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
     marginBottom: spacing.lg,
@@ -424,25 +424,26 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: colors.primary,
   },
   name: {
     fontSize: typography.sizes.xl,
     fontWeight: '700',
-    color: colors.text,
+    color: '#FFFFFF',
     marginBottom: spacing.xs,
   },
   email: {
     fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+    color: '#FFFFFF',
+    opacity: 0.9,
     marginBottom: spacing.sm,
   },
   premiumTag: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: 'rgba(255, 215, 0, 0.95)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.md,
@@ -451,8 +452,8 @@ const styles = StyleSheet.create({
   },
   premiumTagText: {
     fontSize: typography.sizes.xs,
-    fontWeight: '600',
-    color: '#FFD700',
+    fontWeight: '700',
+    color: '#000000',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -465,6 +466,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
     ...commonStyles.shadow,
   },
   statValue: {
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   premiumCard: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -529,6 +532,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...commonStyles.shadow,
   },
   menuItemLeft: {
@@ -566,7 +571,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.md,
     gap: spacing.sm,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.error,
     ...commonStyles.shadow,
   },

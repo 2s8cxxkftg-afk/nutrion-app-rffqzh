@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.large,
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontSize: typography.fontSize.xl,
@@ -53,11 +54,13 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.medium,
     padding: spacing.medium,
     fontSize: typography.fontSize.medium,
     color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   addButton: {
     backgroundColor: colors.primary,
@@ -76,6 +79,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.medium,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...commonStyles.shadow,
   },
   checkbox: {
     width: 24,
@@ -95,7 +101,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: typography.fontSize.medium,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text,
   },
   itemNameCompleted: {
@@ -113,6 +119,8 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: spacing.small,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.sm,
   },
   emptyContainer: {
     flex: 1,
@@ -122,9 +130,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.fontSize.large,
-    color: colors.textSecondary,
+    color: colors.text,
     marginTop: spacing.large,
     textAlign: 'center',
+    fontWeight: '600',
   },
   clearButton: {
     margin: spacing.large,
@@ -132,6 +141,8 @@ const styles = StyleSheet.create({
     padding: spacing.medium,
     borderRadius: borderRadius.medium,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.error + '30',
   },
   clearButtonText: {
     color: colors.error,
@@ -174,7 +185,7 @@ const styles = StyleSheet.create({
   },
   modalUnitPicker: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.medium,
     padding: spacing.medium,
     borderWidth: 1,
@@ -198,7 +209,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: colors.textSecondary + '20',
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalButtonSave: {
     backgroundColor: colors.primary,
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   modalButtonTextSave: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
   unitPickerModal: {
     position: 'absolute',

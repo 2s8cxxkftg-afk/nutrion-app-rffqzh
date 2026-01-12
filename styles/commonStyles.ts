@@ -2,22 +2,23 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  primaryLight: '#193cb8',  // Lighter Blue for switches
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  surface: '#1a2332',    // Surface color for cards/modals
-  text: '#e3e3e3',       // Keeping light text
-  textSecondary: '#90CAF9',  // Secondary text color
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
-  border: '#2a3544',     // Border color
+  primary: '#4CAF50',    // Fresh green for food/pantry theme
+  primaryLight: '#81C784',  // Lighter green
+  secondary: '#66BB6A',  // Medium green
+  accent: '#8BC34A',     // Light green accent
+  background: '#FFFFFF',  // Pure white background for maximum visibility
+  backgroundAlt: '#F5F5F5',  // Very light gray for cards
+  surface: '#FFFFFF',    // White surface for cards/modals
+  text: '#212121',       // Dark text for maximum contrast
+  textSecondary: '#757575',  // Medium gray for secondary text
+  grey: '#9E9E9E',       // Gray for borders and icons
+  card: '#FAFAFA',       // Very light gray for card backgrounds
+  border: '#E0E0E0',     // Light border color
   error: '#F44336',      // Error color
   success: '#4CAF50',    // Success color
   warning: '#FF9800',    // Warning color
   warningLight: '#FFF3E0',  // Light warning background
+  shadow: '#000000',     // Shadow color
 };
 
 export const typography = {
@@ -143,26 +144,26 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.grey,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
     elevation: 2,
   },
   shadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   icon: {
     width: 60,
     height: 60,
-    tintColor: "white",
+    tintColor: colors.primary,
   },
 });

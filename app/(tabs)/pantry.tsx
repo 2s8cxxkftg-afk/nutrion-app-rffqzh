@@ -38,10 +38,12 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
@@ -66,6 +68,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...commonStyles.shadow,
   },
   quickActionText: {
@@ -83,6 +87,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...commonStyles.shadow,
   },
   itemContent: {
     flex: 1,
@@ -100,7 +107,7 @@ const styles = StyleSheet.create({
   },
   itemExpiration: {
     fontSize: typography.sizes.sm,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   itemActions: {
     flexDirection: 'row',
@@ -108,6 +115,8 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: spacing.sm,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.sm,
   },
   emptyContainer: {
     flex: 1,
@@ -117,9 +126,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.sizes.lg,
-    color: colors.textSecondary,
+    color: colors.text,
     marginTop: spacing.lg,
     textAlign: 'center',
+    fontWeight: '600',
   },
   emptySubtext: {
     fontSize: typography.sizes.md,
@@ -137,7 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

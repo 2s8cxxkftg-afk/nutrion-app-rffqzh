@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.lg,
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontSize: typography.sizes.xl,
@@ -86,6 +87,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...commonStyles.shadow,
   },
   mealHeader: {
     flexDirection: 'row',
@@ -135,9 +139,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.sizes.lg,
-    color: colors.textSecondary,
+    color: colors.text,
     marginTop: spacing.lg,
     textAlign: 'center',
+    fontWeight: '600',
   },
   emptySubtext: {
     fontSize: typography.sizes.md,
