@@ -132,6 +132,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#FFD700',
   },
+  backButton: {
+    padding: spacing.sm,
+    marginLeft: Platform.OS === 'ios' ? 0 : spacing.sm,
+  },
 });
 
 export default function SubscriptionManagementScreen() {
@@ -245,15 +249,26 @@ export default function SubscriptionManagementScreen() {
         options={{ 
           headerShown: true,
           title: 'Manage Subscription',
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+            fontWeight: '600',
+          },
           headerLeft: () => (
             <TouchableOpacity 
-              onPress={() => router.back()}
-              style={{ marginLeft: Platform.OS === 'ios' ? 0 : spacing.md }}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={styles.backButton}
             >
               <IconSymbol 
                 ios_icon_name="chevron.left" 
                 android_material_icon_name="arrow-back"
-                size={24} 
+                size={28} 
                 color={colors.text}
               />
             </TouchableOpacity>
