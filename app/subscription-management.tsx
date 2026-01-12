@@ -93,6 +93,9 @@ const styles = StyleSheet.create({
   dangerButton: {
     backgroundColor: colors.error,
   },
+  successButton: {
+    backgroundColor: colors.success,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -135,6 +138,15 @@ const styles = StyleSheet.create({
   backButton: {
     padding: spacing.sm,
     marginLeft: Platform.OS === 'ios' ? 0 : spacing.sm,
+  },
+  devButtonsContainer: {
+    gap: spacing.sm,
+  },
+  devDescription: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+    fontStyle: 'italic',
   },
 });
 
@@ -220,7 +232,7 @@ export default function SubscriptionManagementScreen() {
   async function handleResetSubscription() {
     Alert.alert(
       'Reset Subscription',
-      'This will reset your subscription data. This is for testing purposes only.',
+      'This will reset your subscription data to day one trial. This is for testing purposes only.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -229,11 +241,36 @@ export default function SubscriptionManagementScreen() {
           onPress: async () => {
             try {
               await resetSubscription();
-              Toast.show('Subscription reset', 'success');
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Toast.show('Subscription reset to day one trial', 'success');
               await loadSubscriptionData();
             } catch (error) {
               console.error('Error resetting subscription:', error);
               Toast.show('Failed to reset subscription', 'error');
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleGrantPremium() {
+    Alert.alert(
+      'Grant Premium (Dev Only)',
+      'This will instantly grant premium access for testing. You can test all premium features without payment.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Grant Premium',
+          onPress: async () => {
+            try {
+              await activatePremiumSubscription();
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Toast.show('Premium granted! All features unlocked for testing.', 'success');
+              await loadSubscriptionData();
+            } catch (error) {
+              console.error('Error granting premium:', error);
+              Toast.show('Failed to grant premium', 'error');
             }
           },
         },
@@ -440,12 +477,30 @@ export default function SubscriptionManagementScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Developer Options</Text>
               
-              <TouchableOpacity
-                style={[styles.button, styles.dangerButton]}
-                onPress={handleResetSubscription}
-              >
-                <Text style={styles.buttonText}>Reset Subscription (Dev Only)</Text>
-              </TouchableOpacity>
+              <Text style={styles.devDescription}>
+                These options are only visible in development mode and help you test the app&apos;s subscription features.
+              </Text>
+
+              <View style={styles.devButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.successButton]}
+                  onPress={handleGrantPremium}
+                >
+                  <Text style={styles.buttonText}>✨ Grant Premium (Dev Only)</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.button, styles.dangerButton]}
+                  onPress={handleResetSubscription}
+                >
+                  <Text style={styles.buttonText}>🔄 Reset Subscription (Dev Only)</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.devDescription, { marginTop: spacing.md, fontSize: typography.sizes.xs }]}>
+                • Grant Premium: Instantly unlock all premium features for testing{'\n'}
+                • Reset Subscription: Return to day one trial state
+              </Text>
             </View>
           )}
         </ScrollView>
