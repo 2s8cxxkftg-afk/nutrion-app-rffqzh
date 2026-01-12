@@ -193,9 +193,11 @@ function PantryScreenContent() {
     setRefreshing(false);
   }, [loadItems]);
 
-  const handleEditItem = (itemId: string) => {
-    router.push(`/edit-item?itemId=${itemId}`);
-  };
+  const handleEditItem = useCallback((itemId: string) => {
+    console.log('Editing item:', itemId);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/edit-item?id=${itemId}`);
+  }, [router]);
 
   const handleDeleteItem = useCallback(async (itemId: string) => {
     Alert.alert(
@@ -360,7 +362,10 @@ function PantryScreenContent() {
 
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push('/add-item')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/add-item');
+        }}
       >
         <IconSymbol
           ios_icon_name="plus"
