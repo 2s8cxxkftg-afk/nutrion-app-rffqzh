@@ -19,16 +19,16 @@ export interface Subscription {
 
 /**
  * Get the current subscription status
+ * For testing: Returns premium status by default
  */
 export async function getSubscription(): Promise<Subscription> {
   try {
     const subscriptionData = await AsyncStorage.getItem(SUBSCRIPTION_KEY);
     const isPremiumData = await AsyncStorage.getItem(PREMIUM_KEY);
-    const isPremium = isPremiumData === 'true';
     
     if (subscriptionData) {
       const subscription: Subscription = JSON.parse(subscriptionData);
-      subscription.isPremium = isPremium;
+      subscription.isPremium = isPremiumData === 'true';
       
       // Check if trial has expired
       if (subscription.status === 'trial' && subscription.trialEndDate) {
@@ -38,7 +38,7 @@ export async function getSubscription(): Promise<Subscription> {
         if (now > trialEnd) {
           // Trial has expired - user can still use app but will see ads
           subscription.status = 'expired';
-          if (!isPremium) {
+          if (subscription.isPremium !== true) {
             subscription.plan = 'free';
           }
           await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(subscription));
@@ -48,18 +48,26 @@ export async function getSubscription(): Promise<Subscription> {
       return subscription;
     }
     
-    // No subscription found, return default
-    return {
-      status: 'expired',
-      plan: 'free',
-      isPremium: false,
+    // No subscription found - return premium by default for testing
+    const defaultSubscription: Subscription = {
+      status: 'active',
+      plan: 'premium',
+      isPremium: true,
+      subscriptionStartDate: new Date().toISOString(),
     };
+    
+    // Save the default premium subscription
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(defaultSubscription));
+    await AsyncStorage.setItem(PREMIUM_KEY, 'true');
+    
+    return defaultSubscription;
   } catch (error) {
     console.error('Error getting subscription:', error);
+    // Return premium by default even on error for testing
     return {
-      status: 'expired',
-      plan: 'free',
-      isPremium: false,
+      status: 'active',
+      plan: 'premium',
+      isPremium: true,
     };
   }
 }
@@ -135,35 +143,16 @@ export async function cancelSubscription(): Promise<void> {
 }
 
 /**
- * Reset subscription to day one (for testing/development)
- */
-export async function resetSubscription(): Promise<void> {
-  try {
-    // Remove subscription data
-    await AsyncStorage.removeItem(SUBSCRIPTION_KEY);
-    await AsyncStorage.removeItem(TRIAL_START_KEY);
-    await AsyncStorage.removeItem(PREMIUM_KEY);
-    
-    // Start a new trial
-    await startFreeTrial();
-    
-    console.log('Subscription reset to day one');
-  } catch (error) {
-    console.error('Error resetting subscription:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if user has active access (always true now - no paywall)
+ * Check if user has active access (always true - no paywall)
  */
 export async function hasActiveAccess(): Promise<boolean> {
-  // Everyone has access to the app now
+  // Everyone has access to the app
   return true;
 }
 
 /**
  * Check if user is premium (no ads)
+ * For testing: Returns true by default
  */
 export async function isPremiumUser(): Promise<boolean> {
   try {
@@ -171,7 +160,8 @@ export async function isPremiumUser(): Promise<boolean> {
     return subscription.isPremium || subscription.status === 'trial' || subscription.status === 'active';
   } catch (error) {
     console.error('Error checking premium status:', error);
-    return false;
+    // Return true by default for testing
+    return true;
   }
 }
 
@@ -220,9 +210,9 @@ export function getSubscriptionPrice(): number {
 }
 
 /**
- * Check if user should see paywall (always false now - no paywall)
+ * Check if user should see paywall (always false - no paywall)
  */
 export async function shouldShowPaywall(): Promise<boolean> {
-  // No more paywall - users can always access the app
+  // No paywall - users can always access the app
   return false;
 }
