@@ -47,6 +47,12 @@ export const typography = {
     semibold: '600',
     bold: '700',
   },
+  fontFamily: {
+    regular: 'System',
+    medium: 'System',
+    semibold: 'System',
+    bold: 'System',
+  },
 };
 
 export const spacing = {

@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   text: {
-    fontFamily: typography.fontFamily.bold,
+    fontWeight: typography.weights.bold as any,
     color: colors.primary,
     letterSpacing: 0.5,
   },
