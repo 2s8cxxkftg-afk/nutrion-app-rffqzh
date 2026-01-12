@@ -209,7 +209,7 @@ export default function ScanReceiptScreen() {
         }
       };
       checkPremium();
-    }, [])
+    }, [router])
   );
 
   const requestPermissions = async () => {
@@ -356,11 +356,16 @@ export default function ScanReceiptScreen() {
       ) : scannedItems.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
-            <IconSymbol name="doc.text.viewfinder" size={80} color={colors.primary} />
+            <IconSymbol 
+              ios_icon_name="doc.text.viewfinder" 
+              android_material_icon_name="description" 
+              size={80} 
+              color={colors.primary} 
+            />
           </View>
           <Text style={styles.emptyTitle}>Scan Your Receipt</Text>
           <Text style={styles.emptyDescription}>
-            Take a photo of your grocery receipt and we'll automatically extract items with quantities
+            Take a photo of your grocery receipt and we&apos;ll automatically extract items with quantities
           </Text>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -368,7 +373,12 @@ export default function ScanReceiptScreen() {
               onPress={handleTakePhoto}
               activeOpacity={0.8}
             >
-              <IconSymbol name="camera" size={20} color="#fff" />
+              <IconSymbol 
+                ios_icon_name="camera" 
+                android_material_icon_name="camera" 
+                size={20} 
+                color="#fff" 
+              />
               <Text style={styles.buttonText}>Camera</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -376,7 +386,12 @@ export default function ScanReceiptScreen() {
               onPress={handlePickImage}
               activeOpacity={0.8}
             >
-              <IconSymbol name="photo" size={20} color={colors.text} />
+              <IconSymbol 
+                ios_icon_name="photo" 
+                android_material_icon_name="photo" 
+                size={20} 
+                color={colors.text} 
+              />
               <Text style={[styles.buttonText, styles.secondaryButtonText]}>Gallery</Text>
             </TouchableOpacity>
           </View>
