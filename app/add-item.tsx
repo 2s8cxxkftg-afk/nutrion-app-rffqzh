@@ -204,7 +204,7 @@ export default function AddItemScreen() {
         setDateText(predictedDate);
       }
     }
-  }, [category, name]);
+  }, [name]);
 
   const handleNameChange = (text: string) => {
     setName(text);
@@ -261,17 +261,20 @@ export default function AddItemScreen() {
   const handleSave = async () => {
     if (!name.trim()) {
       Toast.show({ message: 'Please enter an item name', type: 'error' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (!quantityNum || quantityNum <= 0) {
       Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (!expirationDate) {
       Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
@@ -386,10 +389,15 @@ export default function AddItemScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.pickerButtonText}>{getUnitLabel(unit)}</Text>
-                <IconSymbol name="chevron.down" size={16} color={colors.grey} />
+                <IconSymbol 
+                  ios_icon_name="chevron.down" 
+                  android_material_icon_name="arrow-drop-down" 
+                  size={16} 
+                  color={colors.grey} 
+                />
               </TouchableOpacity>
             </View>
-            <Text style={styles.hint}>Type quantity directly or use +/− buttons</Text>
+            <Text style={styles.hint}>Use +/− buttons or type quantity directly</Text>
           </View>
 
           <View style={styles.section}>
@@ -402,7 +410,12 @@ export default function AddItemScreen() {
               <Text style={styles.pickerButtonText}>
                 {FOOD_CATEGORIES.find(c => c.value === category)?.label || 'Other'}
               </Text>
-              <IconSymbol name="chevron.down" size={16} color={colors.grey} />
+              <IconSymbol 
+                ios_icon_name="chevron.down" 
+                android_material_icon_name="arrow-drop-down" 
+                size={16} 
+                color={colors.grey} 
+              />
             </TouchableOpacity>
           </View>
 
@@ -453,7 +466,12 @@ export default function AddItemScreen() {
                 style={styles.modalCloseButton}
                 onPress={() => setShowCategoryPicker(false)}
               >
-                <IconSymbol name="xmark" size={20} color={colors.text} />
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={20} 
+                  color={colors.text} 
+                />
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -502,7 +520,12 @@ export default function AddItemScreen() {
                 style={styles.modalCloseButton}
                 onPress={() => setShowUnitPicker(false)}
               >
-                <IconSymbol name="xmark" size={20} color={colors.text} />
+                <IconSymbol 
+                  ios_icon_name="xmark" 
+                  android_material_icon_name="close" 
+                  size={20} 
+                  color={colors.text} 
+                />
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -534,3 +557,132 @@ export default function AddItemScreen() {
     </SafeAreaView>
   );
 }
+</write file>
+
+Now let me verify and enhance the NumberInput component to ensure it's fully functional:
+
+<write file="components/NumberInput.tsx">
+import React from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { IconSymbol } from './IconSymbol';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import * as Haptics from 'expo-haptics';
+
+interface NumberInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  placeholder?: string;
+}
+
+export default function NumberInput({
+  value,
+  onChangeText,
+  min = 0,
+  max = 9999,
+  step = 1,
+  placeholder = '0',
+}: NumberInputProps) {
+  const handleIncrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = Math.min(currentValue + step, max);
+    onChangeText(newValue.toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleDecrement = () => {
+    const currentValue = parseFloat(value) || 0;
+    const newValue = Math.max(currentValue - step, min);
+    onChangeText(newValue.toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleTextChange = (text: string) => {
+    // Allow only numbers and decimal point
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    // Validate range
+    const numValue = parseFloat(cleaned);
+    if (!isNaN(numValue)) {
+      if (numValue < min || numValue > max) {
+        return;
+      }
+    }
+    
+    onChangeText(cleaned);
+  };
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleDecrement}
+        activeOpacity={0.7}
+      >
+        <IconSymbol
+          ios_icon_name="minus"
+          android_material_icon_name="remove"
+          size={20}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
+      
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={handleTextChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textSecondary}
+        keyboardType="decimal-pad"
+      />
+      
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleIncrement}
+        activeOpacity={0.7}
+      >
+        <IconSymbol
+          ios_icon_name="plus"
+          android_material_icon_name="add"
+          size={20}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.grey,
+    overflow: 'hidden',
+  },
+  input: {
+    flex: 1,
+    padding: spacing.md,
+    fontSize: typography.sizes.md,
+    color: colors.text,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  button: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '20',
+  },
+});
