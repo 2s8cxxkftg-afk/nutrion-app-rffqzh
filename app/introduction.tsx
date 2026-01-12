@@ -13,6 +13,7 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 import { IconSymbol } from '@/components/IconSymbol';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 const ONBOARDING_KEY = '@nutrion_onboarding_completed';
@@ -31,6 +32,7 @@ const onboardingData = [
     iosIcon: 'doc.text.viewfinder',
     androidIcon: 'receipt',
     color: '#9C27B0',
+    isPremium: true,
   },
   {
     title: '🍳 AI Recipe Generator!',
@@ -38,6 +40,7 @@ const onboardingData = [
     iosIcon: 'sparkles',
     androidIcon: 'auto-awesome',
     color: '#FF5722',
+    isPremium: true,
   },
   {
     title: '💪 Zero Food Waste Mission!',
@@ -60,6 +63,8 @@ export default function IntroductionScreen() {
   const [currentPage, setCurrentPage] = useState(0);
 
   const handleNext = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     if (currentPage < onboardingData.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
@@ -75,6 +80,8 @@ export default function IntroductionScreen() {
   };
 
   const handleSkip = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     try {
       await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
       router.replace('/auth');
@@ -105,6 +112,17 @@ export default function IntroductionScreen() {
             size={80} 
             color={currentData.color} 
           />
+          {currentData.isPremium && (
+            <View style={styles.premiumBadge}>
+              <IconSymbol 
+                ios_icon_name="crown.fill"
+                android_material_icon_name="star"
+                size={16} 
+                color="#FFD700" 
+              />
+              <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.title}>{currentData.title}</Text>
@@ -164,6 +182,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,
+    position: 'relative',
+  },
+  premiumBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'rgba(255, 215, 0, 0.95)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: 0.5,
   },
   title: {
     fontSize: 28,
