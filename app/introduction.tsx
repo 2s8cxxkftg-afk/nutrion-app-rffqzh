@@ -26,6 +26,20 @@ const onboardingData = [
     color: '#4CAF50',
   },
   {
+    title: '📸 AI Receipt Scanner!',
+    description: 'Snap a photo of your grocery receipt and let AI automatically add all items to your pantry with quantities detected instantly!',
+    iosIcon: 'doc.text.viewfinder',
+    androidIcon: 'receipt',
+    color: '#9C27B0',
+  },
+  {
+    title: '🍳 AI Recipe Generator!',
+    description: 'Get personalized recipe suggestions based on ingredients in your pantry. Let AI help you cook delicious meals with what you have!',
+    iosIcon: 'sparkles',
+    androidIcon: 'auto-awesome',
+    color: '#FF5722',
+  },
+  {
     title: '💪 Zero Food Waste Mission!',
     description: 'Get powerful alerts before items expire and save money while saving the planet!',
     iosIcon: 'bell.badge.fill',
