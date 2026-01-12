@@ -25,6 +25,16 @@ export default function ProfileScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({ totalItems: 0, expiringSoon: 0, expired: 0 });
 
+  const formatDisplayName = (name: string): string => {
+    if (!name) return 'User';
+    
+    // Capitalize first letter of each word
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const loadUserData = useCallback(async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -40,13 +50,20 @@ export default function ProfileScreen() {
           .eq('id', currentUser.id)
           .single();
         
+        let rawName = '';
         if (profile?.display_name) {
-          setDisplayName(profile.display_name);
+          rawName = profile.display_name;
         } else if (currentUser.user_metadata?.display_name) {
-          setDisplayName(currentUser.user_metadata.display_name);
+          rawName = currentUser.user_metadata.display_name;
+        } else if (currentUser.user_metadata?.full_name) {
+          rawName = currentUser.user_metadata.full_name;
+        } else if (currentUser.email) {
+          rawName = currentUser.email.split('@')[0].replace(/[._-]/g, ' ');
         } else {
-          setDisplayName(currentUser.email?.split('@')[0] || 'User');
+          rawName = 'User';
         }
+        
+        setDisplayName(formatDisplayName(rawName));
       }
     } catch (error) {
       console.log('Error loading user data:', error);
@@ -159,8 +176,14 @@ export default function ProfileScreen() {
               </View>
             )}
           </View>
-          <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.email}>{email}</Text>
+          <View style={styles.nameContainer}>
+            <Text style={styles.name} numberOfLines={2} ellipsizeMode="tail">
+              {displayName}
+            </Text>
+          </View>
+          <Text style={styles.email} numberOfLines={1} ellipsizeMode="middle">
+            {email}
+          </Text>
           {isPremium && (
             <View style={styles.premiumTag}>
               <Text style={styles.premiumTagText}>Premium Member</Text>
@@ -430,17 +453,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.primary,
   },
+  nameContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
   name: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.sizes.xxl,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: spacing.xs,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    lineHeight: 32,
   },
   email: {
     fontSize: typography.sizes.sm,
     color: '#FFFFFF',
     opacity: 0.9,
     marginBottom: spacing.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
   },
   premiumTag: {
     backgroundColor: 'rgba(255, 215, 0, 0.95)',
