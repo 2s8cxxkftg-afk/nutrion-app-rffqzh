@@ -61,21 +61,27 @@ export interface Recipe {
 
 export type ExpirationStatus = 'fresh' | 'nearExpiry' | 'expired';
 
-export const FOOD_CATEGORIES = [
-  'Fruits',
-  'Vegetables',
-  'Dairy',
-  'Meat',
-  'Grains',
-  'Snacks',
-  'Beverages',
-  'Condiments',
-  'Frozen',
-  'Bakery',
-  'Seafood',
-  'Canned Goods',
-  'Spices',
-  'Other',
+export interface FoodCategory {
+  label: string;
+  value: string;
+  icon: string;
+}
+
+export const FOOD_CATEGORIES: FoodCategory[] = [
+  { label: 'Fruits', value: 'fruits', icon: '🍎' },
+  { label: 'Vegetables', value: 'vegetables', icon: '🥕' },
+  { label: 'Dairy', value: 'dairy', icon: '🥛' },
+  { label: 'Meat', value: 'meat', icon: '🥩' },
+  { label: 'Seafood', value: 'seafood', icon: '🐟' },
+  { label: 'Grains', value: 'grains', icon: '🌾' },
+  { label: 'Bakery', value: 'bakery', icon: '🍞' },
+  { label: 'Snacks', value: 'snacks', icon: '🍿' },
+  { label: 'Beverages', value: 'beverages', icon: '🥤' },
+  { label: 'Condiments', value: 'condiments', icon: '🧂' },
+  { label: 'Spices', value: 'spices', icon: '🌶️' },
+  { label: 'Frozen', value: 'frozen', icon: '🧊' },
+  { label: 'Canned Goods', value: 'canned', icon: '🥫' },
+  { label: 'Other', value: 'other', icon: '📦' },
 ];
 
 export const UNITS = [

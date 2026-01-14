@@ -5,7 +5,7 @@ import Toast from '@/components/Toast';
 import AdBanner from '@/components/AdBanner';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
 import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
-import { PantryItem } from '@/types/pantry';
+import { PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
@@ -224,6 +224,11 @@ function PantryScreenContent() {
     );
   }, [loadItems]);
 
+  const getCategoryDisplay = (categoryValue: string): string => {
+    const categoryObj = FOOD_CATEGORIES.find(c => c.value === categoryValue);
+    return categoryObj ? `${categoryObj.icon} ${categoryObj.label}` : '📦 Other';
+  };
+
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -239,7 +244,7 @@ function PantryScreenContent() {
         <View style={styles.itemContent}>
           <Text style={styles.itemName}>{item.name}</Text>
           <Text style={styles.itemDetails}>
-            {item.quantity} {item.unit} • {item.category}
+            {item.quantity} {item.unit} • {getCategoryDisplay(item.category)}
           </Text>
           <Text style={[styles.itemExpiration, { color: expirationColor }]}>
             {expirationText}

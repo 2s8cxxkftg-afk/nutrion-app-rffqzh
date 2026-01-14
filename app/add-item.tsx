@@ -221,6 +221,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  autoCategoryBadge: {
+    backgroundColor: colors.success + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  autoCategoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.success,
+    marginLeft: 4,
+  },
 });
 
 export default function AddItemScreen() {
@@ -240,6 +256,7 @@ export default function AddItemScreen() {
     daysUntilExpiry: number;
   } | null>(null);
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
+  const [autoDetectedCategory, setAutoDetectedCategory] = useState(false);
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -249,12 +266,20 @@ export default function AddItemScreen() {
 
   useEffect(() => {
     if (name.trim().length >= 2) {
-      console.log('[AddItem] Name changed, predicting expiration for:', name);
+      console.log('[AddItem] Name changed, predicting expiration and category for:', name);
       predictExpiration();
+      
+      // Auto-categorize based on item name
+      const suggestedCategory = categorizeFoodItem(name);
+      console.log('[AddItem] Auto-detected category:', suggestedCategory);
+      setCategory(suggestedCategory);
+      setAutoDetectedCategory(suggestedCategory !== 'other');
     } else {
       setAiPrediction(null);
       setExpirationDate('');
       setDateText('');
+      setCategory('other');
+      setAutoDetectedCategory(false);
     }
   }, [name]);
 
@@ -271,12 +296,6 @@ export default function AddItemScreen() {
         estimationText: prediction.estimationText,
         daysUntilExpiry: prediction.daysUntilExpiry,
       });
-      
-      // Auto-categorize based on item name
-      const suggestedCategory = categorizeFoodItem(name);
-      if (suggestedCategory !== 'other') {
-        setCategory(suggestedCategory);
-      }
     } catch (error) {
       console.error('[AddItem] Prediction error:', error);
       setAiPrediction(null);
@@ -388,6 +407,7 @@ export default function AddItemScreen() {
     Keyboard.dismiss();
     closeAllPickers();
     setShowCategoryPicker(true);
+    setAutoDetectedCategory(false); // User is manually changing category
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -401,6 +421,11 @@ export default function AddItemScreen() {
   const getUnitLabel = (unitValue: string): string => {
     const unitObj = UNITS.find(u => u.value === unitValue);
     return unitObj ? unitObj.label : unitValue;
+  };
+
+  const getCategoryDisplay = (): string => {
+    const categoryObj = FOOD_CATEGORIES.find(c => c.value === category);
+    return categoryObj ? `${categoryObj.icon} ${categoryObj.label}` : '📦 Other';
   };
 
   return (
@@ -421,7 +446,7 @@ export default function AddItemScreen() {
             <TextInput
               ref={nameInputRef}
               style={[styles.input, focusedInput === 'name' && styles.inputFocused]}
-              placeholder="e.g., Milk, Apples, Chicken"
+              placeholder="e.g., Grapes, Salmon, Milk"
               placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={handleNameChange}
@@ -500,7 +525,7 @@ export default function AddItemScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.pickerButtonText}>
-                {FOOD_CATEGORIES.find(c => c.value === category)?.label || 'Other'}
+                {getCategoryDisplay()}
               </Text>
               <IconSymbol 
                 ios_icon_name="chevron.down" 
@@ -509,6 +534,18 @@ export default function AddItemScreen() {
                 color={colors.textSecondary} 
               />
             </TouchableOpacity>
+            
+            {autoDetectedCategory && (
+              <View style={styles.autoCategoryBadge}>
+                <IconSymbol 
+                  ios_icon_name="checkmark.circle.fill" 
+                  android_material_icon_name="check-circle" 
+                  size={14} 
+                  color={colors.success} 
+                />
+                <Text style={styles.autoCategoryText}>Auto-detected from item name</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -600,6 +637,7 @@ export default function AddItemScreen() {
                     category === cat.value && styles.optionButtonSelected,
                   ]}
                   onPress={() => {
+                    console.log('[AddItem] User manually selected category:', cat.value);
                     setCategory(cat.value);
                     setShowCategoryPicker(false);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

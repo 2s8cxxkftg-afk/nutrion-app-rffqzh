@@ -206,6 +206,22 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: 'italic',
   },
+  autoCategoryBadge: {
+    backgroundColor: colors.success + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  autoCategoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.success,
+    marginLeft: 4,
+  },
 });
 
 export default function EditItemScreen() {
@@ -213,7 +229,7 @@ export default function EditItemScreen() {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState('pieces');
-  const [category, setCategory] = useState('Other');
+  const [category, setCategory] = useState('other');
   const [expirationDate, setExpirationDate] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -224,6 +240,7 @@ export default function EditItemScreen() {
     daysUntilExpiry: number;
   } | null>(null);
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
+  const [autoDetectedCategory, setAutoDetectedCategory] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const router = useRouter();
 
@@ -261,6 +278,17 @@ export default function EditItemScreen() {
 
   function handleNameChange(text: string) {
     setName(text);
+    
+    // Auto-categorize when name changes
+    if (text.trim().length >= 2) {
+      const suggestedCategory = categorizeFoodItem(text);
+      console.log('[EditItem] Auto-detected category:', suggestedCategory);
+      setCategory(suggestedCategory);
+      setAutoDetectedCategory(suggestedCategory !== 'other');
+    } else {
+      setCategory('other');
+      setAutoDetectedCategory(false);
+    }
   }
 
   const predictExpiration = async () => {
@@ -278,6 +306,12 @@ export default function EditItemScreen() {
         estimationText: prediction.estimationText,
         daysUntilExpiry: prediction.daysUntilExpiry,
       });
+      
+      // Also update category when re-predicting
+      const suggestedCategory = categorizeFoodItem(name);
+      console.log('[EditItem] Auto-detected category during prediction:', suggestedCategory);
+      setCategory(suggestedCategory);
+      setAutoDetectedCategory(suggestedCategory !== 'other');
     } catch (error) {
       console.error('[EditItem] Prediction error:', error);
       setAiPrediction(null);
@@ -365,6 +399,7 @@ export default function EditItemScreen() {
   function openCategoryPicker() {
     closeAllPickers();
     setShowCategoryPicker(true);
+    setAutoDetectedCategory(false); // User is manually changing category
   }
 
   function openUnitPicker() {
@@ -381,6 +416,11 @@ export default function EditItemScreen() {
     const unitObj = UNITS.find(u => u.value === unitValue);
     return unitObj ? unitObj.label : unitValue;
   }
+
+  const getCategoryDisplay = (): string => {
+    const categoryObj = FOOD_CATEGORIES.find(c => c.value === category);
+    return categoryObj ? `${categoryObj.icon} ${categoryObj.label}` : '📦 Other';
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -419,7 +459,7 @@ export default function EditItemScreen() {
               style={styles.input}
               value={name}
               onChangeText={handleNameChange}
-              placeholder="e.g., Milk, Eggs, Chicken"
+              placeholder="e.g., Grapes, Salmon, Milk"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
             />
@@ -484,7 +524,7 @@ export default function EditItemScreen() {
               style={styles.pickerButton}
               onPress={openCategoryPicker}
             >
-              <Text style={styles.pickerButtonText}>{category}</Text>
+              <Text style={styles.pickerButtonText}>{getCategoryDisplay()}</Text>
               <IconSymbol
                 ios_icon_name="chevron.down"
                 android_material_icon_name="arrow-drop-down"
@@ -492,6 +532,18 @@ export default function EditItemScreen() {
                 color={colors.text}
               />
             </TouchableOpacity>
+            
+            {autoDetectedCategory && (
+              <View style={styles.autoCategoryBadge}>
+                <IconSymbol 
+                  ios_icon_name="checkmark.circle.fill" 
+                  android_material_icon_name="check-circle" 
+                  size={14} 
+                  color={colors.success} 
+                />
+                <Text style={styles.autoCategoryText}>Auto-detected from item name</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -565,6 +617,7 @@ export default function EditItemScreen() {
                     key={cat.value}
                     style={styles.pickerOption}
                     onPress={() => {
+                      console.log('[EditItem] User manually selected category:', cat.value);
                       setCategory(cat.value);
                       closeAllPickers();
                     }}

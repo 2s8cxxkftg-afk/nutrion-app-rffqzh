@@ -9,68 +9,68 @@ interface CategoryKeywords {
 
 const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   {
-    category: 'Fruits',
-    keywords: ['apple', 'banana', 'orange', 'grape', 'strawberry', 'blueberry', 'mango', 'pineapple', 'watermelon', 'peach', 'pear', 'cherry', 'kiwi', 'lemon', 'lime', 'plum', 'raspberry', 'blackberry', 'melon', 'papaya', 'guava', 'passion fruit', 'dragon fruit', 'lychee', 'pomegranate', 'fig', 'date', 'apricot', 'nectarine', 'tangerine', 'clementine', 'grapefruit', 'avocado'],
+    category: 'fruits',
+    keywords: ['apple', 'banana', 'orange', 'grape', 'grapes', 'strawberry', 'strawberries', 'blueberry', 'blueberries', 'mango', 'mangoes', 'pineapple', 'watermelon', 'peach', 'peaches', 'pear', 'pears', 'cherry', 'cherries', 'kiwi', 'kiwis', 'lemon', 'lemons', 'lime', 'limes', 'plum', 'plums', 'raspberry', 'raspberries', 'blackberry', 'blackberries', 'melon', 'melons', 'papaya', 'papayas', 'guava', 'guavas', 'passion fruit', 'dragon fruit', 'lychee', 'lychees', 'pomegranate', 'pomegranates', 'fig', 'figs', 'date', 'dates', 'apricot', 'apricots', 'nectarine', 'nectarines', 'tangerine', 'tangerines', 'clementine', 'clementines', 'grapefruit', 'grapefruits', 'avocado', 'avocados'],
     priority: 1,
   },
   {
-    category: 'Vegetables',
-    keywords: ['carrot', 'broccoli', 'spinach', 'lettuce', 'tomato', 'cucumber', 'pepper', 'onion', 'garlic', 'potato', 'sweet potato', 'celery', 'cabbage', 'cauliflower', 'zucchini', 'eggplant', 'mushroom', 'asparagus', 'green bean', 'pea', 'corn', 'radish', 'beet', 'turnip', 'parsnip', 'leek', 'kale', 'chard', 'arugula', 'bok choy', 'brussels sprout', 'artichoke', 'squash', 'pumpkin', 'bell pepper', 'chili', 'jalapeno'],
+    category: 'vegetables',
+    keywords: ['carrot', 'carrots', 'broccoli', 'spinach', 'lettuce', 'tomato', 'tomatoes', 'cucumber', 'cucumbers', 'pepper', 'peppers', 'onion', 'onions', 'garlic', 'potato', 'potatoes', 'sweet potato', 'sweet potatoes', 'celery', 'cabbage', 'cauliflower', 'zucchini', 'zucchinis', 'eggplant', 'eggplants', 'mushroom', 'mushrooms', 'asparagus', 'green bean', 'green beans', 'pea', 'peas', 'corn', 'radish', 'radishes', 'beet', 'beets', 'turnip', 'turnips', 'parsnip', 'parsnips', 'leek', 'leeks', 'kale', 'chard', 'arugula', 'bok choy', 'brussels sprout', 'brussels sprouts', 'artichoke', 'artichokes', 'squash', 'pumpkin', 'pumpkins', 'bell pepper', 'bell peppers', 'chili', 'chilies', 'jalapeno', 'jalapenos'],
     priority: 1,
   },
   {
-    category: 'Dairy',
-    keywords: ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'sour cream', 'cottage cheese', 'ricotta', 'mozzarella', 'cheddar', 'parmesan', 'feta', 'goat cheese', 'blue cheese', 'brie', 'camembert', 'swiss cheese', 'provolone', 'gouda', 'cream cheese', 'whipped cream', 'half and half', 'buttermilk', 'kefir', 'ghee'],
+    category: 'dairy',
+    keywords: ['milk', 'cheese', 'yogurt', 'yoghurt', 'butter', 'cream', 'sour cream', 'cottage cheese', 'ricotta', 'mozzarella', 'cheddar', 'parmesan', 'feta', 'goat cheese', 'blue cheese', 'brie', 'camembert', 'swiss cheese', 'provolone', 'gouda', 'cream cheese', 'whipped cream', 'half and half', 'buttermilk', 'kefir', 'ghee'],
     priority: 1,
   },
   {
-    category: 'Meat',
-    keywords: ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'bacon', 'sausage', 'ham', 'steak', 'ground beef', 'ground turkey', 'ground chicken', 'ribs', 'chop', 'roast', 'brisket', 'tenderloin', 'sirloin', 'ribeye', 'filet', 'veal', 'venison', 'rabbit', 'quail', 'goose', 'pheasant'],
+    category: 'meat',
+    keywords: ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'bacon', 'sausage', 'sausages', 'ham', 'steak', 'steaks', 'ground beef', 'ground turkey', 'ground chicken', 'ribs', 'chop', 'chops', 'roast', 'brisket', 'tenderloin', 'sirloin', 'ribeye', 'filet', 'veal', 'venison', 'rabbit', 'quail', 'goose', 'pheasant'],
     priority: 1,
   },
   {
-    category: 'Seafood',
-    keywords: ['fish', 'salmon', 'tuna', 'cod', 'tilapia', 'shrimp', 'crab', 'lobster', 'oyster', 'clam', 'mussel', 'scallop', 'squid', 'octopus', 'anchovy', 'sardine', 'mackerel', 'halibut', 'trout', 'bass', 'catfish', 'snapper', 'mahi mahi', 'swordfish', 'sea bass', 'haddock', 'pollock', 'flounder', 'sole', 'perch', 'pike', 'crayfish', 'prawn', 'calamari'],
+    category: 'seafood',
+    keywords: ['fish', 'salmon', 'tuna', 'cod', 'tilapia', 'shrimp', 'shrimps', 'crab', 'crabs', 'lobster', 'lobsters', 'oyster', 'oysters', 'clam', 'clams', 'mussel', 'mussels', 'scallop', 'scallops', 'squid', 'octopus', 'anchovy', 'anchovies', 'sardine', 'sardines', 'mackerel', 'halibut', 'trout', 'bass', 'catfish', 'snapper', 'mahi mahi', 'swordfish', 'sea bass', 'haddock', 'pollock', 'flounder', 'sole', 'perch', 'pike', 'crayfish', 'prawn', 'prawns', 'calamari', 'seafood'],
     priority: 1,
   },
   {
-    category: 'Grains',
-    keywords: ['rice', 'pasta', 'bread', 'cereal', 'oats', 'quinoa', 'barley', 'wheat', 'flour', 'couscous', 'bulgur', 'farro', 'millet', 'rye', 'cornmeal', 'polenta', 'grits', 'bran', 'wheat germ', 'semolina', 'spelt', 'amaranth', 'buckwheat', 'sorghum', 'teff', 'wild rice', 'brown rice', 'white rice', 'basmati', 'jasmine rice', 'arborio', 'risotto', 'noodle', 'macaroni', 'spaghetti', 'penne', 'fusilli', 'linguine', 'fettuccine', 'ravioli', 'tortellini', 'lasagna', 'bagel', 'baguette', 'croissant', 'muffin', 'roll', 'bun', 'pita', 'naan', 'tortilla', 'wrap'],
+    category: 'grains',
+    keywords: ['rice', 'pasta', 'bread', 'cereal', 'oats', 'oatmeal', 'quinoa', 'barley', 'wheat', 'flour', 'couscous', 'bulgur', 'farro', 'millet', 'rye', 'cornmeal', 'polenta', 'grits', 'bran', 'wheat germ', 'semolina', 'spelt', 'amaranth', 'buckwheat', 'sorghum', 'teff', 'wild rice', 'brown rice', 'white rice', 'basmati', 'jasmine rice', 'arborio', 'risotto', 'noodle', 'noodles', 'macaroni', 'spaghetti', 'penne', 'fusilli', 'linguine', 'fettuccine', 'ravioli', 'tortellini', 'lasagna', 'bagel', 'bagels', 'baguette', 'croissant', 'croissants', 'muffin', 'muffins', 'roll', 'rolls', 'bun', 'buns', 'pita', 'naan', 'tortilla', 'tortillas', 'wrap', 'wraps'],
     priority: 1,
   },
   {
-    category: 'Bakery',
-    keywords: ['bread', 'cake', 'cookie', 'pastry', 'pie', 'donut', 'muffin', 'croissant', 'bagel', 'baguette', 'roll', 'bun', 'scone', 'biscuit', 'brownie', 'cupcake', 'tart', 'danish', 'eclair', 'macaron', 'strudel', 'turnover', 'puff pastry', 'phyllo', 'shortbread', 'wafer', 'cracker', 'pretzel', 'breadstick'],
+    category: 'bakery',
+    keywords: ['bread', 'cake', 'cakes', 'cookie', 'cookies', 'pastry', 'pastries', 'pie', 'pies', 'donut', 'donuts', 'doughnut', 'doughnuts', 'muffin', 'muffins', 'croissant', 'croissants', 'bagel', 'bagels', 'baguette', 'roll', 'rolls', 'bun', 'buns', 'scone', 'scones', 'biscuit', 'biscuits', 'brownie', 'brownies', 'cupcake', 'cupcakes', 'tart', 'tarts', 'danish', 'eclair', 'eclairs', 'macaron', 'macarons', 'strudel', 'turnover', 'turnovers', 'puff pastry', 'phyllo', 'shortbread', 'wafer', 'wafers', 'cracker', 'crackers', 'pretzel', 'pretzels', 'breadstick', 'breadsticks'],
     priority: 1,
   },
   {
-    category: 'Snacks',
-    keywords: ['chips', 'crackers', 'popcorn', 'pretzels', 'nuts', 'trail mix', 'granola bar', 'energy bar', 'protein bar', 'candy', 'chocolate', 'gummy', 'lollipop', 'caramel', 'toffee', 'fudge', 'marshmallow', 'licorice', 'jelly bean', 'mint', 'gum', 'peanut', 'almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia', 'sunflower seed', 'pumpkin seed', 'sesame seed', 'chia seed', 'flax seed'],
+    category: 'snacks',
+    keywords: ['chips', 'crackers', 'popcorn', 'pretzels', 'nuts', 'trail mix', 'granola bar', 'granola bars', 'energy bar', 'energy bars', 'protein bar', 'protein bars', 'candy', 'candies', 'chocolate', 'chocolates', 'gummy', 'gummies', 'lollipop', 'lollipops', 'caramel', 'toffee', 'fudge', 'marshmallow', 'marshmallows', 'licorice', 'jelly bean', 'jelly beans', 'mint', 'mints', 'gum', 'peanut', 'peanuts', 'almond', 'almonds', 'cashew', 'cashews', 'walnut', 'walnuts', 'pecan', 'pecans', 'pistachio', 'pistachios', 'hazelnut', 'hazelnuts', 'macadamia', 'sunflower seed', 'sunflower seeds', 'pumpkin seed', 'pumpkin seeds', 'sesame seed', 'sesame seeds', 'chia seed', 'chia seeds', 'flax seed', 'flax seeds'],
     priority: 1,
   },
   {
-    category: 'Beverages',
-    keywords: ['water', 'juice', 'soda', 'coffee', 'tea', 'milk', 'smoothie', 'shake', 'lemonade', 'iced tea', 'hot chocolate', 'cocoa', 'beer', 'wine', 'champagne', 'vodka', 'whiskey', 'rum', 'gin', 'tequila', 'brandy', 'liqueur', 'cocktail', 'mocktail', 'energy drink', 'sports drink', 'coconut water', 'almond milk', 'soy milk', 'oat milk', 'rice milk', 'kombucha', 'kefir', 'cider', 'sake', 'sparkling water', 'tonic', 'cola', 'root beer', 'ginger ale'],
+    category: 'beverages',
+    keywords: ['water', 'juice', 'juices', 'soda', 'sodas', 'coffee', 'tea', 'milk', 'smoothie', 'smoothies', 'shake', 'shakes', 'lemonade', 'iced tea', 'hot chocolate', 'cocoa', 'beer', 'beers', 'wine', 'wines', 'champagne', 'vodka', 'whiskey', 'rum', 'gin', 'tequila', 'brandy', 'liqueur', 'cocktail', 'cocktails', 'mocktail', 'mocktails', 'energy drink', 'energy drinks', 'sports drink', 'sports drinks', 'coconut water', 'almond milk', 'soy milk', 'oat milk', 'rice milk', 'kombucha', 'kefir', 'cider', 'sake', 'sparkling water', 'tonic', 'cola', 'root beer', 'ginger ale'],
     priority: 1,
   },
   {
-    category: 'Condiments',
-    keywords: ['ketchup', 'mustard', 'mayonnaise', 'mayo', 'relish', 'pickle', 'hot sauce', 'salsa', 'soy sauce', 'worcestershire', 'bbq sauce', 'barbecue sauce', 'teriyaki', 'hoisin', 'fish sauce', 'oyster sauce', 'sriracha', 'tabasco', 'vinegar', 'balsamic', 'olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'sesame oil', 'peanut oil', 'avocado oil', 'honey', 'maple syrup', 'agave', 'molasses', 'jam', 'jelly', 'marmalade', 'peanut butter', 'almond butter', 'tahini', 'hummus', 'guacamole', 'ranch', 'caesar', 'italian dressing', 'vinaigrette', 'aioli', 'pesto', 'marinara', 'alfredo', 'gravy', 'chutney'],
+    category: 'condiments',
+    keywords: ['ketchup', 'mustard', 'mayonnaise', 'mayo', 'relish', 'pickle', 'pickles', 'hot sauce', 'salsa', 'soy sauce', 'worcestershire', 'bbq sauce', 'barbecue sauce', 'teriyaki', 'hoisin', 'fish sauce', 'oyster sauce', 'sriracha', 'tabasco', 'vinegar', 'balsamic', 'olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'sesame oil', 'peanut oil', 'avocado oil', 'honey', 'maple syrup', 'agave', 'molasses', 'jam', 'jams', 'jelly', 'jellies', 'marmalade', 'peanut butter', 'almond butter', 'tahini', 'hummus', 'guacamole', 'ranch', 'caesar', 'italian dressing', 'vinaigrette', 'aioli', 'pesto', 'marinara', 'alfredo', 'gravy', 'chutney'],
     priority: 1,
   },
   {
-    category: 'Spices',
-    keywords: ['salt', 'pepper', 'paprika', 'cumin', 'coriander', 'turmeric', 'cinnamon', 'nutmeg', 'ginger', 'clove', 'cardamom', 'allspice', 'bay leaf', 'thyme', 'rosemary', 'oregano', 'basil', 'parsley', 'cilantro', 'dill', 'sage', 'mint', 'tarragon', 'chive', 'fennel', 'anise', 'caraway', 'mustard seed', 'celery seed', 'poppy seed', 'sesame seed', 'vanilla', 'extract', 'curry', 'chili powder', 'cayenne', 'red pepper flake', 'garlic powder', 'onion powder', 'smoked paprika', 'italian seasoning', 'herbs de provence', 'za\'atar', 'garam masala', 'five spice', 'saffron', 'sumac', 'fenugreek'],
+    category: 'spices',
+    keywords: ['salt', 'pepper', 'paprika', 'cumin', 'coriander', 'turmeric', 'cinnamon', 'nutmeg', 'ginger', 'clove', 'cloves', 'cardamom', 'allspice', 'bay leaf', 'bay leaves', 'thyme', 'rosemary', 'oregano', 'basil', 'parsley', 'cilantro', 'dill', 'sage', 'mint', 'tarragon', 'chive', 'chives', 'fennel', 'anise', 'caraway', 'mustard seed', 'celery seed', 'poppy seed', 'sesame seed', 'vanilla', 'extract', 'curry', 'chili powder', 'cayenne', 'red pepper flake', 'red pepper flakes', 'garlic powder', 'onion powder', 'smoked paprika', 'italian seasoning', 'herbs de provence', 'za\'atar', 'garam masala', 'five spice', 'saffron', 'sumac', 'fenugreek'],
     priority: 1,
   },
   {
-    category: 'Frozen',
-    keywords: ['frozen', 'ice cream', 'frozen yogurt', 'sorbet', 'gelato', 'popsicle', 'frozen pizza', 'frozen dinner', 'frozen vegetable', 'frozen fruit', 'frozen meal', 'tv dinner', 'frozen waffle', 'frozen pancake', 'frozen french fry', 'frozen chicken nugget', 'frozen fish stick', 'frozen burrito', 'frozen lasagna', 'frozen pot pie'],
+    category: 'frozen',
+    keywords: ['frozen', 'ice cream', 'frozen yogurt', 'sorbet', 'gelato', 'popsicle', 'popsicles', 'frozen pizza', 'frozen dinner', 'frozen dinners', 'frozen vegetable', 'frozen vegetables', 'frozen fruit', 'frozen fruits', 'frozen meal', 'frozen meals', 'tv dinner', 'frozen waffle', 'frozen waffles', 'frozen pancake', 'frozen pancakes', 'frozen french fry', 'frozen french fries', 'frozen chicken nugget', 'frozen chicken nuggets', 'frozen fish stick', 'frozen fish sticks', 'frozen burrito', 'frozen burritos', 'frozen lasagna', 'frozen pot pie'],
     priority: 1,
   },
   {
-    category: 'Canned Goods',
-    keywords: ['canned', 'can', 'soup', 'broth', 'stock', 'tomato sauce', 'tomato paste', 'diced tomato', 'crushed tomato', 'bean', 'black bean', 'kidney bean', 'pinto bean', 'chickpea', 'garbanzo', 'lentil', 'corn', 'pea', 'green bean', 'tuna', 'salmon', 'sardine', 'anchovy', 'coconut milk', 'evaporated milk', 'condensed milk', 'pumpkin puree', 'apple sauce', 'cranberry sauce', 'fruit cocktail', 'peach', 'pear', 'pineapple', 'mandarin orange', 'cherry', 'olive', 'artichoke heart', 'roasted pepper', 'water chestnut', 'bamboo shoot'],
+    category: 'canned',
+    keywords: ['canned', 'can', 'cans', 'soup', 'soups', 'broth', 'stock', 'tomato sauce', 'tomato paste', 'diced tomato', 'diced tomatoes', 'crushed tomato', 'crushed tomatoes', 'bean', 'beans', 'black bean', 'black beans', 'kidney bean', 'kidney beans', 'pinto bean', 'pinto beans', 'chickpea', 'chickpeas', 'garbanzo', 'lentil', 'lentils', 'corn', 'pea', 'peas', 'green bean', 'green beans', 'tuna', 'salmon', 'sardine', 'sardines', 'anchovy', 'anchovies', 'coconut milk', 'evaporated milk', 'condensed milk', 'pumpkin puree', 'apple sauce', 'cranberry sauce', 'fruit cocktail', 'peach', 'peaches', 'pear', 'pears', 'pineapple', 'mandarin orange', 'mandarin oranges', 'cherry', 'cherries', 'olive', 'olives', 'artichoke heart', 'artichoke hearts', 'roasted pepper', 'roasted peppers', 'water chestnut', 'water chestnuts', 'bamboo shoot', 'bamboo shoots'],
     priority: 1,
   },
 ];
@@ -82,11 +82,12 @@ const CATEGORY_KEYWORDS: CategoryKeywords[] = [
  * which category it belongs to by matching keywords.
  * 
  * @param itemName - The name of the food item
- * @returns The detected category or 'Other' if no match found
+ * @returns The detected category value (lowercase) or 'other' if no match found
  */
 export function categorizeFoodItem(itemName: string): string {
   if (!itemName || itemName.trim().length === 0) {
-    return 'Other';
+    console.log('ℹ️ Empty item name, defaulting to "other"');
+    return 'other';
   }
 
   const normalizedName = itemName.toLowerCase().trim();
@@ -102,6 +103,6 @@ export function categorizeFoodItem(itemName: string): string {
   }
 
   // No match found
-  console.log(`ℹ️ No category match for "${itemName}", defaulting to "Other"`);
-  return 'Other';
+  console.log(`ℹ️ No category match for "${itemName}", defaulting to "other"`);
+  return 'other';
 }
