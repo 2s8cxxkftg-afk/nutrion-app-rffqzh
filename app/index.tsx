@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Image, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
@@ -13,7 +13,6 @@ export default function Index() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     checkAppStatus();
@@ -72,30 +71,6 @@ export default function Index() {
     }
   };
 
-  const handleSkipToApp = async () => {
-    try {
-      // Mark everything as completed
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      
-      // Reload the app state
-      checkAppStatus();
-    } catch (error) {
-      console.error('Error skipping to app:', error);
-    }
-  };
-
-  const handleResetApp = async () => {
-    try {
-      // Clear all onboarding flags
-      await AsyncStorage.removeItem(ONBOARDING_KEY);
-      
-      // Reload the app state
-      checkAppStatus();
-    } catch (error) {
-      console.error('Error resetting app:', error);
-    }
-  };
-
   if (isLoading || hasCompletedOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
@@ -110,26 +85,6 @@ export default function Index() {
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
         {error && (
           <Text style={styles.errorText}>{error}</Text>
-        )}
-        
-        {/* Debug button - long press logo to show */}
-        <TouchableOpacity 
-          style={styles.debugTrigger}
-          onLongPress={() => setShowDebug(true)}
-          delayLongPress={3000}
-        >
-          <View style={{ height: 100, width: 100 }} />
-        </TouchableOpacity>
-
-        {showDebug && (
-          <View style={styles.debugContainer}>
-            <TouchableOpacity style={styles.debugButton} onPress={handleSkipToApp}>
-              <Text style={styles.debugButtonText}>Skip to App</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.debugButton, styles.debugButtonSecondary]} onPress={handleResetApp}>
-              <Text style={styles.debugButtonText}>Reset Onboarding</Text>
-            </TouchableOpacity>
-          </View>
         )}
       </View>
     );
@@ -150,7 +105,6 @@ export default function Index() {
     return <Redirect href="/auth" />;
   }
 
-  // No more paywall - everyone can access the app
   console.log('→ /(tabs)/pantry');
   return <Redirect href="/(tabs)/pantry" />;
 }
@@ -195,32 +149,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 20,
-  },
-  debugTrigger: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  debugContainer: {
-    position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
-    gap: 12,
-  },
-  debugButton: {
-    backgroundColor: '#1F5F4E',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  debugButtonSecondary: {
-    backgroundColor: '#6c757d',
-  },
-  debugButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
