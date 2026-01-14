@@ -37,14 +37,18 @@ export default function AIRecipesScreen() {
   const [checkingPremium, setCheckingPremium] = useState(true);
 
   const checkPremiumStatus = useCallback(async () => {
+    console.log('[AIRecipes] Checking premium status');
     setCheckingPremium(true);
     const premium = await isPremiumUser();
+    console.log('[AIRecipes] Premium status:', premium);
     setIsPremium(premium);
     setCheckingPremium(false);
   }, []);
 
   const loadItems = useCallback(async () => {
+    console.log('[AIRecipes] Loading pantry items');
     const items = await loadPantryItems();
+    console.log('[AIRecipes] Loaded', items.length, 'pantry items');
     setPantryItems(items);
   }, []);
 
@@ -56,8 +60,11 @@ export default function AIRecipesScreen() {
   );
 
   const handleGenerateRecipes = async () => {
+    console.log('[AIRecipes] Generate recipes button pressed');
+    
     // Check premium status
     if (!isPremium) {
+      console.log('[AIRecipes] User is not premium, redirecting to subscription');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Toast.show('Subscribe to Premium to use AI Recipe Generator', 'error');
       router.push('/subscription-management');
@@ -65,6 +72,7 @@ export default function AIRecipesScreen() {
     }
 
     if (pantryItems.length === 0) {
+      console.log('[AIRecipes] No pantry items available');
       Toast.show('Add items to your pantry first', 'error');
       return;
     }
@@ -77,7 +85,10 @@ export default function AIRecipesScreen() {
     });
 
     if (result) {
+      console.log('[AIRecipes] Successfully generated', result.length, 'recipes');
       Toast.show(`Found ${result.length} delicious recipes`, 'success');
+    } else {
+      console.log('[AIRecipes] Failed to generate recipes');
     }
   };
 
@@ -355,7 +366,14 @@ export default function AIRecipesScreen() {
               size={20}
               color={colors.error}
             />
-            <Text style={styles.errorText}>{error}</Text>
+            <View style={styles.errorContent}>
+              <Text style={styles.errorText}>{error}</Text>
+              {error.includes('Edge Function') || error.includes('AI service') ? (
+                <Text style={styles.errorHint}>
+                  The AI recipe generator requires the Supabase Edge Function to be deployed. Please contact support or check the setup instructions.
+                </Text>
+              ) : null}
+            </View>
           </View>
         )}
 
@@ -663,17 +681,28 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF3E0',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
     gap: spacing.sm,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  errorContent: {
+    flex: 1,
   },
   errorText: {
     fontSize: typography.sizes.sm,
     color: colors.error,
-    flex: 1,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  errorHint: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   recipesContainer: {
     marginTop: spacing.md,
