@@ -2,7 +2,7 @@
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { categorizeFoodItem } from '@/utils/categoryHelper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
+import { predictExpirationDateWithAI, parseMMDDYYYYToISO, formatDateToMMDDYYYY } from '@/utils/expirationHelper';
 import { IconSymbol } from '@/components/IconSymbol';
 import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
@@ -20,6 +20,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
@@ -170,6 +171,56 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
+  aiPredictionBox: {
+    backgroundColor: colors.primary + '15',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  aiPredictionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  aiPredictionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginLeft: 6,
+  },
+  aiPredictionText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+  },
+  earliestDateBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  earliestDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 });
 
 export default function AddItemScreen() {
@@ -183,6 +234,12 @@ export default function AddItemScreen() {
   const [category, setCategory] = useState<string>('other');
   const [expirationDate, setExpirationDate] = useState('');
   const [dateText, setDateText] = useState('');
+  const [aiPrediction, setAiPrediction] = useState<{
+    isEarliestDate: boolean;
+    estimationText: string;
+    daysUntilExpiry: number;
+  } | null>(null);
+  const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -191,20 +248,42 @@ export default function AddItemScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    if (name.trim()) {
+    if (name.trim().length >= 2) {
+      console.log('[AddItem] Name changed, predicting expiration for:', name);
+      predictExpiration();
+    } else {
+      setAiPrediction(null);
+      setExpirationDate('');
+      setDateText('');
+    }
+  }, [name]);
+
+  const predictExpiration = async () => {
+    setIsLoadingPrediction(true);
+    try {
+      const prediction = await predictExpirationDateWithAI(name, category, true);
+      console.log('[AddItem] AI Prediction result:', prediction);
+      
+      setExpirationDate(prediction.expirationDate);
+      setDateText(prediction.expirationDate);
+      setAiPrediction({
+        isEarliestDate: prediction.isEarliestDate,
+        estimationText: prediction.estimationText,
+        daysUntilExpiry: prediction.daysUntilExpiry,
+      });
+      
+      // Auto-categorize based on item name
       const suggestedCategory = categorizeFoodItem(name);
       if (suggestedCategory !== 'other') {
         setCategory(suggestedCategory);
       }
-
-      const estimation = getExpirationEstimation(name);
-      if (estimation) {
-        const predictedDate = predictExpirationDate(name, true);
-        setExpirationDate(predictedDate);
-        setDateText(predictedDate);
-      }
+    } catch (error) {
+      console.error('[AddItem] Prediction error:', error);
+      setAiPrediction(null);
+    } finally {
+      setIsLoadingPrediction(false);
     }
-  }, [name]);
+  };
 
   const handleNameChange = (text: string) => {
     setName(text);
@@ -231,34 +310,30 @@ export default function AddItemScreen() {
   };
 
   const handleDateChange = (text: string) => {
-    setDateText(text);
-    const parsed = validateAndParseDate(text);
-    if (parsed) {
-      setExpirationDate(parsed);
-    }
-  };
-
-  const validateAndParseDate = (dateText: string): string | null => {
-    const cleaned = dateText.replace(/[^\d]/g, '');
+    // Auto-format as user types: MM/DD/YYYY
+    let cleaned = text.replace(/[^0-9]/g, '');
     
-    if (cleaned.length === 8) {
-      const month = cleaned.substring(0, 2);
-      const day = cleaned.substring(2, 4);
-      const year = cleaned.substring(4, 8);
-      
-      const monthNum = parseInt(month);
-      const dayNum = parseInt(day);
-      const yearNum = parseInt(year);
-      
-      if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 2024) {
-        return `${year}-${month}-${day}`;
+    if (cleaned.length >= 2) {
+      cleaned = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+    }
+    if (cleaned.length >= 5) {
+      cleaned = cleaned.slice(0, 5) + '/' + cleaned.slice(5, 9);
+    }
+    
+    setDateText(cleaned);
+    
+    // Validate complete date
+    if (cleaned.length === 10) {
+      const isoDate = parseMMDDYYYYToISO(cleaned);
+      if (isoDate) {
+        setExpirationDate(cleaned);
       }
     }
-    
-    return null;
   };
 
   const handleSave = async () => {
+    console.log('[AddItem] Save button pressed');
+    
     if (!name.trim()) {
       Toast.show({ message: 'Please enter an item name', type: 'error' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -272,8 +347,15 @@ export default function AddItemScreen() {
       return;
     }
 
-    if (!expirationDate) {
+    if (!expirationDate || expirationDate.length !== 10) {
       Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    const isoDate = parseMMDDYYYYToISO(expirationDate);
+    if (!isoDate) {
+      Toast.show({ message: 'Invalid date format. Please use MM/DD/YYYY', type: 'error' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -284,10 +366,11 @@ export default function AddItemScreen() {
       quantity: quantityNum,
       unit,
       category,
-      expirationDate,
+      expirationDate: isoDate,
       dateAdded: new Date().toISOString().split('T')[0],
     };
 
+    console.log('[AddItem] Adding item to pantry:', newItem);
     await addPantryItem(newItem);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Toast.show({ message: `${name} added to pantry!`, type: 'success' });
@@ -346,6 +429,13 @@ export default function AddItemScreen() {
               returnKeyType="next"
               onSubmitEditing={() => quantityInputRef.current?.focus()}
             />
+            
+            {isLoadingPrediction && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>AI is predicting expiration date...</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -434,7 +524,32 @@ export default function AddItemScreen() {
               maxLength={10}
               returnKeyType="done"
             />
-            <Text style={styles.hint}>Auto-suggested based on item type</Text>
+            
+            {aiPrediction && (
+              <View style={styles.aiPredictionBox}>
+                <View style={styles.aiPredictionHeader}>
+                  <IconSymbol 
+                    ios_icon_name="sparkles" 
+                    android_material_icon_name="auto-awesome" 
+                    size={16} 
+                    color={colors.primary} 
+                  />
+                  <Text style={styles.aiPredictionTitle}>AI Prediction</Text>
+                </View>
+                <Text style={styles.aiPredictionText}>{aiPrediction.estimationText}</Text>
+                {aiPrediction.isEarliestDate && (
+                  <View style={styles.earliestDateBadge}>
+                    <Text style={styles.earliestDateText}>Earliest Possible Expiry Date</Text>
+                  </View>
+                )}
+              </View>
+            )}
+            
+            <Text style={styles.hint}>
+              {aiPrediction 
+                ? 'AI-suggested date (you can edit it)' 
+                : 'Enter date in MM/DD/YYYY format'}
+            </Text>
           </View>
 
           <TouchableOpacity 

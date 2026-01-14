@@ -1,7 +1,7 @@
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { getExpirationEstimation, predictExpirationDate } from '@/utils/expirationHelper';
+import { predictExpirationDateWithAI, parseMMDDYYYYToISO, parseISOToMMDDYYYY } from '@/utils/expirationHelper';
 import { PantryItem, FOOD_CATEGORIES, UNITS, QUANTITY_PRESETS } from '@/types/pantry';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -15,6 +15,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import Toast from '@/components/Toast';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -137,19 +138,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
   },
-  aiHint: {
-    backgroundColor: colors.primary + '20',
-    borderRadius: 8,
+  aiPredictionBox: {
+    backgroundColor: colors.primary + '15',
+    borderRadius: 12,
     padding: 12,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  aiPredictionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
-  aiHintText: {
+  aiPredictionTitle: {
     fontSize: 14,
+    fontWeight: '600',
     color: colors.primary,
-    marginLeft: 8,
-    flex: 1,
+    marginLeft: 6,
+  },
+  aiPredictionText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+  },
+  earliestDateBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  earliestDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   saveButton: {
     backgroundColor: colors.primary,
@@ -163,6 +189,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  hint: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
 });
 
 export default function EditItemScreen() {
@@ -175,63 +218,76 @@ export default function EditItemScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showQuantityPicker, setShowQuantityPicker] = useState(false);
-  const [aiHint, setAiHint] = useState('');
+  const [aiPrediction, setAiPrediction] = useState<{
+    isEarliestDate: boolean;
+    estimationText: string;
+    daysUntilExpiry: number;
+  } | null>(null);
+  const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const router = useRouter();
 
   // Wrap loadItem with useCallback to stabilize its reference
   const loadItem = useCallback(async () => {
     try {
+      console.log('[EditItem] Loading item with id:', id);
       const items = await loadPantryItems();
       const item = items.find((i) => i.id === id);
       
       if (item) {
+        console.log('[EditItem] Item found:', item);
         setName(item.name);
         setQuantity(item.quantity.toString());
         setUnit(item.unit);
         setCategory(item.category);
         
-        // Format expiration date to MM/DD/YYYY
-        const date = new Date(item.expirationDate);
-        const formattedDate = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
+        // Convert ISO date to MM/DD/YYYY
+        const formattedDate = parseISOToMMDDYYYY(item.expirationDate);
         setExpirationDate(formattedDate);
       } else {
-        Toast.show('Item not found', 'error');
+        Toast.show({ message: 'Item not found', type: 'error' });
         router.back();
       }
     } catch (error) {
-      console.error('Error loading item:', error);
-      Toast.show('Failed to load item', 'error');
+      console.error('[EditItem] Error loading item:', error);
+      Toast.show({ message: 'Failed to load item', type: 'error' });
       router.back();
     }
   }, [id, router]);
 
   useEffect(() => {
     loadItem();
-  }, [loadItem]); // Fixed: Added loadItem to dependencies
-
-  useEffect(() => {
-    if (name.length > 2) {
-      const detectedCategory = categorizeFoodItem(name);
-      if (detectedCategory !== category) {
-        setCategory(detectedCategory);
-        const predictedDate = predictExpirationDate(detectedCategory);
-        const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-        setExpirationDate(formattedDate);
-        
-        const estimation = getExpirationEstimation(detectedCategory);
-        setAiHint(`AI suggests: ${estimation.label} (${estimation.days} days)`);
-      }
-    } else {
-      setAiHint('');
-    }
-  }, [category, name]);
+  }, [loadItem]);
 
   function handleNameChange(text: string) {
     setName(text);
   }
 
+  const predictExpiration = async () => {
+    if (name.trim().length < 2) return;
+    
+    setIsLoadingPrediction(true);
+    try {
+      console.log('[EditItem] Predicting expiration for:', name);
+      const prediction = await predictExpirationDateWithAI(name, category, true);
+      console.log('[EditItem] AI Prediction result:', prediction);
+      
+      setExpirationDate(prediction.expirationDate);
+      setAiPrediction({
+        isEarliestDate: prediction.isEarliestDate,
+        estimationText: prediction.estimationText,
+        daysUntilExpiry: prediction.daysUntilExpiry,
+      });
+    } catch (error) {
+      console.error('[EditItem] Prediction error:', error);
+      setAiPrediction(null);
+    } finally {
+      setIsLoadingPrediction(false);
+    }
+  };
+
   function handleDateChange(text: string) {
+    // Auto-format as user types: MM/DD/YYYY
     let cleaned = text.replace(/[^0-9]/g, '');
     
     if (cleaned.length >= 2) {
@@ -244,41 +300,28 @@ export default function EditItemScreen() {
     setExpirationDate(cleaned);
   }
 
-  function validateAndParseDate(dateText: string): Date | null {
-    const parts = dateText.split('/');
-    if (parts.length !== 3) return null;
-    
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2024) {
-      return null;
-    }
-    
-    return new Date(year, month - 1, day);
-  }
-
   async function handleSave() {
+    console.log('[EditItem] Save button pressed');
+    
     if (!name.trim()) {
-      Toast.show('Please enter an item name', 'error');
+      Toast.show({ message: 'Please enter an item name', type: 'error' });
       return;
     }
 
-    if (!expirationDate.trim()) {
-      Toast.show('Please enter an expiration date', 'error');
+    if (!expirationDate.trim() || expirationDate.length !== 10) {
+      Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
       return;
     }
 
-    const parsedDate = validateAndParseDate(expirationDate);
-    if (!parsedDate) {
-      Toast.show('Please enter a valid date (MM/DD/YYYY)', 'error');
+    const isoDate = parseMMDDYYYYToISO(expirationDate);
+    if (!isoDate) {
+      Toast.show({ message: 'Invalid date format. Please use MM/DD/YYYY', type: 'error' });
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Toast.show('Please enter a valid quantity', 'error');
+      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
       return;
     }
 
@@ -289,16 +332,17 @@ export default function EditItemScreen() {
         quantity: quantityNum,
         unit,
         category,
-        expirationDate: parsedDate.toISOString().split('T')[0],
+        expirationDate: isoDate,
         dateAdded: new Date().toISOString().split('T')[0],
       };
 
+      console.log('[EditItem] Updating item:', updatedItem);
       await updatePantryItem(updatedItem);
-      Toast.show('Item updated successfully', 'success');
+      Toast.show({ message: 'Item updated successfully', type: 'success' });
       router.back();
     } catch (error) {
-      console.error('Error updating item:', error);
-      Toast.show('Failed to update item', 'error');
+      console.error('[EditItem] Error updating item:', error);
+      Toast.show({ message: 'Failed to update item', type: 'error' });
     }
   }
 
@@ -379,17 +423,20 @@ export default function EditItemScreen() {
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
             />
-            {aiHint ? (
-              <View style={styles.aiHint}>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={16}
-                  color={colors.primary}
-                />
-                <Text style={styles.aiHintText}>{aiHint}</Text>
+            
+            <TouchableOpacity 
+              style={[styles.presetButton, { marginTop: 8, alignSelf: 'flex-start' }]}
+              onPress={predictExpiration}
+            >
+              <Text style={styles.presetButtonText}>🤖 Re-predict Expiration with AI</Text>
+            </TouchableOpacity>
+            
+            {isLoadingPrediction && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>AI is predicting expiration date...</Text>
               </View>
-            ) : null}
+            )}
           </View>
 
           <View style={styles.section}>
@@ -419,7 +466,7 @@ export default function EditItemScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.quantityPresets}>
-              {QUANTITY_PRESETS.map((preset) => (
+              {QUANTITY_PRESETS.slice(0, 10).map((preset) => (
                 <TouchableOpacity
                   key={preset.value}
                   style={styles.presetButton}
@@ -458,6 +505,32 @@ export default function EditItemScreen() {
               keyboardType="number-pad"
               maxLength={10}
             />
+            
+            {aiPrediction && (
+              <View style={styles.aiPredictionBox}>
+                <View style={styles.aiPredictionHeader}>
+                  <IconSymbol 
+                    ios_icon_name="sparkles" 
+                    android_material_icon_name="auto-awesome" 
+                    size={16} 
+                    color={colors.primary} 
+                  />
+                  <Text style={styles.aiPredictionTitle}>AI Prediction</Text>
+                </View>
+                <Text style={styles.aiPredictionText}>{aiPrediction.estimationText}</Text>
+                {aiPrediction.isEarliestDate && (
+                  <View style={styles.earliestDateBadge}>
+                    <Text style={styles.earliestDateText}>Earliest Possible Expiry Date</Text>
+                  </View>
+                )}
+              </View>
+            )}
+            
+            <Text style={styles.hint}>
+              {aiPrediction 
+                ? 'AI-suggested date (you can edit it)' 
+                : 'Enter date in MM/DD/YYYY format'}
+            </Text>
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -489,17 +562,14 @@ export default function EditItemScreen() {
               <ScrollView>
                 {FOOD_CATEGORIES.map((cat) => (
                   <TouchableOpacity
-                    key={cat}
+                    key={cat.value}
                     style={styles.pickerOption}
                     onPress={() => {
-                      setCategory(cat);
-                      const predictedDate = predictExpirationDate(cat);
-                      const formattedDate = `${String(predictedDate.getMonth() + 1).padStart(2, '0')}/${String(predictedDate.getDate()).padStart(2, '0')}/${predictedDate.getFullYear()}`;
-                      setExpirationDate(formattedDate);
+                      setCategory(cat.value);
                       closeAllPickers();
                     }}
                   >
-                    <Text style={styles.pickerOptionText}>{cat}</Text>
+                    <Text style={styles.pickerOptionText}>{cat.icon} {cat.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
