@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   numberButtonText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.primary,
   },
@@ -296,12 +296,14 @@ export default function AddItemScreen() {
   };
 
   const incrementQuantity = () => {
+    console.log('[AddItem] Increment quantity button pressed');
     const current = parseFloat(quantity) || 0;
     setQuantity((current + 1).toString());
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const decrementQuantity = () => {
+    console.log('[AddItem] Decrement quantity button pressed');
     const current = parseFloat(quantity) || 0;
     if (current > 0) {
       setQuantity(Math.max(0, current - 1).toString());
