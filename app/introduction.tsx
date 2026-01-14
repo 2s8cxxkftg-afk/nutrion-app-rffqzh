@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -62,7 +62,21 @@ export default function IntroductionScreen() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(0);
 
+  const handleBack = async () => {
+    console.log('User tapped back button on introduction page, current page:', currentPage);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    if (currentPage > 0) {
+      // Go to previous page
+      setCurrentPage(currentPage - 1);
+    } else {
+      // If on first page, go back to previous screen
+      router.back();
+    }
+  };
+
   const handleNext = async () => {
+    console.log('User tapped next button on introduction page, current page:', currentPage);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     if (currentPage < onboardingData.length - 1) {
@@ -71,6 +85,7 @@ export default function IntroductionScreen() {
       // Mark onboarding as completed and navigate to auth
       try {
         await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+        console.log('Onboarding completed, navigating to auth');
         router.replace('/auth');
       } catch (error) {
         console.error('Error saving onboarding status:', error);
@@ -79,25 +94,34 @@ export default function IntroductionScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      router.replace('/auth');
-    } catch (error) {
-      console.error('Error saving onboarding status:', error);
-      router.replace('/auth');
-    }
-  };
-
   const currentData = onboardingData[currentPage];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={styles.skipButtonText}>Skip</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <Stack.Screen 
+        options={{
+          headerShown: true,
+          title: 'Introduction',
+          headerStyle: {
+            backgroundColor: '#FAFAFA',
+          },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={handleBack}
+              style={styles.backButton}
+            >
+              <IconSymbol 
+                ios_icon_name="chevron.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
       <Animated.View 
         key={currentPage}
@@ -157,17 +181,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
-  skipButton: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    zIndex: 10,
+  backButton: {
     padding: spacing.sm,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontWeight: '600',
+    marginLeft: spacing.xs,
   },
   content: {
     flex: 1,

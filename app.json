@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "Nutrion",
+    "slug": "nutrion-app-rffqzh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -28,7 +28,7 @@
         "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.nutrion.app",
+      "package": "com.solvralabs.nutrion",
       "versionCode": 1,
       "permissions": [
         "INTERNET",
