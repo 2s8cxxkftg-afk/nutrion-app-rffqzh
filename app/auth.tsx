@@ -5,7 +5,7 @@ import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles
 import { supabase } from "@/utils/supabase";
 import Toast from "@/components/Toast";
 import Logo from "@/components/Logo";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
   View,
@@ -186,6 +186,11 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          headerShown: false,
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
