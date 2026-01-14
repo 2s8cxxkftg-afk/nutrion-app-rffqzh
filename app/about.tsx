@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-  Image,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,28 +15,40 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 
 export default function AboutScreen() {
+  console.log('AboutScreen: Rendering about page');
   const router = useRouter();
   const { t } = useTranslation();
 
-  const handleOpenWebsite = () => {
+  const handleOpenWebsite = async () => {
+    console.log('AboutScreen: Opening website');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL('https://nutrion.app');
   };
 
-  const handleOpenPrivacy = () => {
+  const handleOpenPrivacy = async () => {
+    console.log('AboutScreen: Opening privacy policy');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL('https://nutrion.app/privacy');
   };
 
-  const handleOpenTerms = () => {
+  const handleOpenTerms = async () => {
+    console.log('AboutScreen: Opening terms of service');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL('https://nutrion.app/terms');
   };
 
-  const handleOpenSupport = () => {
+  const handleOpenSupport = async () => {
+    console.log('AboutScreen: Opening support email');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL('mailto:support@nutrion.app');
   };
 
-  const handleRateApp = () => {
+  const handleRateApp = async () => {
+    console.log('AboutScreen: Opening app store for rating');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const url = Platform.select({
       ios: 'https://apps.apple.com/app/id123456789',
       android: 'https://play.google.com/store/apps/details?id=com.nutrion.app',
@@ -46,19 +57,25 @@ export default function AboutScreen() {
     Linking.openURL(url);
   };
 
+  const handleBack = async () => {
+    console.log('AboutScreen: User tapped back button');
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
+
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
-          title: t('about.title') || 'About Nutrion',
+          title: t('about.title'),
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-          presentation: 'modal',
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity 
-              onPress={() => router.back()}
-              style={{ marginLeft: Platform.OS === 'ios' ? 0 : spacing.md, padding: 8 }}
+              onPress={handleBack}
+              style={styles.backButton}
             >
               <IconSymbol 
                 ios_icon_name="chevron.left" 
@@ -78,11 +95,14 @@ export default function AboutScreen() {
       >
         {/* App Logo and Name */}
         <View style={styles.header}>
-          <Image
-            source={require('../assets/images/609a5e99-cd5d-4fbc-a55d-088a645e292c.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoContainer}>
+            <IconSymbol
+              ios_icon_name="leaf.fill"
+              android_material_icon_name="eco"
+              size={64}
+              color={colors.primary}
+            />
+          </View>
           <Text style={styles.appName}>Nutrion</Text>
           <Text style={styles.version}>
             {t('about.version')} {Constants.expoConfig?.version || '1.0.0'}
@@ -212,25 +232,33 @@ export default function AboutScreen() {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    marginLeft: Platform.OS === 'ios' ? 0 : spacing.md,
+    padding: 8,
+  },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: spacing.xxl,
   },
-  logo: {
+  logoContainer: {
     width: 120,
     height: 120,
-    marginBottom: 16,
+    borderRadius: 60,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   appName: {
     fontSize: 32,
     fontWeight: '800',
     color: colors.primary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   version: {
     fontSize: 16,
@@ -238,24 +266,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.xxl,
   },
   description: {
     fontSize: 16,
     color: colors.text,
     lineHeight: 24,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   linkItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+    }),
   },
   linkIcon: {
     width: 48,
@@ -264,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: spacing.lg,
   },
   linkContent: {
     flex: 1,
@@ -281,13 +321,13 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingTop: 32,
-    paddingBottom: 16,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
   footerText: {
     fontSize: 15,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   copyright: {
