@@ -7,7 +7,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -264,26 +264,7 @@ export default function AddItemScreen() {
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (name.trim().length >= 2) {
-      console.log('[AddItem] Name changed, predicting expiration and category for:', name);
-      predictExpiration();
-      
-      // Auto-categorize based on item name
-      const suggestedCategory = categorizeFoodItem(name);
-      console.log('[AddItem] Auto-detected category:', suggestedCategory);
-      setCategory(suggestedCategory);
-      setAutoDetectedCategory(suggestedCategory !== 'other');
-    } else {
-      setAiPrediction(null);
-      setExpirationDate('');
-      setDateText('');
-      setCategory('other');
-      setAutoDetectedCategory(false);
-    }
-  }, [name]);
-
-  const predictExpiration = async () => {
+  const predictExpiration = useCallback(async () => {
     setIsLoadingPrediction(true);
     try {
       const prediction = await predictExpirationDateWithAI(name, category, true);
@@ -302,7 +283,26 @@ export default function AddItemScreen() {
     } finally {
       setIsLoadingPrediction(false);
     }
-  };
+  }, [name, category]);
+
+  useEffect(() => {
+    if (name.trim().length >= 2) {
+      console.log('[AddItem] Name changed, predicting expiration and category for:', name);
+      predictExpiration();
+      
+      // Auto-categorize based on item name
+      const suggestedCategory = categorizeFoodItem(name);
+      console.log('[AddItem] Auto-detected category:', suggestedCategory);
+      setCategory(suggestedCategory);
+      setAutoDetectedCategory(suggestedCategory !== 'other');
+    } else {
+      setAiPrediction(null);
+      setExpirationDate('');
+      setDateText('');
+      setCategory('other');
+      setAutoDetectedCategory(false);
+    }
+  }, [name, predictExpiration]);
 
   const handleNameChange = (text: string) => {
     setName(text);
