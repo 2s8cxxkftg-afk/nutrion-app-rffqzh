@@ -112,11 +112,16 @@ const styles = StyleSheet.create({
   itemActions: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginLeft: spacing.sm,
   },
   actionButton: {
-    padding: spacing.sm,
+    padding: spacing.md,
     backgroundColor: colors.backgroundAlt,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -172,8 +177,10 @@ function PantryScreenContent() {
 
   const loadItems = useCallback(async () => {
     try {
+      console.log('Loading pantry items...');
       const loadedItems = await loadPantryItems();
       setItems(loadedItems);
+      console.log('Pantry items loaded:', loadedItems.length);
       await checkAndNotifyExpiringItems(loadedItems);
     } catch (error) {
       console.error('Error loading pantry items:', error);
@@ -183,37 +190,46 @@ function PantryScreenContent() {
 
   useFocusEffect(
     useCallback(() => {
+      console.log('Pantry screen focused - loading items');
       loadItems();
     }, [loadItems])
   );
 
   const onRefresh = useCallback(async () => {
+    console.log('User refreshing pantry list');
     setRefreshing(true);
     await loadItems();
     setRefreshing(false);
   }, [loadItems]);
 
-  const handleEditItem = useCallback((itemId: string) => {
-    console.log('Editing item:', itemId);
+  const handleEditItem = useCallback((itemId: string, itemName: string) => {
+    console.log('User tapped Edit button for item:', itemName, 'ID:', itemId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/edit-item?id=${itemId}`);
   }, [router]);
 
-  const handleDeleteItem = useCallback(async (itemId: string) => {
+  const handleDeleteItem = useCallback(async (itemId: string, itemName: string) => {
+    console.log('User tapped Delete button for item:', itemName, 'ID:', itemId);
     Alert.alert(
       'Delete Item',
-      'Are you sure you want to delete this item?',
+      `Are you sure you want to delete "${itemName}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('User cancelled delete')
+        },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Deleting pantry item:', itemName);
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               await deletePantryItem(itemId);
               await loadItems();
               Toast.show('Item deleted', 'success');
+              console.log('Item deleted successfully');
             } catch (error) {
               console.error('Error deleting item:', error);
               Toast.show('Failed to delete item', 'error');
@@ -253,23 +269,25 @@ function PantryScreenContent() {
         <View style={styles.itemActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleEditItem(item.id)}
+            onPress={() => handleEditItem(item.id, item.name)}
+            activeOpacity={0.7}
           >
             <IconSymbol
               ios_icon_name="pencil"
               android_material_icon_name="edit"
-              size={20}
+              size={22}
               color={colors.primary}
             />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleDeleteItem(item.id)}
+            onPress={() => handleDeleteItem(item.id, item.name)}
+            activeOpacity={0.7}
           >
             <IconSymbol
               ios_icon_name="trash"
               android_material_icon_name="delete"
-              size={20}
+              size={22}
               color={colors.error}
             />
           </TouchableOpacity>
@@ -303,6 +321,7 @@ function PantryScreenContent() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
+              console.log('User tapped Scan Receipt button');
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-receipt');
             }}
@@ -319,6 +338,7 @@ function PantryScreenContent() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
+              console.log('User tapped AI Recipes button');
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/ai-recipes');
             }}
@@ -368,6 +388,7 @@ function PantryScreenContent() {
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
+          console.log('User tapped Add Item button');
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/add-item');
         }}

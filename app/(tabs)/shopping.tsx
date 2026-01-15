@@ -147,11 +147,16 @@ const styles = StyleSheet.create({
   itemActions: {
     flexDirection: 'row',
     gap: spacing.small,
+    marginLeft: spacing.small,
   },
   actionButton: {
-    padding: spacing.small,
+    padding: spacing.md,
     backgroundColor: colors.backgroundAlt,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -404,19 +409,23 @@ function ShoppingScreenContent() {
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    console.log('User attempting to delete shopping item:', itemId);
+  const handleDeleteItem = async (itemId: string, itemName: string) => {
+    console.log('User tapped Delete button for shopping item:', itemName, 'ID:', itemId);
     Alert.alert(
       'Delete Item',
-      'Are you sure you want to delete this item?',
+      `Are you sure you want to delete "${itemName}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('User cancelled delete')
+        },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deleting shopping item:', itemId);
+              console.log('Deleting shopping item:', itemName);
               await deleteShoppingItem(itemId);
               await loadItems();
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -431,7 +440,7 @@ function ShoppingScreenContent() {
   };
 
   const handleEditQuantity = (item: ShoppingItem) => {
-    console.log('User editing quantity for:', item.name);
+    console.log('User tapped Edit button for:', item.name);
     setEditingItem(item);
     setEditQuantity(item.quantity?.toString() || '1');
     setEditUnit(item.unit || 'pieces');
@@ -521,22 +530,24 @@ function ShoppingScreenContent() {
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => handleEditQuantity(item)}
+          activeOpacity={0.7}
         >
           <IconSymbol
             ios_icon_name="number"
             android_material_icon_name="edit"
-            size={20}
+            size={22}
             color={colors.primary}
           />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleDeleteItem(item.id)}
+          onPress={() => handleDeleteItem(item.id, item.name)}
+          activeOpacity={0.7}
         >
           <IconSymbol
             ios_icon_name="trash"
             android_material_icon_name="delete"
-            size={20}
+            size={22}
             color={colors.error}
           />
         </TouchableOpacity>
@@ -584,7 +595,10 @@ function ShoppingScreenContent() {
             </View>
             <TouchableOpacity
               style={styles.unitPickerButton}
-              onPress={() => setShowAddUnitPicker(true)}
+              onPress={() => {
+                console.log('User tapped unit picker for new item');
+                setShowAddUnitPicker(true);
+              }}
             >
               <Text style={styles.unitPickerText}>{getUnitLabel(newItemUnit)}</Text>
               <IconSymbol
@@ -651,6 +665,7 @@ function ShoppingScreenContent() {
         transparent
         animationType="fade"
         onRequestClose={() => {
+          console.log('User closed edit modal');
           setEditingItem(null);
           setShowUnitPicker(false);
         }}
@@ -659,6 +674,7 @@ function ShoppingScreenContent() {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => {
+            console.log('User tapped outside modal to close');
             setEditingItem(null);
             setShowUnitPicker(false);
           }}
@@ -681,7 +697,10 @@ function ShoppingScreenContent() {
                 </View>
                 <TouchableOpacity
                   style={styles.modalUnitPicker}
-                  onPress={() => setShowUnitPicker(true)}
+                  onPress={() => {
+                    console.log('User tapped unit picker in edit modal');
+                    setShowUnitPicker(true);
+                  }}
                 >
                   <Text style={styles.modalUnitText}>{getUnitLabel(editUnit)}</Text>
                   <IconSymbol
@@ -697,6 +716,7 @@ function ShoppingScreenContent() {
                 <TouchableOpacity
                   style={[styles.modalButton, styles.modalButtonCancel]}
                   onPress={() => {
+                    console.log('User cancelled edit');
                     setEditingItem(null);
                     setShowUnitPicker(false);
                   }}
@@ -725,19 +745,28 @@ function ShoppingScreenContent() {
           visible={showUnitPicker}
           transparent
           animationType="slide"
-          onRequestClose={() => setShowUnitPicker(false)}
+          onRequestClose={() => {
+            console.log('User closed unit picker');
+            setShowUnitPicker(false);
+          }}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            onPress={() => setShowUnitPicker(false)}
+            onPress={() => {
+              console.log('User tapped outside unit picker to close');
+              setShowUnitPicker(false);
+            }}
           >
             <View style={styles.unitPickerModal}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>Select Unit</Text>
                 <TouchableOpacity
                   style={styles.pickerCloseButton}
-                  onPress={() => setShowUnitPicker(false)}
+                  onPress={() => {
+                    console.log('User tapped close button on unit picker');
+                    setShowUnitPicker(false);
+                  }}
                 >
                   <IconSymbol
                     ios_icon_name="xmark"
@@ -753,6 +782,7 @@ function ShoppingScreenContent() {
                     key={u.value}
                     style={styles.pickerOption}
                     onPress={() => {
+                      console.log('User selected unit:', u.label);
                       setEditUnit(u.value);
                       setShowUnitPicker(false);
                     }}
@@ -772,19 +802,28 @@ function ShoppingScreenContent() {
           visible={showAddUnitPicker}
           transparent
           animationType="slide"
-          onRequestClose={() => setShowAddUnitPicker(false)}
+          onRequestClose={() => {
+            console.log('User closed add unit picker');
+            setShowAddUnitPicker(false);
+          }}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            onPress={() => setShowAddUnitPicker(false)}
+            onPress={() => {
+              console.log('User tapped outside add unit picker to close');
+              setShowAddUnitPicker(false);
+            }}
           >
             <View style={styles.unitPickerModal}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>Select Unit</Text>
                 <TouchableOpacity
                   style={styles.pickerCloseButton}
-                  onPress={() => setShowAddUnitPicker(false)}
+                  onPress={() => {
+                    console.log('User tapped close button on add unit picker');
+                    setShowAddUnitPicker(false);
+                  }}
                 >
                   <IconSymbol
                     ios_icon_name="xmark"
@@ -800,6 +839,7 @@ function ShoppingScreenContent() {
                     key={u.value}
                     style={styles.pickerOption}
                     onPress={() => {
+                      console.log('User selected unit for new item:', u.label);
                       setNewItemUnit(u.value);
                       setShowAddUnitPicker(false);
                     }}
