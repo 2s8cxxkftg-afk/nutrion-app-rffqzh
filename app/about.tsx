@@ -89,8 +89,8 @@ export default function AboutScreen() {
       />
 
       <ScrollView
-        style={commonStyles.container}
-        contentContainerStyle={styles.content}
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* App Logo and Name */}
@@ -236,7 +236,11 @@ const styles = StyleSheet.create({
     marginLeft: Platform.OS === 'ios' ? 0 : spacing.md,
     padding: 8,
   },
-  content: {
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  contentContainer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
