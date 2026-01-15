@@ -62,19 +62,6 @@ export default function IntroductionScreen() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(0);
 
-  const handleBack = async () => {
-    console.log('User tapped back button on introduction page, current page:', currentPage);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    if (currentPage > 0) {
-      // Go to previous page
-      setCurrentPage(currentPage - 1);
-    } else {
-      // If on first page, go back to previous screen
-      router.back();
-    }
-  };
-
   const handleNext = async () => {
     console.log('User tapped next button on introduction page, current page:', currentPage);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -107,19 +94,7 @@ export default function IntroductionScreen() {
           },
           headerTintColor: colors.text,
           headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity 
-              onPress={handleBack}
-              style={styles.backButton}
-            >
-              <IconSymbol 
-                ios_icon_name="chevron.left"
-                android_material_icon_name="arrow-back"
-                size={24}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-          ),
+          headerLeft: () => null,
         }}
       />
 
@@ -180,10 +155,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  backButton: {
-    padding: spacing.sm,
-    marginLeft: spacing.xs,
   },
   content: {
     flex: 1,
