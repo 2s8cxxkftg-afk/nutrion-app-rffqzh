@@ -25,25 +25,25 @@ export default function AboutScreen() {
   const handleOpenWebsite = async () => {
     console.log('AboutScreen: Opening website');
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('https://nutrion.app');
+    Linking.openURL('https://solvralabs.net');
   };
 
   const handleOpenPrivacy = async () => {
     console.log('AboutScreen: Opening privacy policy');
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('https://nutrion.app/privacy');
+    Linking.openURL('https://solvralabs.net/privacy');
   };
 
   const handleOpenTerms = async () => {
     console.log('AboutScreen: Opening terms of service');
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('https://nutrion.app/terms');
+    Linking.openURL('https://solvralabs.net/terms');
   };
 
   const handleOpenSupport = async () => {
     console.log('AboutScreen: Opening support email');
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('mailto:support@nutrion.app');
+    Linking.openURL('mailto:support@solvralabs.net');
   };
 
   const handleRateApp = async () => {
@@ -52,7 +52,7 @@ export default function AboutScreen() {
     const url = Platform.select({
       ios: 'https://apps.apple.com/app/id123456789',
       android: 'https://play.google.com/store/apps/details?id=com.nutrion.app',
-      default: 'https://nutrion.app',
+      default: 'https://solvralabs.net',
     });
     Linking.openURL(url);
   };
@@ -129,7 +129,7 @@ export default function AboutScreen() {
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.website')}</Text>
-              <Text style={styles.linkSubtitle}>nutrion.app</Text>
+              <Text style={styles.linkSubtitle}>solvralabs.net</Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right" 
@@ -190,7 +190,7 @@ export default function AboutScreen() {
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.support')}</Text>
-              <Text style={styles.linkSubtitle}>support@nutrion.app</Text>
+              <Text style={styles.linkSubtitle}>support@solvralabs.net</Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right" 

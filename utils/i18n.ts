@@ -1,6 +1,24 @@
 
-// Simplified i18n - English only
-// Translation infrastructure removed per user request
+import i18next from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import en from './translations/en.json';
+
+// Initialize i18next with English translations
+i18next
+  .use(initReactI18next)
+  .init({
+    compatibilityJSON: 'v3',
+    lng: 'en',
+    fallbackLng: 'en',
+    resources: {
+      en: {
+        translation: en,
+      },
+    },
+    interpolation: {
+      escapeValue: false,
+    },
+  });
 
 export const changeLanguage = async (languageCode: string) => {
   console.log('Language switching disabled - English only');
@@ -17,11 +35,4 @@ export const getAvailableLanguages = () => {
   ];
 };
 
-// Dummy i18n object for compatibility
-const i18n = {
-  language: 'en',
-  changeLanguage: changeLanguage,
-  t: (key: string) => key, // Return key as fallback
-};
-
-export default i18n;
+export default i18next;
