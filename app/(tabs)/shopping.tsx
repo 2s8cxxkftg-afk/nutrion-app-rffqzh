@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.small,
+    marginBottom: spacing.small,
   },
   input: {
     flex: 1,
@@ -62,12 +63,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  quantityRow: {
+    flexDirection: 'row',
+    gap: spacing.small,
+    marginBottom: spacing.small,
+  },
+  quantityInputContainer: {
+    flex: 1,
+  },
+  unitPickerButton: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.medium,
+    padding: spacing.medium,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  unitPickerText: {
+    fontSize: typography.fontSize.medium,
+    color: colors.text,
+  },
   addButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.medium,
     padding: spacing.medium,
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.small,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: typography.fontSize.medium,
+    fontWeight: '600',
   },
   listContainer: {
     padding: spacing.large,
@@ -272,6 +303,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  labelText: {
+    fontSize: typography.fontSize.small,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.small,
+  },
 });
 
 function ShoppingScreen() {
@@ -287,16 +324,21 @@ function ShoppingScreenContent() {
   const router = useRouter();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
+  const [newItemUnit, setNewItemUnit] = useState('pieces');
   const [refreshing, setRefreshing] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [editQuantity, setEditQuantity] = useState('');
-  const [editUnit, setEditUnit] = useState('item');
+  const [editUnit, setEditUnit] = useState('pieces');
   const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [showAddUnitPicker, setShowAddUnitPicker] = useState(false);
 
   const loadItems = async () => {
     try {
+      console.log('Loading shopping items...');
       const loadedItems = await loadShoppingItems();
       setItems(loadedItems);
+      console.log('Shopping items loaded:', loadedItems.length);
     } catch (error) {
       console.error('Error loading shopping items:', error);
     }
@@ -304,41 +346,53 @@ function ShoppingScreenContent() {
 
   useFocusEffect(
     React.useCallback(() => {
+      console.log('Shopping screen focused - loading items');
       loadItems();
     }, [])
   );
 
   const onRefresh = async () => {
+    console.log('User refreshing shopping list');
     setRefreshing(true);
     await loadItems();
     setRefreshing(false);
   };
 
   const handleAddItem = async () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim()) {
+      console.log('Cannot add item - name is empty');
+      return;
+    }
 
     try {
+      const quantity = parseFloat(newItemQuantity) || 1;
+      console.log('User adding shopping item:', newItemName, 'Quantity:', quantity, newItemUnit);
+
       const newItem: ShoppingItem = {
         id: Date.now().toString(),
         name: newItemName.trim(),
         completed: false,
-        quantity: 1,
-        unit: 'item',
+        quantity: quantity,
+        unit: newItemUnit,
       };
 
       const updatedItems = [...items, newItem];
       await saveShoppingItems(updatedItems);
       setItems(updatedItems);
       setNewItemName('');
+      setNewItemQuantity('1');
+      setNewItemUnit('pieces');
       Keyboard.dismiss();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      console.log('Shopping item added successfully');
     } catch (error) {
-      console.error('Error adding item:', error);
+      console.error('Error adding shopping item:', error);
     }
   };
 
   const handleToggleItem = async (itemId: string) => {
     try {
+      console.log('User toggling shopping item:', itemId);
       const updatedItems = items.map(item =>
         item.id === itemId ? { ...item, completed: !item.completed } : item
       );
@@ -346,11 +400,12 @@ function ShoppingScreenContent() {
       setItems(updatedItems);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
-      console.error('Error toggling item:', error);
+      console.error('Error toggling shopping item:', error);
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
+    console.log('User attempting to delete shopping item:', itemId);
     Alert.alert(
       'Delete Item',
       'Are you sure you want to delete this item?',
@@ -361,11 +416,13 @@ function ShoppingScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Deleting shopping item:', itemId);
               await deleteShoppingItem(itemId);
               await loadItems();
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              console.log('Shopping item deleted successfully');
             } catch (error) {
-              console.error('Error deleting item:', error);
+              console.error('Error deleting shopping item:', error);
             }
           },
         },
@@ -374,9 +431,10 @@ function ShoppingScreenContent() {
   };
 
   const handleEditQuantity = (item: ShoppingItem) => {
+    console.log('User editing quantity for:', item.name);
     setEditingItem(item);
     setEditQuantity(item.quantity?.toString() || '1');
-    setEditUnit(item.unit || 'item');
+    setEditUnit(item.unit || 'pieces');
   };
 
   const handleSaveQuantity = async () => {
@@ -384,6 +442,7 @@ function ShoppingScreenContent() {
 
     try {
       const quantity = parseFloat(editQuantity) || 1;
+      console.log('Saving quantity update:', editingItem.name, 'New quantity:', quantity, editUnit);
       const updatedItems = items.map(item =>
         item.id === editingItem.id ? { ...item, quantity, unit: editUnit } : item
       );
@@ -392,6 +451,7 @@ function ShoppingScreenContent() {
       setEditingItem(null);
       setShowUnitPicker(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      console.log('Quantity updated successfully');
     } catch (error) {
       console.error('Error updating quantity:', error);
     }
@@ -401,6 +461,7 @@ function ShoppingScreenContent() {
     const completedCount = items.filter(item => item.completed).length;
     if (completedCount === 0) return;
 
+    console.log('User clearing completed items:', completedCount);
     Alert.alert(
       'Clear Completed',
       `Remove ${completedCount} completed item${completedCount > 1 ? 's' : ''}?`,
@@ -411,10 +472,12 @@ function ShoppingScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Clearing completed shopping items');
               const updatedItems = items.filter(item => !item.completed);
               await saveShoppingItems(updatedItems);
               setItems(updatedItems);
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              console.log('Completed items cleared successfully');
             } catch (error) {
               console.error('Error clearing completed items:', error);
             }
@@ -450,7 +513,7 @@ function ShoppingScreenContent() {
         </Text>
         {item.quantity && item.quantity > 0 && (
           <Text style={styles.itemQuantity}>
-            Quantity: {item.quantity} {getUnitLabel(item.unit || 'item')}
+            Quantity: {item.quantity} {getUnitLabel(item.unit || 'pieces')}
           </Text>
         )}
       </View>
@@ -494,6 +557,7 @@ function ShoppingScreenContent() {
         </View>
 
         <View style={styles.addItemContainer}>
+          <Text style={styles.labelText}>Item Name</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -504,15 +568,43 @@ function ShoppingScreenContent() {
               onSubmitEditing={handleAddItem}
               returnKeyType="done"
             />
-            <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
+          </View>
+
+          <Text style={styles.labelText}>Quantity & Unit</Text>
+          <View style={styles.quantityRow}>
+            <View style={styles.quantityInputContainer}>
+              <NumberInput
+                value={newItemQuantity}
+                onChangeText={setNewItemQuantity}
+                min={0}
+                max={9999}
+                step={1}
+                placeholder="1"
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.unitPickerButton}
+              onPress={() => setShowAddUnitPicker(true)}
+            >
+              <Text style={styles.unitPickerText}>{getUnitLabel(newItemUnit)}</Text>
               <IconSymbol
-                ios_icon_name="plus"
-                android_material_icon_name="add"
-                size={24}
-                color="#fff"
+                ios_icon_name="chevron.down"
+                android_material_icon_name="arrow-drop-down"
+                size={20}
+                color={colors.text}
               />
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
+            <IconSymbol
+              ios_icon_name="plus"
+              android_material_icon_name="add"
+              size={20}
+              color="#fff"
+            />
+            <Text style={styles.addButtonText}>Add to List</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -553,6 +645,7 @@ function ShoppingScreenContent() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Edit Quantity Modal */}
       <Modal
         visible={editingItem !== null}
         transparent
@@ -626,6 +719,7 @@ function ShoppingScreenContent() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Edit Unit Picker Modal */}
       {showUnitPicker && (
         <Modal
           visible={showUnitPicker}
@@ -661,6 +755,53 @@ function ShoppingScreenContent() {
                     onPress={() => {
                       setEditUnit(u.value);
                       setShowUnitPicker(false);
+                    }}
+                  >
+                    <Text style={styles.pickerOptionText}>{u.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
+
+      {/* Add Unit Picker Modal */}
+      {showAddUnitPicker && (
+        <Modal
+          visible={showAddUnitPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowAddUnitPicker(false)}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowAddUnitPicker(false)}
+          >
+            <View style={styles.unitPickerModal}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Unit</Text>
+                <TouchableOpacity
+                  style={styles.pickerCloseButton}
+                  onPress={() => setShowAddUnitPicker(false)}
+                >
+                  <IconSymbol
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+              <ScrollView>
+                {UNITS.map((u) => (
+                  <TouchableOpacity
+                    key={u.value}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setNewItemUnit(u.value);
+                      setShowAddUnitPicker(false);
                     }}
                   >
                     <Text style={styles.pickerOptionText}>{u.label}</Text>
