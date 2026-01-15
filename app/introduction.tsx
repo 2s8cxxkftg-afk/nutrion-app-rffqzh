@@ -101,7 +101,7 @@ export default function IntroductionScreen() {
       <Stack.Screen 
         options={{
           headerShown: true,
-          title: 'Introduction',
+          title: '',
           headerStyle: {
             backgroundColor: '#FAFAFA',
           },
