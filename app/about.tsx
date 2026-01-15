@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
+import Logo from '@/components/Logo';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +44,7 @@ export default function AboutScreen() {
   const handleOpenSupport = async () => {
     console.log('AboutScreen: Opening support email');
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('mailto:support@solvralabs.net');
+    Linking.openURL('mailto:hello@solvralabs.net');
   };
 
   const handleRateApp = async () => {
@@ -96,12 +97,7 @@ export default function AboutScreen() {
         {/* App Logo and Name */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <IconSymbol
-              ios_icon_name="leaf.fill"
-              android_material_icon_name="eco"
-              size={64}
-              color={colors.primary}
-            />
+            <Logo size="large" showText={false} />
           </View>
           <Text style={styles.appName}>Nutrion</Text>
           <Text style={styles.version}>
@@ -190,7 +186,7 @@ export default function AboutScreen() {
             </View>
             <View style={styles.linkContent}>
               <Text style={styles.linkTitle}>{t('about.support')}</Text>
-              <Text style={styles.linkSubtitle}>support@solvralabs.net</Text>
+              <Text style={styles.linkSubtitle}>hello@solvralabs.net</Text>
             </View>
             <IconSymbol 
               ios_icon_name="chevron.right" 
@@ -250,12 +246,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   appName: {
