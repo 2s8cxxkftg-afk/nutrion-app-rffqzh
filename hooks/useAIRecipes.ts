@@ -5,15 +5,15 @@ import { PantryItem } from '@/types/pantry';
 
 export type Recipe = {
   name: string;
-  description: string;
+  cuisine: string;
+  origin: string;
+  culturalContext: string;
   ingredients: string[];
-  instructions: string[];
-  prepTime: string;
-  cookTime: string;
+  instructions: string;
+  prepTime: number;
   servings: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  matchedIngredients: string[];
-  missingIngredients: string[];
+  category: string;
+  matchPercentage: number;
 };
 
 type State =
@@ -44,30 +44,32 @@ export function useAIRecipes() {
     try {
       console.log('[AIRecipes] Generating recipes for', pantryItems.length, 'items');
       
-      const ingredientsList = pantryItems.map(item => 
-        `${item.name} (${item.quantity} ${item.unit})`
-      ).join(', ');
+      // Extract just the item names for the API
+      const ingredientsList = pantryItems.map(item => item.name);
 
-      const dietaryInfo = preferences?.dietaryRestrictions?.length 
-        ? `Dietary restrictions: ${preferences.dietaryRestrictions.join(', ')}. `
-        : '';
+      // Build preferences object
+      const preferencesObj: any = {};
       
-      const cuisineInfo = preferences?.cuisine 
-        ? `Preferred cuisine: ${preferences.cuisine}. `
-        : '';
-
-      const prompt = `Generate 3 creative recipes using these available ingredients: ${ingredientsList}. ${dietaryInfo}${cuisineInfo}Return the response as a JSON array with this structure: [{"name": "Recipe Name", "description": "Brief description", "ingredients": ["ingredient 1", "ingredient 2"], "instructions": ["step 1", "step 2"], "prepTime": "15 mins", "cookTime": "30 mins", "servings": 4, "difficulty": "Easy", "matchedIngredients": ["items from pantry"], "missingIngredients": ["items needed"]}]`;
-
-      console.log('[AIRecipes] Calling Supabase Edge Function: generate-text');
+      if (preferences?.cuisine && preferences.cuisine !== 'Any') {
+        preferencesObj.cuisine = preferences.cuisine;
+      }
       
-      const { data, error } = await supabase.functions.invoke('generate-text', {
+      if (preferences?.dietaryRestrictions && preferences.dietaryRestrictions.length > 0) {
+        preferencesObj.dietary = preferences.dietaryRestrictions.join(', ');
+      }
+      
+      if (preferences?.difficulty) {
+        preferencesObj.difficulty = preferences.difficulty;
+      }
+
+      console.log('[AIRecipes] Calling Supabase Edge Function: generate-recipe-suggestions');
+      console.log('[AIRecipes] Pantry items:', ingredientsList);
+      console.log('[AIRecipes] Preferences:', preferencesObj);
+      
+      const { data, error } = await supabase.functions.invoke('generate-recipe-suggestions', {
         body: {
-          prompt,
-          system: 'You are a professional chef and nutritionist. Generate practical, delicious recipes that maximize the use of available ingredients. Always return valid JSON.',
-          temperature: 0.8,
-          max_tokens: 2000,
-          format: 'json',
-          model: 'gpt-4o-mini'
+          pantryItems: ingredientsList,
+          preferences: Object.keys(preferencesObj).length > 0 ? preferencesObj : undefined
         }
       });
 
@@ -82,42 +84,26 @@ export function useAIRecipes() {
         throw new Error('No response from AI service. Please try again.');
       }
 
-      // Check if we have a text response directly
-      let textContent: string;
-      if (data.text) {
-        textContent = data.text;
-      } else if (data.url) {
-        // Fetch the generated text from the URL
-        console.log('[AIRecipes] Fetching text from URL:', data.url);
-        const textResponse = await fetch(data.url);
-        if (!textResponse.ok) {
-          throw new Error('Failed to fetch generated recipes');
-        }
-        textContent = await textResponse.text();
-      } else {
+      // Check for error in response
+      if (data.error) {
+        console.error('[AIRecipes] API returned error:', data.error, data.detail);
+        throw new Error(data.userMessage || data.detail || 'Failed to generate recipes');
+      }
+
+      // Extract recipes from response
+      const recipes = data.recipes;
+      
+      if (!recipes || !Array.isArray(recipes)) {
+        console.error('[AIRecipes] Invalid response format:', data);
         throw new Error('Invalid response format from AI service');
       }
       
-      console.log('[AIRecipes] Generated text:', textContent.substring(0, 200) + '...');
-      
-      // Parse the JSON response
-      let recipes: Recipe[];
-      try {
-        // Try to extract JSON from the response if it's wrapped in markdown code blocks
-        const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/) || textContent.match(/\[[\s\S]*\]/);
-        const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : textContent;
-        recipes = JSON.parse(jsonText.trim());
-        
-        if (!Array.isArray(recipes)) {
-          throw new Error('Response is not an array');
-        }
-        
-        console.log('[AIRecipes] Successfully parsed', recipes.length, 'recipes');
-      } catch (parseError) {
-        console.error('[AIRecipes] Failed to parse recipe JSON:', textContent);
-        console.error('[AIRecipes] Parse error:', parseError);
-        throw new Error('Failed to parse AI response. Please try again.');
+      if (recipes.length === 0) {
+        throw new Error('No recipes were generated. Please try again with different ingredients.');
       }
+      
+      console.log('[AIRecipes] Successfully generated', recipes.length, 'recipes');
+      console.log('[AIRecipes] Cuisines:', recipes.map(r => r.cuisine));
 
       setState({ status: 'success', data: recipes, error: null });
       return recipes;

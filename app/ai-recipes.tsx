@@ -22,7 +22,7 @@ import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
 import { isPremiumUser } from '@/utils/subscription';
 
-const CUISINES = ['Any', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'American', 'Indian'];
+const CUISINES = ['Any', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'American', 'Indian', 'Filipino', 'Chinese', 'Japanese', 'Thai'];
 const DIETARY_RESTRICTIONS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free'];
 
 export default function AIRecipesScreen() {
@@ -257,7 +257,7 @@ export default function AIRecipesScreen() {
           />
           <Text style={styles.infoTitle}>AI-Powered Recipe Suggestions</Text>
           <Text style={styles.infoText}>
-            Our AI analyzes your pantry and generates personalized recipes. Accuracy: 90-95% for ingredient matching and recipe quality.
+            Our AI analyzes your pantry and generates personalized recipes from diverse cuisines around the world.
           </Text>
           <Text style={styles.pantryCount}>
             {pantryItems.length} ingredients available
@@ -370,7 +370,7 @@ export default function AIRecipesScreen() {
               <Text style={styles.errorText}>{error}</Text>
               {error.includes('Edge Function') || error.includes('AI service') ? (
                 <Text style={styles.errorHint}>
-                  The AI recipe generator requires the Supabase Edge Function to be deployed. Please contact support or check the setup instructions.
+                  Please check your internet connection and try again. If the problem persists, contact support at hello@solvralabs.net
                 </Text>
               ) : null}
             </View>
@@ -388,12 +388,23 @@ export default function AIRecipesScreen() {
                 onPress={() => setSelectedRecipe(recipe)}
               >
                 <View style={styles.recipeHeader}>
-                  <Text style={styles.recipeName}>{recipe.name}</Text>
-                  <View style={[styles.difficultyBadge, styles[`difficulty${recipe.difficulty}`]]}>
-                    <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
+                  <View style={styles.recipeHeaderLeft}>
+                    <Text style={styles.recipeName}>{recipe.name}</Text>
+                    <View style={styles.cuisineBadge}>
+                      <Text style={styles.cuisineText}>{recipe.cuisine}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchBadgeText}>{recipe.matchPercentage}%</Text>
                   </View>
                 </View>
-                <Text style={styles.recipeDescription}>{recipe.description}</Text>
+                
+                {recipe.culturalContext && (
+                  <Text style={styles.culturalContext} numberOfLines={2}>
+                    {recipe.culturalContext}
+                  </Text>
+                )}
+                
                 <View style={styles.recipeMetaRow}>
                   <View style={styles.recipeMeta}>
                     <IconSymbol
@@ -402,9 +413,7 @@ export default function AIRecipesScreen() {
                       size={14}
                       color={colors.textSecondary}
                     />
-                    <Text style={styles.recipeMetaText}>
-                      {recipe.prepTime} + {recipe.cookTime}
-                    </Text>
+                    <Text style={styles.recipeMetaText}>{recipe.prepTime} mins</Text>
                   </View>
                   <View style={styles.recipeMeta}>
                     <IconSymbol
@@ -415,17 +424,22 @@ export default function AIRecipesScreen() {
                     />
                     <Text style={styles.recipeMetaText}>{recipe.servings} servings</Text>
                   </View>
+                  <View style={styles.recipeMeta}>
+                    <IconSymbol
+                      ios_icon_name="tag"
+                      android_material_icon_name="label"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                    <Text style={styles.recipeMetaText}>{recipe.category}</Text>
+                  </View>
                 </View>
-                <View style={styles.ingredientMatch}>
-                  <Text style={styles.matchText}>
-                    ✓ {recipe.matchedIngredients.length} ingredients from your pantry
+                
+                <View style={styles.ingredientPreview}>
+                  <Text style={styles.ingredientPreviewText}>
+                    {recipe.ingredients.slice(0, 3).join(', ')}
+                    {recipe.ingredients.length > 3 && '...'}
                   </Text>
-                  {recipe.missingIngredients.length > 0 && (
-                    <Text style={styles.missingText}>
-                      Need: {recipe.missingIngredients.slice(0, 2).join(', ')}
-                      {recipe.missingIngredients.length > 2 && '...'}
-                    </Text>
-                  )}
                 </View>
               </TouchableOpacity>
             ))}
@@ -445,7 +459,17 @@ export default function AIRecipesScreen() {
         {selectedRecipe && (
           <SafeAreaView style={styles.modalContainer} edges={['top']}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selectedRecipe.name}</Text>
+              <View style={styles.modalHeaderContent}>
+                <Text style={styles.modalTitle}>{selectedRecipe.name}</Text>
+                <View style={styles.modalBadges}>
+                  <View style={styles.cuisineBadge}>
+                    <Text style={styles.cuisineText}>{selectedRecipe.cuisine}</Text>
+                  </View>
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchBadgeText}>{selectedRecipe.matchPercentage}%</Text>
+                  </View>
+                </View>
+              </View>
               <TouchableOpacity onPress={() => setSelectedRecipe(null)}>
                 <IconSymbol
                   ios_icon_name="xmark"
@@ -456,20 +480,36 @@ export default function AIRecipesScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalDescription}>{selectedRecipe.description}</Text>
+              {selectedRecipe.origin && (
+                <View style={styles.originSection}>
+                  <IconSymbol
+                    ios_icon_name="globe"
+                    android_material_icon_name="public"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.originText}>Origin: {selectedRecipe.origin}</Text>
+                </View>
+              )}
+              
+              {selectedRecipe.culturalContext && (
+                <View style={styles.culturalSection}>
+                  <Text style={styles.culturalSectionText}>{selectedRecipe.culturalContext}</Text>
+                </View>
+              )}
               
               <View style={styles.modalMetaRow}>
                 <View style={styles.modalMetaItem}>
                   <Text style={styles.modalMetaLabel}>Prep Time</Text>
-                  <Text style={styles.modalMetaValue}>{selectedRecipe.prepTime}</Text>
-                </View>
-                <View style={styles.modalMetaItem}>
-                  <Text style={styles.modalMetaLabel}>Cook Time</Text>
-                  <Text style={styles.modalMetaValue}>{selectedRecipe.cookTime}</Text>
+                  <Text style={styles.modalMetaValue}>{selectedRecipe.prepTime} mins</Text>
                 </View>
                 <View style={styles.modalMetaItem}>
                   <Text style={styles.modalMetaLabel}>Servings</Text>
                   <Text style={styles.modalMetaValue}>{selectedRecipe.servings}</Text>
+                </View>
+                <View style={styles.modalMetaItem}>
+                  <Text style={styles.modalMetaLabel}>Category</Text>
+                  <Text style={styles.modalMetaValue}>{selectedRecipe.category}</Text>
                 </View>
               </View>
 
@@ -482,12 +522,7 @@ export default function AIRecipesScreen() {
               ))}
 
               <Text style={styles.modalSectionTitle}>Instructions</Text>
-              {selectedRecipe.instructions.map((instruction, idx) => (
-                <View key={idx} style={styles.instructionItem}>
-                  <Text style={styles.instructionNumber}>{idx + 1}</Text>
-                  <Text style={styles.instructionText}>{instruction}</Text>
-                </View>
-              ))}
+              <Text style={styles.instructionsText}>{selectedRecipe.instructions}</Text>
 
               <View style={{ height: spacing.xl }} />
             </ScrollView>
@@ -600,6 +635,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.sm,
+    lineHeight: 20,
   },
   pantryCount: {
     fontSize: typography.sizes.sm,
@@ -726,36 +762,45 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
+  recipeHeaderLeft: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
   recipeName: {
     fontSize: typography.sizes.md,
     fontWeight: '600',
     color: colors.text,
-    flex: 1,
-    marginRight: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  difficultyBadge: {
+  cuisineBadge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
+    backgroundColor: '#E3F2FD',
   },
-  difficultyEasy: {
-    backgroundColor: '#E8F5E9',
-  },
-  difficultyMedium: {
-    backgroundColor: '#FFF3E0',
-  },
-  difficultyHard: {
-    backgroundColor: '#FFEBEE',
-  },
-  difficultyText: {
+  cuisineText: {
     fontSize: typography.sizes.xs,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1976D2',
   },
-  recipeDescription: {
+  matchBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    backgroundColor: '#E8F5E9',
+  },
+  matchBadgeText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: '600',
+    color: '#388E3C',
+  },
+  culturalContext: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   recipeMetaRow: {
     flexDirection: 'row',
@@ -771,18 +816,13 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
   },
-  ingredientMatch: {
+  ingredientPreview: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.grey,
   },
-  matchText: {
-    fontSize: typography.sizes.xs,
-    color: colors.success,
-    marginBottom: spacing.xs,
-  },
-  missingText: {
+  ingredientPreviewText: {
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
   },
@@ -793,26 +833,51 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.grey,
+  },
+  modalHeaderContent: {
+    flex: 1,
+    marginRight: spacing.md,
   },
   modalTitle: {
     fontSize: typography.sizes.xl,
     fontWeight: '600',
     color: colors.text,
-    flex: 1,
-    marginRight: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  modalBadges: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   modalContent: {
     flex: 1,
     padding: spacing.lg,
   },
-  modalDescription: {
-    fontSize: typography.sizes.md,
+  originSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  originText: {
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  culturalSection: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     marginBottom: spacing.lg,
+  },
+  culturalSectionText: {
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   modalMetaRow: {
     flexDirection: 'row',
@@ -857,20 +922,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
   },
-  instructionItem: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
-  },
-  instructionNumber: {
-    fontSize: typography.sizes.md,
-    color: colors.primary,
-    fontWeight: 'bold',
-    marginRight: spacing.sm,
-    minWidth: 24,
-  },
-  instructionText: {
+  instructionsText: {
     fontSize: typography.sizes.md,
     color: colors.text,
-    flex: 1,
+    lineHeight: 24,
   },
 });
