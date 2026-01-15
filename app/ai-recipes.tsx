@@ -21,6 +21,7 @@ import { PantryItem } from '@/types/pantry';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
 import { isPremiumUser } from '@/utils/subscription';
+import { supabase } from '@/utils/supabase';
 
 const CUISINES = ['Any', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'American', 'Indian', 'Filipino', 'Chinese', 'Japanese', 'Thai'];
 const DIETARY_RESTRICTIONS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free'];
@@ -35,6 +36,23 @@ export default function AIRecipesScreen() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [checkingPremium, setCheckingPremium] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  const checkAuthStatus = useCallback(async () => {
+    console.log('[AIRecipes] Checking authentication status');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authenticated = !!session;
+      console.log('[AIRecipes] Authentication status:', authenticated);
+      setIsAuthenticated(authenticated);
+    } catch (error) {
+      console.error('[AIRecipes] Error checking auth:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  }, []);
 
   const checkPremiumStatus = useCallback(async () => {
     console.log('[AIRecipes] Checking premium status');
@@ -55,12 +73,22 @@ export default function AIRecipesScreen() {
   useFocusEffect(
     useCallback(() => {
       loadItems();
+      checkAuthStatus();
       checkPremiumStatus();
-    }, [loadItems, checkPremiumStatus])
+    }, [loadItems, checkAuthStatus, checkPremiumStatus])
   );
 
   const handleGenerateRecipes = async () => {
     console.log('[AIRecipes] Generate recipes button pressed');
+    
+    // Check authentication first
+    if (!isAuthenticated) {
+      console.log('[AIRecipes] User is not authenticated, redirecting to auth');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Toast.show('Please sign in to use AI Recipe Generator', 'error');
+      router.push('/auth');
+      return;
+    }
     
     // Check premium status
     if (!isPremium) {
@@ -100,7 +128,7 @@ export default function AIRecipesScreen() {
     );
   };
 
-  if (checkingPremium) {
+  if (checkingAuth || checkingPremium) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen
@@ -113,11 +141,74 @@ export default function AIRecipesScreen() {
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Show authentication gate if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'AI Recipe Generator',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="arrow-back"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <View style={styles.premiumGateContainer}>
+          <View style={styles.premiumGateIcon}>
+            <IconSymbol
+              ios_icon_name="person.circle"
+              android_material_icon_name="account-circle"
+              size={64}
+              color={colors.primary}
+            />
+          </View>
+          <Text style={styles.premiumGateTitle}>Sign In Required</Text>
+          <Text style={styles.premiumGateDescription}>
+            You need to be signed in to use the AI Recipe Generator.
+          </Text>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/auth');
+            }}
+          >
+            <IconSymbol
+              ios_icon_name="person.fill"
+              android_material_icon_name="person"
+              size={20}
+              color="#FFFFFF"
+            />
+            <Text style={styles.upgradeButtonText}>Sign In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.backButtonAlt}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backButtonAltText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show premium gate if not premium
   if (!isPremium) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -363,16 +454,26 @@ export default function AIRecipesScreen() {
             <IconSymbol
               ios_icon_name="exclamationmark.triangle"
               android_material_icon_name="warning"
-              size={20}
+              size={24}
               color={colors.error}
             />
             <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Unable to Generate Recipes</Text>
               <Text style={styles.errorText}>{error}</Text>
-              {error.includes('Edge Function') || error.includes('AI service') ? (
-                <Text style={styles.errorHint}>
-                  Please check your internet connection and try again. If the problem persists, contact support at hello@solvralabs.net
-                </Text>
-              ) : null}
+              <View style={styles.errorActions}>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={handleGenerateRecipes}
+                >
+                  <IconSymbol
+                    ios_icon_name="arrow.clockwise"
+                    android_material_icon_name="refresh"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
@@ -542,6 +643,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
   },
   backButton: {
     padding: spacing.sm,
@@ -719,26 +825,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#FFF3E0',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     marginBottom: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.md,
     borderLeftWidth: 4,
     borderLeftColor: colors.error,
   },
   errorContent: {
     flex: 1,
   },
-  errorText: {
-    fontSize: typography.sizes.sm,
+  errorTitle: {
+    fontSize: typography.sizes.md,
     color: colors.error,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: spacing.xs,
   },
-  errorHint: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    lineHeight: 18,
+  errorText: {
+    fontSize: typography.sizes.sm,
+    color: '#D84315',
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+  },
+  retryButtonText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
+    fontWeight: '600',
   },
   recipesContainer: {
     marginTop: spacing.md,

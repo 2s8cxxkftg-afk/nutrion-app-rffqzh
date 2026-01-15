@@ -44,6 +44,21 @@ export function useAIRecipes() {
     try {
       console.log('[AIRecipes] Generating recipes for', pantryItems.length, 'items');
       
+      // Check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[AIRecipes] Session error:', sessionError);
+        throw new Error('Authentication error. Please sign in and try again.');
+      }
+      
+      if (!session) {
+        console.error('[AIRecipes] No active session');
+        throw new Error('You must be signed in to use the AI Recipe Generator. Please sign in and try again.');
+      }
+      
+      console.log('[AIRecipes] User authenticated:', session.user.email);
+      
       // Extract just the item names for the API
       const ingredientsList = pantryItems.map(item => item.name);
 
@@ -77,17 +92,42 @@ export function useAIRecipes() {
 
       if (error) {
         console.error('[AIRecipes] Edge Function error:', error);
-        throw new Error(error.message || 'Failed to connect to AI service. Please check your internet connection and try again.');
+        
+        // Provide more specific error messages based on the error
+        let errorMessage = 'Failed to generate recipes. Please try again.';
+        
+        if (error.message) {
+          const msg = error.message.toLowerCase();
+          
+          if (msg.includes('jwt') || msg.includes('auth') || msg.includes('unauthorized') || msg.includes('401')) {
+            errorMessage = 'Authentication error. Please sign out and sign back in, then try again.';
+          } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('connection')) {
+            errorMessage = 'Network error. Please check your internet connection and try again.';
+          } else if (msg.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+          } else if (msg.includes('rate limit')) {
+            errorMessage = 'Too many requests. Please wait a moment and try again.';
+          } else if (msg.includes('quota')) {
+            errorMessage = 'Service quota exceeded. Please try again later or contact support at hello@solvralabs.net';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data) {
-        throw new Error('No response from AI service. Please try again.');
+        throw new Error('No response from AI service. Please check your internet connection and try again.');
       }
 
       // Check for error in response
       if (data.error) {
         console.error('[AIRecipes] API returned error:', data.error, data.detail);
-        throw new Error(data.userMessage || data.detail || 'Failed to generate recipes');
+        
+        // Use the userMessage if available, otherwise use detail or error
+        const errorMessage = data.userMessage || data.detail || data.error || 'Failed to generate recipes';
+        throw new Error(errorMessage);
       }
 
       // Extract recipes from response
@@ -95,11 +135,11 @@ export function useAIRecipes() {
       
       if (!recipes || !Array.isArray(recipes)) {
         console.error('[AIRecipes] Invalid response format:', data);
-        throw new Error('Invalid response format from AI service');
+        throw new Error('Invalid response format from AI service. Please try again.');
       }
       
       if (recipes.length === 0) {
-        throw new Error('No recipes were generated. Please try again with different ingredients.');
+        throw new Error('No recipes were generated. Please try again with different ingredients or preferences.');
       }
       
       console.log('[AIRecipes] Successfully generated', recipes.length, 'recipes');
@@ -109,7 +149,21 @@ export function useAIRecipes() {
       return recipes;
     } catch (e: any) {
       console.error('[AIRecipes] Recipe generation error:', e);
-      const errorMessage = e?.message || 'Failed to generate recipes. Please check your internet connection and try again.';
+      
+      let errorMessage = 'Failed to generate recipes. Please try again.';
+      
+      if (e?.message) {
+        errorMessage = e.message;
+      } else if (typeof e === 'string') {
+        errorMessage = e;
+      }
+      
+      // Add contact info for persistent errors
+      if (!errorMessage.includes('hello@solvralabs.net') && 
+          (errorMessage.includes('service') || errorMessage.includes('quota') || errorMessage.includes('configuration'))) {
+        errorMessage += '\n\nIf the problem persists, contact support at hello@solvralabs.net';
+      }
+      
       setState({ status: 'error', data: null, error: errorMessage });
       return null;
     }
