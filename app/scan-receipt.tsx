@@ -212,24 +212,74 @@ export default function ScanReceiptScreen() {
     }, [router])
   );
 
-  const requestPermissions = async () => {
+  const requestCameraPermission = async () => {
+    console.log('User tapped Camera button - requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
     if (status !== 'granted') {
+      console.log('Camera permission denied by user');
       Alert.alert(
-        'Permission Required',
-        'Camera permission is needed to scan receipts.',
-        [{ text: 'OK' }]
+        'Camera Permission Required',
+        'Please allow camera access to scan receipts. You can enable this in your device settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Open Settings', 
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                // On iOS, we can't directly open settings, but the user can do it manually
+                Alert.alert('Open Settings', 'Go to Settings > Nutrion > Camera to enable camera access.');
+              }
+            }
+          }
+        ]
       );
       return false;
     }
+    
+    console.log('Camera permission granted');
+    return true;
+  };
+
+  const requestMediaLibraryPermission = async () => {
+    console.log('User tapped Gallery button - requesting media library permission');
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      console.log('Media library permission denied by user');
+      Alert.alert(
+        'Photo Library Permission Required',
+        'Please allow photo library access to select images. You can enable this in your device settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Open Settings', 
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                // On iOS, we can't directly open settings, but the user can do it manually
+                Alert.alert('Open Settings', 'Go to Settings > Nutrion > Photos to enable photo library access.');
+              }
+            }
+          }
+        ]
+      );
+      return false;
+    }
+    
+    console.log('Media library permission granted');
     return true;
   };
 
   const handleTakePhoto = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    console.log('User initiated take photo action');
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      console.log('Cannot take photo - camera permission not granted');
+      return;
+    }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('Launching camera for receipt scanning');
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -238,8 +288,10 @@ export default function ScanReceiptScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
+      console.log('Photo captured successfully, scanning receipt');
       const items = await scanReceipt(result.assets[0].uri);
       if (items && items.length > 0) {
+        console.log(`Receipt scanned: ${items.length} items found`);
         setScannedItems(items);
         // Auto-select all items and set predicted expiration dates
         const allIndices = new Set(items.map((_, idx) => idx));
@@ -252,12 +304,24 @@ export default function ScanReceiptScreen() {
         setExpirationDates(dates);
         
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        console.log('No items found on receipt');
       }
+    } else {
+      console.log('Photo capture cancelled by user');
     }
   };
 
   const handlePickImage = async () => {
+    console.log('User initiated pick image from gallery action');
+    const hasPermission = await requestMediaLibraryPermission();
+    if (!hasPermission) {
+      console.log('Cannot pick image - media library permission not granted');
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('Launching image picker for receipt scanning');
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -266,8 +330,10 @@ export default function ScanReceiptScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
+      console.log('Image selected successfully, scanning receipt');
       const items = await scanReceipt(result.assets[0].uri);
       if (items && items.length > 0) {
+        console.log(`Receipt scanned: ${items.length} items found`);
         setScannedItems(items);
         const allIndices = new Set(items.map((_, idx) => idx));
         setSelectedItems(allIndices);
@@ -279,7 +345,11 @@ export default function ScanReceiptScreen() {
         setExpirationDates(dates);
         
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        console.log('No items found on receipt');
       }
+    } else {
+      console.log('Image selection cancelled by user');
     }
   };
 
@@ -304,6 +374,7 @@ export default function ScanReceiptScreen() {
       return;
     }
 
+    console.log(`User adding ${selectedItems.size} items to pantry`);
     let addedCount = 0;
     for (const index of selectedItems) {
       const item = scannedItems[index];
@@ -327,6 +398,7 @@ export default function ScanReceiptScreen() {
     }
 
     if (addedCount > 0) {
+      console.log(`Successfully added ${addedCount} items to pantry`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({ message: `${addedCount} items added to pantry!`, type: 'success' });
       router.back();
