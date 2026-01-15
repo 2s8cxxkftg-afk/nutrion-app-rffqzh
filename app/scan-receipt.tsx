@@ -119,6 +119,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  itemHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   itemName: {
     fontSize: 16,
     fontWeight: '600',
@@ -128,6 +134,14 @@ const styles = StyleSheet.create({
   itemQuantity: {
     fontSize: 14,
     color: colors.grey,
+    marginLeft: 8,
+  },
+  deleteButton: {
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginLeft: 8,
   },
   dateInputContainer: {
@@ -151,6 +165,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 20,
+    marginBottom: 20,
   },
   selectAllButton: {
     flex: 1,
@@ -364,6 +379,62 @@ export default function ScanReceiptScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleDeleteItem = (index: number, itemName: string) => {
+    console.log(`User tapped delete button for item: ${itemName} at index ${index}`);
+    
+    Alert.alert(
+      'Delete Item',
+      `Remove "${itemName}" from the scanned list?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => console.log('Delete cancelled by user'),
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            console.log(`Deleting item: ${itemName} at index ${index}`);
+            
+            // Remove the item from scannedItems
+            const newScannedItems = scannedItems.filter((_, idx) => idx !== index);
+            setScannedItems(newScannedItems);
+            
+            // Update selectedItems - need to rebuild the set with adjusted indices
+            const newSelectedItems = new Set<number>();
+            selectedItems.forEach(selectedIdx => {
+              if (selectedIdx < index) {
+                newSelectedItems.add(selectedIdx);
+              } else if (selectedIdx > index) {
+                newSelectedItems.add(selectedIdx - 1);
+              }
+              // Skip if selectedIdx === index (the deleted item)
+            });
+            setSelectedItems(newSelectedItems);
+            
+            // Update expirationDates - rebuild with adjusted indices
+            const newExpirationDates: { [key: number]: string } = {};
+            Object.keys(expirationDates).forEach(key => {
+              const idx = parseInt(key);
+              if (idx < index) {
+                newExpirationDates[idx] = expirationDates[idx];
+              } else if (idx > index) {
+                newExpirationDates[idx - 1] = expirationDates[idx];
+              }
+              // Skip if idx === index (the deleted item)
+            });
+            setExpirationDates(newExpirationDates);
+            
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Toast.show({ message: `${itemName} removed`, type: 'success' });
+            console.log(`Successfully deleted item: ${itemName}`);
+          },
+        },
+      ]
+    );
+  };
+
   const handleExpirationDateChange = (index: number, text: string) => {
     setExpirationDates(prev => ({ ...prev, [index]: text }));
   };
@@ -480,20 +551,37 @@ export default function ScanReceiptScreen() {
           </View>
 
           {scannedItems.map((item, index) => (
-            <TouchableOpacity
+            <View
               key={index}
               style={[
                 styles.itemCard,
                 selectedItems.has(index) && styles.itemCardSelected,
               ]}
-              onPress={() => toggleItemSelection(index)}
-              activeOpacity={0.7}
             >
               <View style={styles.itemHeader}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemQuantity}>
-                  {item.quantity} {item.unit}
-                </Text>
+                <TouchableOpacity
+                  style={styles.itemHeaderLeft}
+                  onPress={() => toggleItemSelection(index)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemQuantity}>
+                    {item.quantity} {item.unit}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteItem(index, item.name)}
+                  activeOpacity={0.6}
+                >
+                  <IconSymbol
+                    ios_icon_name="trash"
+                    android_material_icon_name="delete"
+                    size={20}
+                    color="#FF3B30"
+                  />
+                </TouchableOpacity>
               </View>
 
               {selectedItems.has(index) && (
@@ -509,7 +597,7 @@ export default function ScanReceiptScreen() {
                   />
                 </View>
               )}
-            </TouchableOpacity>
+            </View>
           ))}
 
           <View style={styles.actionButtons}>
