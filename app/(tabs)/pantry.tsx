@@ -1,14 +1,14 @@
 
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { IconSymbol } from '@/components/IconSymbol';
+import React, { useState, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from '@/components/Toast';
-import AdBanner from '@/components/AdBanner';
+import { colors, commonStyles, expirationColors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
-import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
+import { IconSymbol } from '@/components/IconSymbol';
+import AdBanner from '@/components/AdBanner';
 import { PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import * as Haptics from 'expo-haptics';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 import {
   View,
   Text,
@@ -20,8 +20,8 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import React, { useState, useCallback } from 'react';
-import { colors, commonStyles, expirationColors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { getExpirationStatus, formatExpirationText } from '@/utils/expirationHelper';
 
 const styles = StyleSheet.create({
   container: {
@@ -177,39 +177,43 @@ function PantryScreenContent() {
 
   const loadItems = useCallback(async () => {
     try {
-      console.log('Loading pantry items...');
+      console.log('[Pantry] Loading pantry items...');
       const loadedItems = await loadPantryItems();
       setItems(loadedItems);
-      console.log('Pantry items loaded:', loadedItems.length);
+      console.log('[Pantry] Pantry items loaded:', loadedItems.length);
       await checkAndNotifyExpiringItems(loadedItems);
     } catch (error) {
-      console.error('Error loading pantry items:', error);
+      console.error('[Pantry] Error loading pantry items:', error);
       Toast.show('Failed to load items', 'error');
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      console.log('Pantry screen focused - loading items');
+      console.log('[Pantry] Screen focused - loading items');
       loadItems();
     }, [loadItems])
   );
 
   const onRefresh = useCallback(async () => {
-    console.log('User refreshing pantry list');
+    console.log('[Pantry] User refreshing pantry list');
     setRefreshing(true);
     await loadItems();
     setRefreshing(false);
   }, [loadItems]);
 
   const handleEditItem = useCallback((itemId: string, itemName: string) => {
-    console.log('User tapped Edit button for item:', itemName, 'ID:', itemId);
+    console.log('[Pantry] User tapped Edit button for item:', itemName, 'ID:', itemId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/edit-item?id=${itemId}`);
   }, [router]);
 
-  const handleDeleteItem = useCallback(async (itemId: string, itemName: string) => {
-    console.log('User tapped Delete button for item:', itemName, 'ID:', itemId);
+  const handleDeleteItem = useCallback((itemId: string, itemName: string) => {
+    console.log('[Pantry] User tapped Delete button for item:', itemName, 'ID:', itemId);
+    
+    // Provide haptic feedback immediately when button is pressed
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     Alert.alert(
       'Delete Item',
       `Are you sure you want to delete "${itemName}"?`,
@@ -217,22 +221,36 @@ function PantryScreenContent() {
         { 
           text: 'Cancel', 
           style: 'cancel',
-          onPress: () => console.log('User cancelled delete')
+          onPress: () => {
+            console.log('[Pantry] User cancelled delete');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
         },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deleting pantry item:', itemName);
+              console.log('[Pantry] Deleting pantry item:', itemName, 'ID:', itemId);
+              
+              // Provide haptic feedback for delete action
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              
+              // Delete the item
               await deletePantryItem(itemId);
+              console.log('[Pantry] Item deleted from storage');
+              
+              // Reload items to update UI
               await loadItems();
-              Toast.show('Item deleted', 'success');
-              console.log('Item deleted successfully');
+              console.log('[Pantry] Items reloaded after delete');
+              
+              // Show success message
+              Toast.show(`${itemName} deleted`, 'success');
+              console.log('[Pantry] Delete operation completed successfully');
             } catch (error) {
-              console.error('Error deleting item:', error);
+              console.error('[Pantry] Error deleting item:', error);
               Toast.show('Failed to delete item', 'error');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             }
           },
         },
@@ -321,7 +339,7 @@ function PantryScreenContent() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
-              console.log('User tapped Scan Receipt button');
+              console.log('[Pantry] User tapped Scan Receipt button');
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-receipt');
             }}
@@ -338,7 +356,7 @@ function PantryScreenContent() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
-              console.log('User tapped AI Recipes button');
+              console.log('[Pantry] User tapped AI Recipes button');
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/ai-recipes');
             }}
@@ -388,7 +406,7 @@ function PantryScreenContent() {
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
-          console.log('User tapped Add Item button');
+          console.log('[Pantry] User tapped Add Item button');
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/add-item');
         }}

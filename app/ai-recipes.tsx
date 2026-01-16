@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -126,6 +127,12 @@ export default function AIRecipesScreen() {
         ? prev.filter(r => r !== restriction)
         : [...prev, restriction]
     );
+  };
+
+  const handleContactSupport = () => {
+    console.log('[AIRecipes] User tapped contact support');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL('mailto:hello@solvralabs.net?subject=AI Recipe Generator Issue');
   };
 
   if (checkingAuth || checkingPremium) {
@@ -460,20 +467,51 @@ export default function AIRecipesScreen() {
             <View style={styles.errorContent}>
               <Text style={styles.errorTitle}>Unable to Generate Recipes</Text>
               <Text style={styles.errorText}>{error}</Text>
-              <View style={styles.errorActions}>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={handleGenerateRecipes}
-                >
-                  <IconSymbol
-                    ios_icon_name="arrow.clockwise"
-                    android_material_icon_name="refresh"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={styles.retryButtonText}>Try Again</Text>
-                </TouchableOpacity>
-              </View>
+              
+              {error.includes('OPENAI_API_KEY') || error.includes('configuration') || error.includes('quota') ? (
+                <View style={styles.setupInstructions}>
+                  <Text style={styles.setupTitle}>Setup Required:</Text>
+                  <Text style={styles.setupStep}>
+                    1. Go to your Supabase project dashboard
+                  </Text>
+                  <Text style={styles.setupStep}>
+                    2. Navigate to Project Settings → Edge Functions
+                  </Text>
+                  <Text style={styles.setupStep}>
+                    3. Add environment variable: OPENAI_API_KEY
+                  </Text>
+                  <Text style={styles.setupStep}>
+                    4. Get your API key from platform.openai.com
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.supportButton}
+                    onPress={handleContactSupport}
+                  >
+                    <IconSymbol
+                      ios_icon_name="envelope"
+                      android_material_icon_name="email"
+                      size={16}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.supportButtonText}>Contact Support</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.errorActions}>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={handleGenerateRecipes}
+                  >
+                    <IconSymbol
+                      ios_icon_name="arrow.clockwise"
+                      android_material_icon_name="refresh"
+                      size={16}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.retryButtonText}>Try Again</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -846,6 +884,40 @@ const styles = StyleSheet.create({
     color: '#D84315',
     lineHeight: 20,
     marginBottom: spacing.md,
+  },
+  setupInstructions: {
+    backgroundColor: '#FFF',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  setupTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  setupStep: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+    lineHeight: 18,
+  },
+  supportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  supportButtonText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
+    fontWeight: '600',
   },
   errorActions: {
     flexDirection: 'row',

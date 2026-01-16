@@ -23,6 +23,7 @@ import { colors, commonStyles, spacing, borderRadius, typography } from '@/style
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShoppingItem, UNITS } from '@/types/pantry';
 import NumberInput from '@/components/NumberInput';
+import Toast from '@/components/Toast';
 
 const styles = StyleSheet.create({
   container: {
@@ -340,24 +341,24 @@ function ShoppingScreenContent() {
 
   const loadItems = async () => {
     try {
-      console.log('Loading shopping items...');
+      console.log('[Shopping] Loading shopping items...');
       const loadedItems = await loadShoppingItems();
       setItems(loadedItems);
-      console.log('Shopping items loaded:', loadedItems.length);
+      console.log('[Shopping] Shopping items loaded:', loadedItems.length);
     } catch (error) {
-      console.error('Error loading shopping items:', error);
+      console.error('[Shopping] Error loading shopping items:', error);
     }
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log('Shopping screen focused - loading items');
+      console.log('[Shopping] Screen focused - loading items');
       loadItems();
     }, [])
   );
 
   const onRefresh = async () => {
-    console.log('User refreshing shopping list');
+    console.log('[Shopping] User refreshing shopping list');
     setRefreshing(true);
     await loadItems();
     setRefreshing(false);
@@ -365,13 +366,13 @@ function ShoppingScreenContent() {
 
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
-      console.log('Cannot add item - name is empty');
+      console.log('[Shopping] Cannot add item - name is empty');
       return;
     }
 
     try {
       const quantity = parseFloat(newItemQuantity) || 1;
-      console.log('User adding shopping item:', newItemName, 'Quantity:', quantity, newItemUnit);
+      console.log('[Shopping] User adding shopping item:', newItemName, 'Quantity:', quantity, newItemUnit);
 
       const newItem: ShoppingItem = {
         id: Date.now().toString(),
@@ -389,15 +390,17 @@ function ShoppingScreenContent() {
       setNewItemUnit('pieces');
       Keyboard.dismiss();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      console.log('Shopping item added successfully');
+      Toast.show(`${newItem.name} added`, 'success');
+      console.log('[Shopping] Shopping item added successfully');
     } catch (error) {
-      console.error('Error adding shopping item:', error);
+      console.error('[Shopping] Error adding shopping item:', error);
+      Toast.show('Failed to add item', 'error');
     }
   };
 
   const handleToggleItem = async (itemId: string) => {
     try {
-      console.log('User toggling shopping item:', itemId);
+      console.log('[Shopping] User toggling shopping item:', itemId);
       const updatedItems = items.map(item =>
         item.id === itemId ? { ...item, completed: !item.completed } : item
       );
@@ -405,12 +408,16 @@ function ShoppingScreenContent() {
       setItems(updatedItems);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
-      console.error('Error toggling shopping item:', error);
+      console.error('[Shopping] Error toggling shopping item:', error);
     }
   };
 
-  const handleDeleteItem = async (itemId: string, itemName: string) => {
-    console.log('User tapped Delete button for shopping item:', itemName, 'ID:', itemId);
+  const handleDeleteItem = (itemId: string, itemName: string) => {
+    console.log('[Shopping] User tapped Delete button for shopping item:', itemName, 'ID:', itemId);
+    
+    // Provide haptic feedback immediately when button is pressed
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     Alert.alert(
       'Delete Item',
       `Are you sure you want to delete "${itemName}"?`,
@@ -418,20 +425,36 @@ function ShoppingScreenContent() {
         { 
           text: 'Cancel', 
           style: 'cancel',
-          onPress: () => console.log('User cancelled delete')
+          onPress: () => {
+            console.log('[Shopping] User cancelled delete');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
         },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deleting shopping item:', itemName);
-              await deleteShoppingItem(itemId);
-              await loadItems();
+              console.log('[Shopping] Deleting shopping item:', itemName, 'ID:', itemId);
+              
+              // Provide haptic feedback for delete action
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              console.log('Shopping item deleted successfully');
+              
+              // Delete the item
+              await deleteShoppingItem(itemId);
+              console.log('[Shopping] Item deleted from storage');
+              
+              // Reload items to update UI
+              await loadItems();
+              console.log('[Shopping] Items reloaded after delete');
+              
+              // Show success message
+              Toast.show(`${itemName} deleted`, 'success');
+              console.log('[Shopping] Delete operation completed successfully');
             } catch (error) {
-              console.error('Error deleting shopping item:', error);
+              console.error('[Shopping] Error deleting shopping item:', error);
+              Toast.show('Failed to delete item', 'error');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             }
           },
         },
@@ -440,7 +463,7 @@ function ShoppingScreenContent() {
   };
 
   const handleEditQuantity = (item: ShoppingItem) => {
-    console.log('User tapped Edit button for:', item.name);
+    console.log('[Shopping] User tapped Edit button for:', item.name);
     setEditingItem(item);
     setEditQuantity(item.quantity?.toString() || '1');
     setEditUnit(item.unit || 'pieces');
@@ -451,7 +474,7 @@ function ShoppingScreenContent() {
 
     try {
       const quantity = parseFloat(editQuantity) || 1;
-      console.log('Saving quantity update:', editingItem.name, 'New quantity:', quantity, editUnit);
+      console.log('[Shopping] Saving quantity update:', editingItem.name, 'New quantity:', quantity, editUnit);
       const updatedItems = items.map(item =>
         item.id === editingItem.id ? { ...item, quantity, unit: editUnit } : item
       );
@@ -460,9 +483,11 @@ function ShoppingScreenContent() {
       setEditingItem(null);
       setShowUnitPicker(false);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      console.log('Quantity updated successfully');
+      Toast.show('Quantity updated', 'success');
+      console.log('[Shopping] Quantity updated successfully');
     } catch (error) {
-      console.error('Error updating quantity:', error);
+      console.error('[Shopping] Error updating quantity:', error);
+      Toast.show('Failed to update quantity', 'error');
     }
   };
 
@@ -470,7 +495,7 @@ function ShoppingScreenContent() {
     const completedCount = items.filter(item => item.completed).length;
     if (completedCount === 0) return;
 
-    console.log('User clearing completed items:', completedCount);
+    console.log('[Shopping] User clearing completed items:', completedCount);
     Alert.alert(
       'Clear Completed',
       `Remove ${completedCount} completed item${completedCount > 1 ? 's' : ''}?`,
@@ -481,14 +506,16 @@ function ShoppingScreenContent() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Clearing completed shopping items');
+              console.log('[Shopping] Clearing completed shopping items');
               const updatedItems = items.filter(item => !item.completed);
               await saveShoppingItems(updatedItems);
               setItems(updatedItems);
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              console.log('Completed items cleared successfully');
+              Toast.show(`${completedCount} item${completedCount > 1 ? 's' : ''} cleared`, 'success');
+              console.log('[Shopping] Completed items cleared successfully');
             } catch (error) {
-              console.error('Error clearing completed items:', error);
+              console.error('[Shopping] Error clearing completed items:', error);
+              Toast.show('Failed to clear items', 'error');
             }
           },
         },
@@ -596,7 +623,7 @@ function ShoppingScreenContent() {
             <TouchableOpacity
               style={styles.unitPickerButton}
               onPress={() => {
-                console.log('User tapped unit picker for new item');
+                console.log('[Shopping] User tapped unit picker for new item');
                 setShowAddUnitPicker(true);
               }}
             >
@@ -665,7 +692,7 @@ function ShoppingScreenContent() {
         transparent
         animationType="fade"
         onRequestClose={() => {
-          console.log('User closed edit modal');
+          console.log('[Shopping] User closed edit modal');
           setEditingItem(null);
           setShowUnitPicker(false);
         }}
@@ -674,7 +701,7 @@ function ShoppingScreenContent() {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => {
-            console.log('User tapped outside modal to close');
+            console.log('[Shopping] User tapped outside modal to close');
             setEditingItem(null);
             setShowUnitPicker(false);
           }}
@@ -698,7 +725,7 @@ function ShoppingScreenContent() {
                 <TouchableOpacity
                   style={styles.modalUnitPicker}
                   onPress={() => {
-                    console.log('User tapped unit picker in edit modal');
+                    console.log('[Shopping] User tapped unit picker in edit modal');
                     setShowUnitPicker(true);
                   }}
                 >
@@ -716,7 +743,7 @@ function ShoppingScreenContent() {
                 <TouchableOpacity
                   style={[styles.modalButton, styles.modalButtonCancel]}
                   onPress={() => {
-                    console.log('User cancelled edit');
+                    console.log('[Shopping] User cancelled edit');
                     setEditingItem(null);
                     setShowUnitPicker(false);
                   }}
@@ -746,7 +773,7 @@ function ShoppingScreenContent() {
           transparent
           animationType="slide"
           onRequestClose={() => {
-            console.log('User closed unit picker');
+            console.log('[Shopping] User closed unit picker');
             setShowUnitPicker(false);
           }}
         >
@@ -754,7 +781,7 @@ function ShoppingScreenContent() {
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => {
-              console.log('User tapped outside unit picker to close');
+              console.log('[Shopping] User tapped outside unit picker to close');
               setShowUnitPicker(false);
             }}
           >
@@ -764,7 +791,7 @@ function ShoppingScreenContent() {
                 <TouchableOpacity
                   style={styles.pickerCloseButton}
                   onPress={() => {
-                    console.log('User tapped close button on unit picker');
+                    console.log('[Shopping] User tapped close button on unit picker');
                     setShowUnitPicker(false);
                   }}
                 >
@@ -782,7 +809,7 @@ function ShoppingScreenContent() {
                     key={u.value}
                     style={styles.pickerOption}
                     onPress={() => {
-                      console.log('User selected unit:', u.label);
+                      console.log('[Shopping] User selected unit:', u.label);
                       setEditUnit(u.value);
                       setShowUnitPicker(false);
                     }}
@@ -803,7 +830,7 @@ function ShoppingScreenContent() {
           transparent
           animationType="slide"
           onRequestClose={() => {
-            console.log('User closed add unit picker');
+            console.log('[Shopping] User closed add unit picker');
             setShowAddUnitPicker(false);
           }}
         >
@@ -811,7 +838,7 @@ function ShoppingScreenContent() {
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => {
-              console.log('User tapped outside add unit picker to close');
+              console.log('[Shopping] User tapped outside add unit picker to close');
               setShowAddUnitPicker(false);
             }}
           >
@@ -821,7 +848,7 @@ function ShoppingScreenContent() {
                 <TouchableOpacity
                   style={styles.pickerCloseButton}
                   onPress={() => {
-                    console.log('User tapped close button on add unit picker');
+                    console.log('[Shopping] User tapped close button on add unit picker');
                     setShowAddUnitPicker(false);
                   }}
                 >
@@ -839,7 +866,7 @@ function ShoppingScreenContent() {
                     key={u.value}
                     style={styles.pickerOption}
                     onPress={() => {
-                      console.log('User selected unit for new item:', u.label);
+                      console.log('[Shopping] User selected unit for new item:', u.label);
                       setNewItemUnit(u.value);
                       setShowAddUnitPicker(false);
                     }}
