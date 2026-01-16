@@ -1,6 +1,6 @@
 
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -17,6 +17,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Toast, { setToastCallback } from "@/components/Toast";
 import "@/utils/i18n"; // Initialize i18n
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -33,11 +34,26 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Set up toast callback
+  useEffect(() => {
+    setToastCallback((message: string, type: 'success' | 'error' | 'info') => {
+      console.log('[Toast] Showing toast:', message, type);
+      setToastMessage(message);
+      setToastType(type);
+      setToastVisible(true);
+    });
+  }, []);
 
   React.useEffect(() => {
     if (
@@ -119,6 +135,14 @@ export default function RootLayout() {
               />
             </Stack>
             <SystemBars style={"auto"} />
+            
+            {/* Global Toast */}
+            <Toast
+              visible={toastVisible}
+              message={toastMessage}
+              type={toastType}
+              onHide={() => setToastVisible(false)}
+            />
           </ThemeProvider>
         </WidgetProvider>
       </AuthProvider>
