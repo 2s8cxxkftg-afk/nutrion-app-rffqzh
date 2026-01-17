@@ -413,11 +413,12 @@ function ShoppingScreenContent() {
   };
 
   const handleDeleteItem = (itemId: string, itemName: string) => {
-    console.log('[Shopping] User tapped Delete button for shopping item:', itemName, 'ID:', itemId);
+    console.log('[Shopping] Delete button pressed for item:', itemName, 'ID:', itemId);
     
     // Provide haptic feedback immediately when button is pressed
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
+    // Show confirmation dialog
     Alert.alert(
       'Delete Item',
       `Are you sure you want to delete "${itemName}"?`,
@@ -433,29 +434,34 @@ function ShoppingScreenContent() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('[Shopping] Deleting shopping item:', itemName, 'ID:', itemId);
-              
-              // Provide haptic feedback for delete action
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              
-              // Delete the item
-              await deleteShoppingItem(itemId);
-              console.log('[Shopping] Item deleted from storage');
-              
-              // Reload items to update UI
-              await loadItems();
-              console.log('[Shopping] Items reloaded after delete');
-              
-              // Show success message
-              Toast.show(`${itemName} deleted`, 'success');
-              console.log('[Shopping] Delete operation completed successfully');
-            } catch (error) {
-              console.error('[Shopping] Error deleting shopping item:', error);
-              Toast.show('Failed to delete item', 'error');
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
+          onPress: () => {
+            console.log('[Shopping] User confirmed delete - starting deletion process');
+            
+            // Execute the delete operation
+            (async () => {
+              try {
+                console.log('[Shopping] Deleting shopping item:', itemName, 'ID:', itemId);
+                
+                // Provide haptic feedback for delete action
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                
+                // Delete the item from storage
+                await deleteShoppingItem(itemId);
+                console.log('[Shopping] Item deleted from storage');
+                
+                // Reload items to update UI
+                await loadItems();
+                console.log('[Shopping] Items reloaded after delete');
+                
+                // Show success message
+                Toast.show(`${itemName} deleted`, 'success');
+                console.log('[Shopping] Delete operation completed successfully');
+              } catch (error) {
+                console.error('[Shopping] Error deleting shopping item:', error);
+                Toast.show('Failed to delete item', 'error');
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              }
+            })();
           },
         },
       ]

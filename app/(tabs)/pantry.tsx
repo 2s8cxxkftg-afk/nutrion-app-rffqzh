@@ -208,12 +208,13 @@ function PantryScreenContent() {
     router.push(`/edit-item?id=${itemId}`);
   }, [router]);
 
-  const handleDeleteItem = useCallback(async (itemId: string, itemName: string) => {
+  const handleDeleteItem = useCallback((itemId: string, itemName: string) => {
     console.log('[Pantry] Delete button pressed for item:', itemName, 'ID:', itemId);
     
     // Provide haptic feedback immediately when button is pressed
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
+    // Show confirmation dialog
     Alert.alert(
       'Delete Item',
       `Are you sure you want to delete "${itemName}"?`,
@@ -229,29 +230,34 @@ function PantryScreenContent() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('[Pantry] User confirmed delete - deleting item:', itemName, 'ID:', itemId);
-              
-              // Provide haptic feedback for delete action
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              
-              // Delete the item
-              await deletePantryItem(itemId);
-              console.log('[Pantry] Item deleted from storage successfully');
-              
-              // Reload items to update UI
-              await loadItems();
-              console.log('[Pantry] Items reloaded after delete');
-              
-              // Show success message
-              Toast.show(`${itemName} deleted successfully`, 'success');
-              console.log('[Pantry] Delete operation completed successfully');
-            } catch (error) {
-              console.error('[Pantry] Error deleting item:', error);
-              Toast.show('Failed to delete item. Please try again.', 'error');
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
+          onPress: () => {
+            console.log('[Pantry] User confirmed delete - starting deletion process');
+            
+            // Execute the delete operation
+            (async () => {
+              try {
+                console.log('[Pantry] Deleting item:', itemName, 'ID:', itemId);
+                
+                // Provide haptic feedback for delete action
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                
+                // Delete the item from storage
+                await deletePantryItem(itemId);
+                console.log('[Pantry] Item deleted from storage successfully');
+                
+                // Reload items to update UI
+                await loadItems();
+                console.log('[Pantry] Items reloaded after delete');
+                
+                // Show success message
+                Toast.show(`${itemName} deleted successfully`, 'success');
+                console.log('[Pantry] Delete operation completed successfully');
+              } catch (error) {
+                console.error('[Pantry] Error deleting item:', error);
+                Toast.show('Failed to delete item. Please try again.', 'error');
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              }
+            })();
           },
         },
       ],
