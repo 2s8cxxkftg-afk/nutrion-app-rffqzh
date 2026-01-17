@@ -1,9 +1,7 @@
 
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { IconSymbol } from './IconSymbol';
+import { View, TextInput, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import * as Haptics from 'expo-haptics';
 
 interface NumberInputProps {
   value: string;
@@ -22,18 +20,11 @@ export default function NumberInput({
   step = 1,
   placeholder = '0',
 }: NumberInputProps) {
-  const handleIncrement = () => {
-    const currentValue = parseFloat(value) || 0;
-    const newValue = Math.min(currentValue + step, max);
-    onChangeText(newValue.toString());
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleDecrement = () => {
-    const currentValue = parseFloat(value) || 0;
-    const newValue = Math.max(currentValue - step, min);
-    onChangeText(newValue.toString());
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleTextChange = (text: string) => {
+    console.log('[NumberInput] User manually entering value:', text);
+    // Allow only numbers and decimal point
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    onChangeText(cleaned);
   };
 
   return (
@@ -41,46 +32,17 @@ export default function NumberInput({
       <TextInput
         style={styles.input}
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={handleTextChange}
         placeholder={placeholder}
         placeholderTextColor={colors.textSecondary}
         keyboardType="decimal-pad"
       />
-      <View style={styles.arrowContainer}>
-        <TouchableOpacity
-          style={styles.arrowButton}
-          onPress={handleIncrement}
-          activeOpacity={0.7}
-        >
-          <IconSymbol
-            ios_icon_name="chevron.up"
-            android_material_icon_name="arrow-drop-up"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <View style={styles.arrowDivider} />
-        <TouchableOpacity
-          style={styles.arrowButton}
-          onPress={handleDecrement}
-          activeOpacity={0.7}
-        >
-          <IconSymbol
-            ios_icon_name="chevron.down"
-            android_material_icon_name="arrow-drop-down"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     borderWidth: 1,
@@ -88,26 +50,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   input: {
-    flex: 1,
     padding: spacing.md,
     fontSize: typography.sizes.md,
     color: colors.text,
     fontWeight: '500',
-  },
-  arrowContainer: {
-    width: 44,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.grey,
-    backgroundColor: colors.surface,
-  },
-  arrowButton: {
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  arrowDivider: {
-    height: 1,
-    backgroundColor: colors.grey,
+    textAlign: 'center',
   },
 });

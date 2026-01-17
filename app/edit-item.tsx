@@ -143,34 +143,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: 'italic',
   },
-  numberInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  numberInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  numberButton: {
-    padding: 16,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 50,
-  },
-  numberButtonText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
-  },
   aiPredictionBox: {
     backgroundColor: colors.primary + '15',
     borderRadius: 12,
@@ -325,25 +297,10 @@ export default function EditItemScreen() {
   }
 
   const handleQuantityChange = (text: string) => {
+    console.log('[EditItem] User manually entering quantity:', text);
     // Allow only numbers and decimal point
     const cleaned = text.replace(/[^0-9.]/g, '');
     setQuantity(cleaned);
-  };
-
-  const incrementQuantity = () => {
-    console.log('[EditItem] Increment quantity button pressed');
-    const current = parseFloat(quantity) || 0;
-    setQuantity((current + 1).toString());
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const decrementQuantity = () => {
-    console.log('[EditItem] Decrement quantity button pressed');
-    const current = parseFloat(quantity) || 0;
-    if (current > 0) {
-      setQuantity(Math.max(0, current - 1).toString());
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
   };
 
   const predictExpiration = async () => {
@@ -543,35 +500,19 @@ export default function EditItemScreen() {
             <Text style={styles.label}>Quantity & Unit *</Text>
             <View style={styles.row}>
               <View style={[styles.flex1, { flex: 1.2 }]}>
-                <View style={styles.numberInputContainer}>
-                  <TouchableOpacity 
-                    style={styles.numberButton}
-                    onPress={decrementQuantity}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.numberButtonText}>−</Text>
-                  </TouchableOpacity>
-                  
-                  <TextInput
-                    ref={quantityInputRef}
-                    style={styles.numberInput}
-                    value={quantity}
-                    onChangeText={handleQuantityChange}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                    placeholderTextColor={colors.textSecondary}
-                    returnKeyType="next"
-                    onSubmitEditing={() => dateInputRef.current?.focus()}
-                  />
-                  
-                  <TouchableOpacity 
-                    style={styles.numberButton}
-                    onPress={incrementQuantity}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.numberButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
+                <TextInput
+                  ref={quantityInputRef}
+                  style={[styles.input, focusedInput === 'quantity' && styles.inputFocused]}
+                  value={quantity}
+                  onChangeText={handleQuantityChange}
+                  onFocus={() => setFocusedInput('quantity')}
+                  onBlur={() => setFocusedInput(null)}
+                  keyboardType="decimal-pad"
+                  placeholder="1"
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="next"
+                  onSubmitEditing={() => dateInputRef.current?.focus()}
+                />
               </View>
 
               <TouchableOpacity 
@@ -588,7 +529,7 @@ export default function EditItemScreen() {
                 />
               </TouchableOpacity>
             </View>
-            <Text style={styles.hint}>Use +/− buttons or type quantity directly</Text>
+            <Text style={styles.hint}>Enter quantity manually</Text>
           </View>
 
           <View style={styles.section}>
