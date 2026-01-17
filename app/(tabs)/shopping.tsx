@@ -190,12 +190,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.lg,
   },
   modalContent: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.large,
     padding: spacing.xl,
-    width: '80%',
+    width: '100%',
     maxWidth: 400,
   },
   modalTitle: {
@@ -436,7 +437,10 @@ function ShoppingScreenContent() {
   };
 
   const confirmDelete = async () => {
-    if (!itemToDelete) return;
+    if (!itemToDelete) {
+      console.log('[Shopping] confirmDelete called but no item to delete');
+      return;
+    }
 
     try {
       console.log('[Shopping] User confirmed delete - starting deletion process');
@@ -717,75 +721,63 @@ function ShoppingScreenContent() {
           setShowUnitPicker(false);
         }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            console.log('[Shopping] User tapped outside modal to close');
-            setEditingItem(null);
-            setShowUnitPicker(false);
-          }}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {
-            console.log('[Shopping] User tapped inside modal content');
-          }}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Quantity & Unit</Text>
-              
-              <Text style={styles.modalLabel}>Quantity</Text>
-              <View style={styles.modalInputRow}>
-                <View style={styles.modalQuantityInput}>
-                  <NumberInput
-                    value={editQuantity}
-                    onChangeText={setEditQuantity}
-                    min={0}
-                    max={9999}
-                    step={1}
-                    placeholder="1"
-                  />
-                </View>
-                <TouchableOpacity
-                  style={styles.modalUnitPicker}
-                  onPress={() => {
-                    console.log('[Shopping] User tapped unit picker in edit modal');
-                    setShowUnitPicker(true);
-                  }}
-                >
-                  <Text style={styles.modalUnitText}>{getUnitLabel(editUnit)}</Text>
-                  <IconSymbol
-                    ios_icon_name="chevron.down"
-                    android_material_icon_name="arrow-drop-down"
-                    size={20}
-                    color={colors.text}
-                  />
-                </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Quantity & Unit</Text>
+            
+            <Text style={styles.modalLabel}>Quantity</Text>
+            <View style={styles.modalInputRow}>
+              <View style={styles.modalQuantityInput}>
+                <NumberInput
+                  value={editQuantity}
+                  onChangeText={setEditQuantity}
+                  min={0}
+                  max={9999}
+                  step={1}
+                  placeholder="1"
+                />
               </View>
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={() => {
-                    console.log('[Shopping] User cancelled edit');
-                    setEditingItem(null);
-                    setShowUnitPicker(false);
-                  }}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonSave]}
-                  onPress={handleSaveQuantity}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextSave]}>
-                    Save
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.modalUnitPicker}
+                onPress={() => {
+                  console.log('[Shopping] User tapped unit picker in edit modal');
+                  setShowUnitPicker(true);
+                }}
+              >
+                <Text style={styles.modalUnitText}>{getUnitLabel(editUnit)}</Text>
+                <IconSymbol
+                  ios_icon_name="chevron.down"
+                  android_material_icon_name="arrow-drop-down"
+                  size={20}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  console.log('[Shopping] User cancelled edit');
+                  setEditingItem(null);
+                  setShowUnitPicker(false);
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveQuantity}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSave]}>
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Delete Confirmation Modal */}
@@ -795,38 +787,38 @@ function ShoppingScreenContent() {
         animationType="fade"
         onRequestClose={cancelDelete}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={cancelDelete}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Delete Item</Text>
-              <Text style={styles.modalMessage}>
-                Are you sure you want to delete "{itemToDelete?.name}"?
-              </Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={cancelDelete}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonDelete]}
-                  onPress={confirmDelete}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Item</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete "{itemToDelete?.name}"?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  console.log('[Shopping] Cancel button pressed in delete modal');
+                  cancelDelete();
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonDelete]}
+                onPress={() => {
+                  console.log('[Shopping] Delete button pressed in delete modal');
+                  confirmDelete();
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Clear Completed Confirmation Modal */}
@@ -836,38 +828,38 @@ function ShoppingScreenContent() {
         animationType="fade"
         onRequestClose={cancelClearCompleted}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={cancelClearCompleted}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Clear Completed Items</Text>
-              <Text style={styles.modalMessage}>
-                Remove {completedCount} completed item{completedCount > 1 ? 's' : ''}?
-              </Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={cancelClearCompleted}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonDelete]}
-                  onPress={confirmClearCompleted}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
-                    Clear
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Clear Completed Items</Text>
+            <Text style={styles.modalMessage}>
+              Remove {completedCount} completed item{completedCount > 1 ? 's' : ''}?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  console.log('[Shopping] Cancel button pressed in clear completed modal');
+                  cancelClearCompleted();
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonDelete]}
+                onPress={() => {
+                  console.log('[Shopping] Clear button pressed in clear completed modal');
+                  confirmClearCompleted();
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                  Clear
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Edit Unit Picker Modal */}
