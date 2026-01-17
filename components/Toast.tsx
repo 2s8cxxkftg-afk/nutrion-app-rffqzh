@@ -6,7 +6,7 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 
 interface ToastProps {
   visible: boolean;
-  message: string;
+  message: string | { message: string; type?: 'success' | 'error' | 'info' };
   type?: 'success' | 'error' | 'info';
   duration?: number;
   onHide?: () => void;
@@ -21,6 +21,10 @@ export default function Toast({
 }: ToastProps) {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateY = React.useRef(new Animated.Value(-100)).current;
+
+  // Extract message and type if message is an object
+  const actualMessage = typeof message === 'string' ? message : message.message;
+  const actualType = typeof message === 'string' ? type : (message.type || type);
 
   // Wrap hideToast with useCallback to stabilize its reference
   const hideToast = useCallback(() => {
@@ -62,14 +66,14 @@ export default function Toast({
       const timer = setTimeout(hideToast, duration);
       return () => clearTimeout(timer);
     }
-  }, [visible, duration, hideToast, fadeAnim, translateY]); // Fixed: Added all dependencies
+  }, [visible, duration, hideToast, fadeAnim, translateY]);
 
   if (!visible && fadeAnim._value === 0) {
     return null;
   }
 
   const getIconName = () => {
-    switch (type) {
+    switch (actualType) {
       case 'success':
         return {
           ios: 'checkmark.circle.fill',
@@ -109,14 +113,14 @@ export default function Toast({
         },
       ]}
     >
-      <View style={[styles.toast, styles[`toast${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof styles]]}>
+      <View style={[styles.toast, styles[`toast${actualType.charAt(0).toUpperCase() + actualType.slice(1)}` as keyof typeof styles]]}>
         <IconSymbol
           ios_icon_name={icon.ios}
           android_material_icon_name={icon.android}
           size={24}
           color={icon.color}
         />
-        <Text style={styles.message}>{message}</Text>
+        <Text style={styles.message}>{actualMessage}</Text>
       </View>
     </Animated.View>
   );
@@ -130,6 +134,7 @@ export function setToastCallback(callback: (message: string, type: 'success' | '
 }
 
 Toast.show = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  console.log('[Toast.show] Called with:', { message, type });
   if (toastCallback) {
     toastCallback(message, type);
   } else {
