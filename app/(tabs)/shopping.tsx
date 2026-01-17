@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   RefreshControl,
   Keyboard,
   KeyboardAvoidingView,
@@ -206,6 +205,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.large,
     textAlign: 'center',
   },
+  modalMessage: {
+    fontSize: typography.fontSize.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
   modalLabel: {
     fontSize: typography.fontSize.small,
     fontWeight: '600',
@@ -253,6 +258,9 @@ const styles = StyleSheet.create({
   modalButtonSave: {
     backgroundColor: colors.primary,
   },
+  modalButtonDelete: {
+    backgroundColor: colors.error,
+  },
   modalButtonText: {
     fontSize: typography.fontSize.medium,
     fontWeight: '600',
@@ -261,6 +269,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   modalButtonTextSave: {
+    color: '#FFFFFF',
+  },
+  modalButtonTextDelete: {
     color: '#FFFFFF',
   },
   unitPickerModal: {
@@ -338,6 +349,9 @@ function ShoppingScreenContent() {
   const [editUnit, setEditUnit] = useState('pieces');
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showAddUnitPicker, setShowAddUnitPicker] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [clearCompletedModalVisible, setClearCompletedModalVisible] = useState(false);
 
   const loadItems = async () => {
     try {
@@ -414,61 +428,53 @@ function ShoppingScreenContent() {
 
   const handleDeleteItem = (itemId: string, itemName: string) => {
     console.log('[Shopping] Delete button pressed for item:', itemName, 'ID:', itemId);
-    
-    // Provide haptic feedback immediately when button is pressed
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Define the delete function
-    const performDelete = async () => {
-      try {
-        console.log('[Shopping] User confirmed delete - starting deletion process');
-        console.log('[Shopping] Deleting shopping item:', itemName, 'ID:', itemId);
-        
-        // Provide haptic feedback for delete action
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        // Delete the item from storage
-        await deleteShoppingItem(itemId);
-        console.log('[Shopping] Item deleted from storage');
-        
-        // Reload items to update UI
-        await loadItems();
-        console.log('[Shopping] Items reloaded after delete');
-        
-        // Show success message
-        Toast.show(`${itemName} deleted`, 'success');
-        console.log('[Shopping] Delete operation completed successfully');
-      } catch (error) {
-        console.error('[Shopping] Error deleting shopping item:', error);
-        Toast.show('Failed to delete item', 'error');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    };
-    
-    // Show confirmation dialog
-    Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete "${itemName}"?`,
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => {
-            console.log('[Shopping] User cancelled delete');
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            console.log('[Shopping] Delete button in alert pressed');
-            // Call the async delete function
-            performDelete();
-          },
-        },
-      ]
-    );
+    // Store the item to delete and show modal
+    setItemToDelete({ id: itemId, name: itemName });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      console.log('[Shopping] User confirmed delete - starting deletion process');
+      console.log('[Shopping] Deleting shopping item:', itemToDelete.name, 'ID:', itemToDelete.id);
+      
+      // Close modal first
+      setDeleteModalVisible(false);
+      
+      // Provide haptic feedback for delete action
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Delete the item from storage
+      await deleteShoppingItem(itemToDelete.id);
+      console.log('[Shopping] Item deleted from storage');
+      
+      // Reload items to update UI
+      await loadItems();
+      console.log('[Shopping] Items reloaded after delete');
+      
+      // Show success message
+      Toast.show(`${itemToDelete.name} deleted`, 'success');
+      console.log('[Shopping] Delete operation completed successfully');
+      
+      // Clear the item to delete
+      setItemToDelete(null);
+    } catch (error) {
+      console.error('[Shopping] Error deleting shopping item:', error);
+      Toast.show('Failed to delete item', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setItemToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    console.log('[Shopping] User cancelled delete');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDeleteModalVisible(false);
+    setItemToDelete(null);
   };
 
   const handleEditQuantity = (item: ShoppingItem) => {
@@ -500,36 +506,41 @@ function ShoppingScreenContent() {
     }
   };
 
-  const handleClearCompleted = async () => {
+  const handleClearCompleted = () => {
     const completedCount = items.filter(item => item.completed).length;
     if (completedCount === 0) return;
 
-    console.log('[Shopping] User clearing completed items:', completedCount);
-    Alert.alert(
-      'Clear Completed',
-      `Remove ${completedCount} completed item${completedCount > 1 ? 's' : ''}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('[Shopping] Clearing completed shopping items');
-              const updatedItems = items.filter(item => !item.completed);
-              await saveShoppingItems(updatedItems);
-              setItems(updatedItems);
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Toast.show(`${completedCount} item${completedCount > 1 ? 's' : ''} cleared`, 'success');
-              console.log('[Shopping] Completed items cleared successfully');
-            } catch (error) {
-              console.error('[Shopping] Error clearing completed items:', error);
-              Toast.show('Failed to clear items', 'error');
-            }
-          },
-        },
-      ]
-    );
+    console.log('[Shopping] User tapped clear completed items button');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setClearCompletedModalVisible(true);
+  };
+
+  const confirmClearCompleted = async () => {
+    const completedCount = items.filter(item => item.completed).length;
+    
+    try {
+      console.log('[Shopping] User confirmed clear completed items');
+      setClearCompletedModalVisible(false);
+      
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      console.log('[Shopping] Clearing completed shopping items');
+      const updatedItems = items.filter(item => !item.completed);
+      await saveShoppingItems(updatedItems);
+      setItems(updatedItems);
+      
+      Toast.show(`${completedCount} item${completedCount > 1 ? 's' : ''} cleared`, 'success');
+      console.log('[Shopping] Completed items cleared successfully');
+    } catch (error) {
+      console.error('[Shopping] Error clearing completed items:', error);
+      Toast.show('Failed to clear items', 'error');
+    }
+  };
+
+  const cancelClearCompleted = () => {
+    console.log('[Shopping] User cancelled clear completed');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setClearCompletedModalVisible(false);
   };
 
   const getUnitLabel = (unitValue: string): string => {
@@ -769,6 +780,88 @@ function ShoppingScreenContent() {
                 >
                   <Text style={[styles.modalButtonText, styles.modalButtonTextSave]}>
                     Save
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={cancelDelete}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Delete Item</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete "{itemToDelete?.name}"?
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={cancelDelete}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonDelete]}
+                  onPress={confirmDelete}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Clear Completed Confirmation Modal */}
+      <Modal
+        visible={clearCompletedModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelClearCompleted}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={cancelClearCompleted}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Clear Completed Items</Text>
+              <Text style={styles.modalMessage}>
+                Remove {completedCount} completed item{completedCount > 1 ? 's' : ''}?
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={cancelClearCompleted}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonDelete]}
+                  onPress={confirmClearCompleted}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                    Clear
                   </Text>
                 </TouchableOpacity>
               </View>

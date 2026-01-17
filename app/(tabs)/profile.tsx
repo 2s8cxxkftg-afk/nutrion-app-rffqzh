@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState<string>('');
   const [isPremium, setIsPremium] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({ totalItems: 0, expiringSoon: 0, expired: 0 });
+  const [signOutModalVisible, setSignOutModalVisible] = useState(false);
 
   const formatDisplayName = (name: string): string => {
     if (!name) return 'User';
@@ -114,29 +115,30 @@ export default function ProfileScreen() {
     }, [loadUserData, loadStats, checkPremiumStatus])
   );
 
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              await supabase.auth.signOut();
-              Toast.show('Signed out successfully', 'success');
-              router.replace('/auth');
-            } catch (error) {
-              console.log('Error signing out:', error);
-              Toast.show('Failed to sign out', 'error');
-            }
-          },
-        },
-      ]
-    );
+  const handleSignOut = () => {
+    console.log('[Profile] User tapped Sign Out button');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSignOutModalVisible(true);
+  };
+
+  const confirmSignOut = async () => {
+    try {
+      console.log('[Profile] User confirmed sign out');
+      setSignOutModalVisible(false);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await supabase.auth.signOut();
+      Toast.show('Signed out successfully', 'success');
+      router.replace('/auth');
+    } catch (error) {
+      console.log('[Profile] Error signing out:', error);
+      Toast.show('Failed to sign out', 'error');
+    }
+  };
+
+  const cancelSignOut = () => {
+    console.log('[Profile] User cancelled sign out');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSignOutModalVisible(false);
   };
 
   const handleNavigation = (route: string) => {
@@ -401,6 +403,47 @@ export default function ProfileScreen() {
 
         <View style={{ height: spacing.xl }} />
       </ScrollView>
+
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        visible={signOutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelSignOut}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={cancelSignOut}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Sign Out</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to sign out?
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={cancelSignOut}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSignOut]}
+                  onPress={confirmSignOut}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextSignOut]}>
+                    Sign Out
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -612,5 +655,59 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.md,
     fontWeight: '600',
     color: colors.error,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonSignOut: {
+    backgroundColor: colors.error,
+  },
+  modalButtonText: {
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+  },
+  modalButtonTextCancel: {
+    color: colors.text,
+  },
+  modalButtonTextSignOut: {
+    color: '#FFFFFF',
   },
 });
