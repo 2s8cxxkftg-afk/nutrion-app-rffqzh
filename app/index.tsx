@@ -12,7 +12,6 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAppStatus();
@@ -28,13 +27,13 @@ export default function Index() {
       console.log('Onboarding completed:', completedOnboarding);
       setHasCompletedOnboarding(completedOnboarding);
 
-      // Check authentication status with timeout
+      // Check authentication status with short timeout
       let authenticated = false;
       
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 3000)
+          setTimeout(() => reject(new Error('Auth timeout')), 1500)
         );
         
         const { data: { session }, error: sessionError } = await Promise.race([
@@ -43,31 +42,27 @@ export default function Index() {
         ]);
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.log('Session error (non-critical):', sessionError.message);
         }
         
         authenticated = !!session;
         console.log('Authenticated:', authenticated);
-        setIsAuthenticated(authenticated);
       } catch (authError: any) {
-        console.error('Auth check error:', authError.message);
-        setIsAuthenticated(false);
+        console.log('Auth check timed out or failed (non-critical):', authError.message);
+        authenticated = false;
       }
       
-      // Show splash screen for 1 second
-      setTimeout(() => {
-        console.log('Navigation ready');
-        setIsLoading(false);
-      }, 1000);
+      setIsAuthenticated(authenticated);
+      
+      // Navigate immediately without artificial delay
+      console.log('Navigation ready - proceeding immediately');
+      setIsLoading(false);
     } catch (error: any) {
       console.error('Error checking app status:', error);
-      setError(error.message || 'Failed to initialize');
-      // On error, assume nothing completed
+      // On error, assume nothing completed and proceed
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
+      setIsLoading(false);
     }
   };
 
@@ -83,9 +78,6 @@ export default function Index() {
         </View>
         <Text style={styles.appName}>Nutrion</Text>
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-        {error && (
-          <Text style={styles.errorText}>{error}</Text>
-        )}
       </View>
     );
   }
@@ -142,12 +134,5 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 32,
-  },
-  errorText: {
-    marginTop: 20,
-    color: '#dc3545',
-    fontSize: 14,
-    textAlign: 'center',
-    paddingHorizontal: 20,
   },
 });
