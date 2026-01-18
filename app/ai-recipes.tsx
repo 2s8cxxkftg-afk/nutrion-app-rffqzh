@@ -26,6 +26,7 @@ import { supabase } from '@/utils/supabase';
 
 const CUISINES = ['Any', 'Italian', 'Mexican', 'Asian', 'Mediterranean', 'American', 'Indian', 'Filipino', 'Chinese', 'Japanese', 'Thai'];
 const DIETARY_RESTRICTIONS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Nut-Free'];
+const DIET_TYPES = ['Keto', 'Paleo', 'Low-Carb', 'High-Protein', 'Mediterranean', 'Whole30', 'Diabetic-Friendly'];
 
 export default function AIRecipesScreen() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function AIRecipesScreen() {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState('Any');
   const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([]);
+  const [selectedDietTypes, setSelectedDietTypes] = useState<string[]>([]);
   const [showPreferences, setShowPreferences] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isPremium, setIsPremium] = useState(false);
@@ -111,6 +113,7 @@ export default function AIRecipesScreen() {
     const result = await generateRecipes(pantryItems, {
       cuisine: selectedCuisine !== 'Any' ? selectedCuisine : undefined,
       dietaryRestrictions: selectedRestrictions.length > 0 ? selectedRestrictions : undefined,
+      dietTypes: selectedDietTypes.length > 0 ? selectedDietTypes : undefined,
     });
 
     if (result) {
@@ -126,6 +129,14 @@ export default function AIRecipesScreen() {
       prev.includes(restriction)
         ? prev.filter(r => r !== restriction)
         : [...prev, restriction]
+    );
+  };
+
+  const toggleDietType = (dietType: string) => {
+    setSelectedDietTypes(prev =>
+      prev.includes(dietType)
+        ? prev.filter(d => d !== dietType)
+        : [...prev, dietType]
     );
   };
 
@@ -427,6 +438,31 @@ export default function AIRecipesScreen() {
                     ]}
                   >
                     {restriction}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>
+              Diet Type
+            </Text>
+            <View style={styles.chipContainer}>
+              {DIET_TYPES.map(dietType => (
+                <TouchableOpacity
+                  key={dietType}
+                  style={[
+                    styles.chip,
+                    selectedDietTypes.includes(dietType) && styles.chipSelected,
+                  ]}
+                  onPress={() => toggleDietType(dietType)}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      selectedDietTypes.includes(dietType) && styles.chipTextSelected,
+                    ]}
+                  >
+                    {dietType}
                   </Text>
                 </TouchableOpacity>
               ))}

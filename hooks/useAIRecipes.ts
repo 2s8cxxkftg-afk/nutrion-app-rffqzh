@@ -30,6 +30,7 @@ export function useAIRecipes() {
     preferences?: {
       cuisine?: string;
       dietaryRestrictions?: string[];
+      dietTypes?: string[];
       difficulty?: string;
       maxTime?: number;
     }
@@ -71,6 +72,10 @@ export function useAIRecipes() {
       
       if (preferences?.dietaryRestrictions && preferences.dietaryRestrictions.length > 0) {
         preferencesObj.dietary = preferences.dietaryRestrictions.join(', ');
+      }
+      
+      if (preferences?.dietTypes && preferences.dietTypes.length > 0) {
+        preferencesObj.dietType = preferences.dietTypes.join(', ');
       }
       
       if (preferences?.difficulty) {
