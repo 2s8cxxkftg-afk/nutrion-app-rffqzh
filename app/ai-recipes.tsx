@@ -146,6 +146,12 @@ export default function AIRecipesScreen() {
     Linking.openURL('mailto:hello@solvralabs.net?subject=AI Recipe Generator Issue');
   };
 
+  const handleOpenSupabaseDocs = () => {
+    console.log('[AIRecipes] User tapped Supabase docs link');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL('https://supabase.com/docs/guides/functions/secrets');
+  };
+
   if (checkingAuth || checkingPremium) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -504,33 +510,61 @@ export default function AIRecipesScreen() {
               <Text style={styles.errorTitle}>Unable to Generate Recipes</Text>
               <Text style={styles.errorText}>{error}</Text>
               
-              {error.includes('OPENAI_API_KEY') || error.includes('configuration') || error.includes('quota') ? (
+              {(error.includes('configuration') || error.includes('OPENAI_API_KEY') || error.includes('quota') || error.includes('API key')) ? (
                 <View style={styles.setupInstructions}>
-                  <Text style={styles.setupTitle}>Setup Required:</Text>
+                  <Text style={styles.setupTitle}>⚙️ Setup Required</Text>
+                  <Text style={styles.setupDescription}>
+                    The AI Recipe Generator requires an OpenAI API key to be configured in your Supabase project.
+                  </Text>
+                  
+                  <Text style={styles.setupStepTitle}>📋 Steps to Fix:</Text>
                   <Text style={styles.setupStep}>
-                    1. Go to your Supabase project dashboard
+                    1. Go to your Supabase Dashboard
                   </Text>
                   <Text style={styles.setupStep}>
-                    2. Navigate to Project Settings → Edge Functions
+                    2. Select your project
                   </Text>
                   <Text style={styles.setupStep}>
-                    3. Add environment variable: OPENAI_API_KEY
+                    3. Navigate to: Project Settings → Edge Functions
                   </Text>
                   <Text style={styles.setupStep}>
-                    4. Get your API key from platform.openai.com
+                    4. Add a new secret:
                   </Text>
-                  <TouchableOpacity
-                    style={styles.supportButton}
-                    onPress={handleContactSupport}
-                  >
-                    <IconSymbol
-                      ios_icon_name="envelope"
-                      android_material_icon_name="email"
-                      size={16}
-                      color={colors.primary}
-                    />
-                    <Text style={styles.supportButtonText}>Contact Support</Text>
-                  </TouchableOpacity>
+                  <View style={styles.codeBlock}>
+                    <Text style={styles.codeText}>Name: OPENAI_API_KEY</Text>
+                    <Text style={styles.codeText}>Value: sk-...</Text>
+                  </View>
+                  <Text style={styles.setupStep}>
+                    5. Get your API key from: platform.openai.com
+                  </Text>
+                  
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={styles.docsButton}
+                      onPress={handleOpenSupabaseDocs}
+                    >
+                      <IconSymbol
+                        ios_icon_name="book"
+                        android_material_icon_name="menu-book"
+                        size={16}
+                        color={colors.primary}
+                      />
+                      <Text style={styles.docsButtonText}>View Docs</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.supportButton}
+                      onPress={handleContactSupport}
+                    >
+                      <IconSymbol
+                        ios_icon_name="envelope"
+                        android_material_icon_name="email"
+                        size={16}
+                        color={colors.primary}
+                      />
+                      <Text style={styles.supportButtonText}>Contact Support</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
                 <View style={styles.errorActions}>
@@ -928,27 +962,79 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   setupTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  setupDescription: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  setupStepTitle: {
     fontSize: typography.sizes.sm,
     fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
   },
   setupStep: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
-    lineHeight: 18,
+    lineHeight: 20,
+    paddingLeft: spacing.sm,
   },
-  supportButton: {
+  codeBlock: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    marginVertical: spacing.sm,
+    marginLeft: spacing.md,
+  },
+  codeText: {
+    fontSize: typography.sizes.xs,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#333',
+    marginBottom: spacing.xs,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  docsButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
-    marginTop: spacing.sm,
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  docsButtonText: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  supportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   supportButtonText: {
     fontSize: typography.sizes.sm,
