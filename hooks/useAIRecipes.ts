@@ -86,51 +86,61 @@ export function useAIRecipes() {
       console.log('[AIRecipes] Pantry items:', ingredientsList);
       console.log('[AIRecipes] Preferences:', preferencesObj);
       
-      const { data, error } = await supabase.functions.invoke('generate-recipe-suggestions', {
-        body: {
+      // Get Supabase URL and key from environment
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration is missing. Please check your environment variables.');
+      }
+      
+      // Call the Edge Function directly with fetch to get better error handling
+      const functionUrl = `${supabaseUrl}/functions/v1/generate-recipe-suggestions`;
+      const accessToken = session.access_token;
+      
+      console.log('[AIRecipes] Calling function URL:', functionUrl);
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
           pantryItems: ingredientsList,
           preferences: Object.keys(preferencesObj).length > 0 ? preferencesObj : undefined
-        }
+        })
       });
 
-      console.log('[AIRecipes] Edge Function response:', { data, error });
+      console.log('[AIRecipes] Response status:', response.status);
+      
+      // Get the response text first
+      const responseText = await response.text();
+      console.log('[AIRecipes] Response text (first 500 chars):', responseText.substring(0, 500));
+      
+      // Try to parse as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[AIRecipes] Failed to parse response as JSON:', parseError);
+        throw new Error('Invalid response from server. Please try again.');
+      }
 
-      if (error) {
-        console.error('[AIRecipes] Edge Function error:', error);
+      // Check if the response was successful
+      if (!response.ok) {
+        console.error('[AIRecipes] Edge Function returned error status:', response.status);
+        console.error('[AIRecipes] Error data:', data);
         
-        // Provide more specific error messages based on the error
-        let errorMessage = 'Failed to generate recipes. Please try again.';
-        
-        if (error.message) {
-          const msg = error.message.toLowerCase();
-          
-          if (msg.includes('jwt') || msg.includes('auth') || msg.includes('unauthorized') || msg.includes('401')) {
-            errorMessage = 'Authentication error. Please sign out and sign back in, then try again.';
-          } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('connection')) {
-            errorMessage = 'Network error. Please check your internet connection and try again.';
-          } else if (msg.includes('timeout')) {
-            errorMessage = 'Request timed out. Please try again.';
-          } else if (msg.includes('rate limit')) {
-            errorMessage = 'Too many requests. Please wait a moment and try again.';
-          } else if (msg.includes('quota')) {
-            errorMessage = 'Service quota exceeded. Please try again later or contact support at hello@solvralabs.net';
-          } else {
-            errorMessage = error.message;
-          }
-        }
-        
+        // Extract error message from response
+        const errorMessage = data.userMessage || data.detail || data.error || `Server error (${response.status})`;
         throw new Error(errorMessage);
       }
 
-      if (!data) {
-        throw new Error('No response from AI service. Please check your internet connection and try again.');
-      }
-
-      // Check for error in response
+      // Check for error in response data
       if (data.error) {
         console.error('[AIRecipes] API returned error:', data.error, data.detail);
-        
-        // Use the userMessage if available, otherwise use detail or error
         const errorMessage = data.userMessage || data.detail || data.error || 'Failed to generate recipes';
         throw new Error(errorMessage);
       }
