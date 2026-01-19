@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -36,11 +37,7 @@
         "track": "internal",
         "releaseStatus": "draft"
       },
-      "ios": {
-        "appleId": "REPLACE_WITH_YOUR_APPLE_ID",
-        "ascAppId": "REPLACE_WITH_YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_YOUR_APPLE_TEAM_ID"
-      }
+      "ios": {}
     }
   }
 }
