@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 5.0.0"
@@ -32,14 +33,14 @@
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "./service-account-key.json",
+        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal",
         "releaseStatus": "draft"
       },
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-apple-team-id"
+        "appleId": "REPLACE_WITH_YOUR_APPLE_ID",
+        "ascAppId": "REPLACE_WITH_YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "REPLACE_WITH_YOUR_APPLE_TEAM_ID"
       }
     }
   }

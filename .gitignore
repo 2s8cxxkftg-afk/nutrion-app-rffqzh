@@ -1,39 +1,36 @@
+
 node_modules/
-
-.git/
 .expo/
-
+.expo-shared/
 dist/
-web-build/
-expo-env.d.ts
-
-*.orig.*
+npm-debug.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.orig.*
+web-build/
+.env
+.env.local
+.env.production
 
-.metro-health-check*
+# EAS
+.eas/
 
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
+# macOS
 .DS_Store
-*.pem
 
-.env*.local
+# Service account keys (NEVER commit these!)
+google-play-service-account.json
+service-account-key.json
+*.json.key
 
-*.tsbuildinfo
+# IDE
+.vscode/
+.idea/
 
-.natively/
-
-android/
-ios/
-
-netlify.toml
-.netlify/
-
-pnpm-lock.yaml
-package-lock.json
+# Logs
+*.log
+yarn-debug.log*
+yarn-error.log*

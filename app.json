@@ -1,41 +1,45 @@
+
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "Nutrion",
+    "slug": "nutrion-app-rffqzh",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/final_quest_240x240.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/final_quest_240x240.png",
       "resizeMode": "contain",
       "backgroundColor": "#4CAF50"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nutrion.app",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Nutrion needs camera access to scan product barcodes for adding items to your pantry.",
         "NSPhotoLibraryUsageDescription": "Nutrion needs photo library access to select product images.",
+        "NSPhotoLibraryAddUsageDescription": "Nutrion needs permission to save photos to your library.",
         "NSMicrophoneUsageDescription": "Nutrion may need microphone access for certain features."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
+        "foregroundImage": "./assets/images/final_quest_240x240.png",
         "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.solvralabs.nutrion",
-      "versionCode": 1,
+      "package": "com.nutrion.app",
+      "versionCode": 2,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "POST_NOTIFICATIONS"
@@ -64,7 +68,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/natively-dark.png",
+          "icon": "./assets/images/final_quest_240x240.png",
           "color": "#4CAF50",
           "sounds": []
         }
@@ -84,9 +88,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "your-eas-project-id-here"
+        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
       }
     }
-  },
-  "scheme": "Nutrion"
+  }
 }
