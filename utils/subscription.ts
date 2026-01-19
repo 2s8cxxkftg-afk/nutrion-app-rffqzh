@@ -19,7 +19,6 @@ export interface Subscription {
 
 /**
  * Get the current subscription status
- * For testing: Returns premium status by default
  */
 export async function getSubscription(): Promise<Subscription> {
   try {
@@ -36,7 +35,7 @@ export async function getSubscription(): Promise<Subscription> {
         const now = new Date();
         
         if (now > trialEnd) {
-          // Trial has expired - user can still use app but will see ads
+          // Trial has expired - user needs to subscribe for premium features
           subscription.status = 'expired';
           if (subscription.isPremium !== true) {
             subscription.plan = 'free';
@@ -48,26 +47,21 @@ export async function getSubscription(): Promise<Subscription> {
       return subscription;
     }
     
-    // No subscription found - return premium by default for testing
+    // No subscription found - return free tier by default
     const defaultSubscription: Subscription = {
-      status: 'active',
-      plan: 'premium',
-      isPremium: true,
-      subscriptionStartDate: new Date().toISOString(),
+      status: 'expired',
+      plan: 'free',
+      isPremium: false,
     };
-    
-    // Save the default premium subscription
-    await AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(defaultSubscription));
-    await AsyncStorage.setItem(PREMIUM_KEY, 'true');
     
     return defaultSubscription;
   } catch (error) {
     console.error('Error getting subscription:', error);
-    // Return premium by default even on error for testing
+    // Return free tier by default on error
     return {
-      status: 'active',
-      plan: 'premium',
-      isPremium: true,
+      status: 'expired',
+      plan: 'free',
+      isPremium: false,
     };
   }
 }
@@ -151,32 +145,26 @@ export async function hasActiveAccess(): Promise<boolean> {
 }
 
 /**
- * Check if user is premium (no ads)
- * For testing: Returns true by default
+ * Check if user is premium (has access to premium features)
  */
 export async function isPremiumUser(): Promise<boolean> {
   try {
     const subscription = await getSubscription();
-    return subscription.isPremium || subscription.status === 'trial' || subscription.status === 'active';
+    return subscription.isPremium || (subscription.status === 'trial' || subscription.status === 'active');
   } catch (error) {
     console.error('Error checking premium status:', error);
-    // Return true by default for testing
-    return true;
+    // Return false by default on error
+    return false;
   }
 }
 
 /**
  * Check if user should see ads
+ * Note: Ads have been removed from the app - this always returns false
  */
 export async function shouldShowAds(): Promise<boolean> {
-  try {
-    const subscription = await getSubscription();
-    // Show ads if trial expired and user is not premium
-    return subscription.status === 'expired' && !subscription.isPremium;
-  } catch (error) {
-    console.error('Error checking if should show ads:', error);
-    return false;
-  }
+  // Ads are no longer shown in the app
+  return false;
 }
 
 /**

@@ -14,7 +14,6 @@ import {
   Modal,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
-import AdBanner from '@/components/AdBanner';
 import { loadShoppingItems, saveShoppingItems, deleteShoppingItem } from '@/utils/storage';
 import * as Haptics from 'expo-haptics';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -678,8 +677,6 @@ function ShoppingScreenContent() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <AdBanner />
-
           {items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <IconSymbol

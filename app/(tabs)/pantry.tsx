@@ -6,7 +6,6 @@ import { colors, commonStyles, expirationColors, spacing, borderRadius, typograp
 import { checkAndNotifyExpiringItems } from '@/utils/notificationScheduler';
 import { loadPantryItems, deletePantryItem } from '@/utils/storage';
 import { IconSymbol } from '@/components/IconSymbol';
-import AdBanner from '@/components/AdBanner';
 import { PantryItem, FOOD_CATEGORIES } from '@/types/pantry';
 import * as Haptics from 'expo-haptics';
 import {
@@ -446,8 +445,6 @@ function PantryScreenContent() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <AdBanner onUpgradePress={() => router.push('/subscription-management')} />
-
         {filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
