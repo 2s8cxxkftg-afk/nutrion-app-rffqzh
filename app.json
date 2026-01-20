@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.nutrion.app",
       "buildNumber": "1",
+      "deploymentTarget": "14.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Nutrion needs camera access to scan product barcodes for adding items to your pantry.",
