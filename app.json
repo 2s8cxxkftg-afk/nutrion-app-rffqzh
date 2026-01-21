@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nutrion.app",
+      "bundleIdentifier": "com.solvralabs.nutrion.ios",
       "buildNumber": "1",
       "deploymentTarget": "14.0",
       "bitcode": false,
