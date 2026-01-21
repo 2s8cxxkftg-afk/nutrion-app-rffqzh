@@ -22,7 +22,8 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium",
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "bitcode": false
       },
       "android": {
         "buildType": "apk"
@@ -37,12 +38,8 @@
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "YOUR_APPLE_ID_EMAIL@example.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
-      },
+      "ios": {},
       "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
       }
     }
