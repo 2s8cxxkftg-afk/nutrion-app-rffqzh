@@ -13,7 +13,10 @@
       },
       "ios": {
         "buildConfiguration": "Debug",
-        "bitcode": false
+        "bitcode": false,
+        "cocoapods": {
+          "deploymentTarget": "14.0"
+        }
       }
     },
     "preview": {
@@ -22,7 +25,10 @@
         "buildType": "apk"
       },
       "ios": {
-        "bitcode": false
+        "bitcode": false,
+        "cocoapods": {
+          "deploymentTarget": "14.0"
+        }
       }
     },
     "production": {
@@ -31,7 +37,10 @@
       },
       "ios": {
         "buildConfiguration": "Release",
-        "bitcode": false
+        "bitcode": false,
+        "cocoapods": {
+          "deploymentTarget": "14.0"
+        }
       }
     }
   },

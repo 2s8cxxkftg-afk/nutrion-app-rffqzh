@@ -81,6 +81,9 @@
           "photosPermission": "Allow Nutrion to access your photos to add product images.",
           "cameraPermission": "Allow Nutrion to access your camera to take product photos."
         }
+      ],
+      [
+        "expo-linear-gradient"
       ]
     ],
     "scheme": "nutrion",
