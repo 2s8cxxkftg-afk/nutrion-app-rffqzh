@@ -1,57 +1,50 @@
 
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 13.2.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk"
-      },
       "ios": {
-        "buildConfiguration": "Debug",
-        "bitcode": false,
-        "cocoapods": {
-          "deploymentTarget": "14.0"
-        }
+        "resourceClass": "m-medium"
       }
     },
     "preview": {
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
       "ios": {
-        "bitcode": false,
-        "cocoapods": {
-          "deploymentTarget": "14.0"
-        }
+        "resourceClass": "m-medium"
       }
     },
     "production": {
-      "android": {
-        "buildType": "aab"
-      },
+      "autoIncrement": true,
       "ios": {
-        "buildConfiguration": "Release",
-        "bitcode": false,
-        "cocoapods": {
-          "deploymentTarget": "14.0"
-        }
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production-aab": {
+      "extends": "production",
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "appleId": "YOUR_APPLE_ID_EMAIL@example.com",
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
+      },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal",
-        "releaseStatus": "draft"
-      },
-      "ios": {}
+        "track": "internal"
+      }
     }
   }
 }
