@@ -106,10 +106,9 @@ android {
         }
         release {
             storeFile file('release.keystore')
-            storePassword 'XrHkretr9ppkFzxK'
-            storeType 'PKCS12'
-            keyAlias 'release-key'
-            keyPassword 'XrHkretr9ppkFzxK'
+            storePassword 'natively_8172e21f_83414'
+            keyAlias 'natively-release-key'
+            keyPassword 'natively_8172e21f_83414'
         }
 
     }

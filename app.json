@@ -1,8 +1,7 @@
-
 {
   "expo": {
     "name": "Nutrion",
-    "slug": "Nutrion",
+    "slug": "nutrion-app-rffqzh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/final_quest_240x240.png",
@@ -33,7 +32,7 @@
         "backgroundColor": "#4CAF50"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.nutrion.app",
+      "package": "com.solvralabs.nutrion.android",
       "versionCode": 2,
       "permissions": [
         "INTERNET",
@@ -58,13 +57,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Nutrion to access your camera to scan product barcodes."
-        }
-      ],
-      [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "Allow Nutrion to access your camera to scan product barcodes."
+          "cameraPermission": "Allow Nutrion to access your camera to scan product barcodes.",
+          "microphonePermission": false
         }
       ],
       [
@@ -93,5 +87,6 @@
         "projectId": "YOUR_EAS_PROJECT_ID_HERE"
       }
     }
-  }
+  },
+  "scheme": "Nutrion"
 }
