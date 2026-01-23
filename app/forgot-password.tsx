@@ -165,6 +165,34 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginLeft: spacing.sm,
   },
+  setupBox: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  setupTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.semibold,
+    color: '#1565C0',
+    marginBottom: spacing.sm,
+  },
+  setupText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    color: '#1976D2',
+    lineHeight: 20,
+    marginBottom: spacing.xs,
+  },
+  setupStep: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.regular,
+    color: '#1976D2',
+    lineHeight: 18,
+    marginLeft: spacing.sm,
+  },
 });
 
 export default function ForgotPasswordScreen() {
@@ -398,6 +426,31 @@ export default function ForgotPasswordScreen() {
               </View>
             )}
 
+            {/* Setup Instructions */}
+            {isConfigured && (
+              <View style={styles.setupBox}>
+                <Text style={styles.setupTitle}>⚙️ Setup Required</Text>
+                <Text style={styles.setupText}>
+                  To send password reset emails, you need to configure Supabase:
+                </Text>
+                <Text style={styles.setupStep}>
+                  1. Go to Supabase Dashboard → Authentication → Email Templates
+                </Text>
+                <Text style={styles.setupStep}>
+                  2. Enable the &quot;Reset Password&quot; template
+                </Text>
+                <Text style={styles.setupStep}>
+                  3. Add redirect URL: nutrion://reset-password
+                </Text>
+                <Text style={styles.setupStep}>
+                  4. Configure SMTP (optional, for better deliverability)
+                </Text>
+                <Text style={[styles.setupText, { marginTop: spacing.sm }]}>
+                  See SUPABASE_PASSWORD_RESET_SETUP.md for detailed instructions.
+                </Text>
+              </View>
+            )}
+
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
@@ -457,7 +510,7 @@ export default function ForgotPasswordScreen() {
                 color={colors.textSecondary} 
               />
               <Text style={styles.infoText}>
-                You will receive an email with instructions to reset your password. Please check your spam folder if you don&apos;t see it.
+                You will receive an email with instructions to reset your password. Please check your spam folder if you don&apos;t see it. Note: Free tier Supabase accounts are limited to 3 emails per hour.
               </Text>
             </View>
 

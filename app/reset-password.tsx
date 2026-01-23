@@ -1,10 +1,5 @@
 
-import React, { useState, useEffect } from "react";
-import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
-import { supabase } from "@/utils/supabase";
-import Toast from "@/components/Toast";
-import { useRouter, Stack } from "expo-router";
-import * as Haptics from "expo-haptics";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,29 +10,59 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+} from 'react-native';
+import { useRouter, Stack } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
+import { supabase } from '@/utils/supabase';
+import Toast from '@/components/Toast';
+import * as Haptics from 'expo-haptics';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: 28,
     fontFamily: typography.fontFamily.bold,
     color: colors.text,
     marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+    lineHeight: 24,
+  },
+  form: {
+    flex: 1,
   },
   inputContainer: {
     marginBottom: spacing.md,
@@ -48,117 +73,138 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: 16,
-    fontFamily: typography.fontFamily.regular,
-    color: colors.text,
+    paddingHorizontal: spacing.md,
+    height: 56,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  button: {
+  inputIconContainer: {
+    marginRight: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.text,
+  },
+  submitButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    height: 56,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.md,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  buttonDisabled: {
+  submitButtonDisabled: {
     opacity: 0.6,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  submitButtonText: {
+    fontSize: 18,
     fontFamily: typography.fontFamily.semibold,
+    color: '#FFFFFF',
+    marginRight: spacing.sm,
   },
-  errorText: {
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  infoText: {
+    flex: 1,
     fontSize: 14,
     fontFamily: typography.fontFamily.regular,
-    color: colors.error,
-    marginTop: spacing.xs,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginLeft: spacing.sm,
   },
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontFamily: typography.fontFamily.bold,
-    color: colors.text,
-    textAlign: 'center',
+  passwordRequirements: {
+    marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
-  successMessage: {
-    fontSize: 16,
+  requirementText: {
+    fontSize: 13,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
+    lineHeight: 20,
+  },
+  requirementMet: {
+    color: colors.primary,
   },
 });
 
 export default function ResetPasswordScreen() {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasValidSession, setHasValidSession] = useState(false);
 
   useEffect(() => {
-    console.log('Reset password screen mounted');
+    checkSession();
+  }, []);
+
+  const checkSession = async () => {
+    console.log('Checking for valid session...');
     
-    // Check if user has a valid session from the reset link
-    const checkSession = async () => {
+    try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('Current session:', session ? 'Valid' : 'None');
       
       if (error) {
-        console.error('Session error:', error);
-      }
-      
-      if (!session) {
-        console.log('No valid session found');
-        Toast.show("Please click the reset link in your email first", "error");
-        
-        // Delay redirect to give user time to read the message
-        setTimeout(() => {
-          router.replace('/auth');
-        }, 2000);
+        console.error('Error getting session:', error);
+        setHasValidSession(false);
+      } else if (session) {
+        console.log('Valid session found');
+        setHasValidSession(true);
       } else {
-        console.log('Valid session found, user can reset password');
+        console.log('No valid session found');
+        setHasValidSession(false);
+        Toast.show('Invalid or expired reset link. Please request a new one.', 'error');
+        setTimeout(() => {
+          router.replace('/forgot-password');
+        }, 2000);
       }
-    };
-    
-    checkSession();
-  }, [router]);
+    } catch (error) {
+      console.error('Error checking session:', error);
+      setHasValidSession(false);
+    } finally {
+      setSessionChecked(true);
+    }
+  };
 
-  const validatePassword = () => {
-    setError("");
-    
-    if (newPassword.length < 6) {
-      const errorMsg = "Password must be at least 6 characters";
-      setError(errorMsg);
-      return false;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      const errorMsg = "Passwords do not match";
-      setError(errorMsg);
-      return false;
-    }
-    
-    return true;
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
   };
 
   const handleResetPassword = async () => {
     console.log('User tapped Reset Password button');
     
-    if (!validatePassword()) {
+    if (!newPassword || !confirmPassword) {
+      Toast.show('Please fill in all fields', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (!validatePassword(newPassword)) {
+      Toast.show('Password must be at least 6 characters', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Toast.show('Passwords do not match', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -179,38 +225,54 @@ export default function ResetPasswordScreen() {
       }
 
       console.log('Password updated successfully');
-      setSuccess(true);
-      Toast.show("Password updated successfully!", "success");
+      Toast.show('Password updated successfully!', 'success');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      // Redirect to pantry after a short delay
+
+      // Navigate to pantry after a short delay
       setTimeout(() => {
         router.replace('/(tabs)/pantry');
-      }, 2000);
+      }, 1500);
     } catch (error: any) {
-      console.error('Failed to reset password:', error);
-      setError(error.message || "Failed to reset password");
-      Toast.show(error.message || "Failed to reset password", "error");
+      console.error('Error resetting password:', error);
+      Toast.show(error.message || 'Failed to reset password', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
+  const passwordLengthMet = newPassword.length >= 6;
+  const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0;
+
+  if (!sessionChecked) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen 
-          options={{
-            headerShown: false,
-          }}
-        />
-        <View style={styles.successContainer}>
-          <Text style={styles.successTitle}>Password Reset Complete!</Text>
-          <Text style={styles.successMessage}>
-            Your password has been successfully updated. You will be redirected to your pantry shortly.
-          </Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: spacing.md, color: colors.textSecondary }}>
+            Verifying reset link...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!hasValidSession) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
+          <IconSymbol 
+            ios_icon_name="exclamationmark.triangle" 
+            android_material_icon_name="warning" 
+            size={64} 
+            color={colors.error} 
+          />
+          <Text style={[styles.title, { marginTop: spacing.lg }]}>
+            Invalid Reset Link
+          </Text>
+          <Text style={[styles.subtitle, { marginTop: spacing.sm }]}>
+            This password reset link is invalid or has expired. Please request a new one.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -220,70 +282,132 @@ export default function ResetPasswordScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: "Reset Password",
-          headerShown: true,
+          headerShown: false,
         }}
       />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Reset Your Password</Text>
-          <Text style={styles.subtitle}>
-            Enter your new password below. Make sure it's at least 6 characters long.
-          </Text>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>New Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter new password"
-              placeholderTextColor={colors.textSecondary}
-              value={newPassword}
-              onChangeText={(text) => {
-                setNewPassword(text);
-                setError("");
-              }}
-              secureTextEntry
-              editable={!loading}
-              autoCapitalize="none"
-            />
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <IconSymbol 
+                ios_icon_name="lock.rotation" 
+                android_material_icon_name="lock" 
+                size={48} 
+                color={colors.primary} 
+              />
+            </View>
+            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>
+              Enter your new password below
+            </Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm new password"
-              placeholderTextColor={colors.textSecondary}
-              value={confirmPassword}
-              onChangeText={(text) => {
-                setConfirmPassword(text);
-                setError("");
-              }}
-              secureTextEntry
-              editable={!loading}
-              autoCapitalize="none"
-            />
+          {/* Form */}
+          <View style={styles.form}>
+            {/* New Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>New Password</Text>
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputIconContainer}>
+                  <IconSymbol 
+                    ios_icon_name="lock.fill" 
+                    android_material_icon_name="lock" 
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter new password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            {/* Confirm Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputIconContainer}>
+                  <IconSymbol 
+                    ios_icon_name="lock.fill" 
+                    android_material_icon_name="lock" 
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm new password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            {/* Password Requirements */}
+            <View style={styles.passwordRequirements}>
+              <Text style={[styles.requirementText, passwordLengthMet && styles.requirementMet]}>
+                {passwordLengthMet ? '✓' : '○'} At least 6 characters
+              </Text>
+              <Text style={[styles.requirementText, passwordsMatch && styles.requirementMet]}>
+                {passwordsMatch ? '✓' : '○'} Passwords match
+              </Text>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleResetPassword}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <React.Fragment>
+                  <Text style={styles.submitButtonText}>
+                    Reset Password
+                  </Text>
+                  <IconSymbol 
+                    ios_icon_name="checkmark" 
+                    android_material_icon_name="check" 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                </React.Fragment>
+              )}
+            </TouchableOpacity>
+
+            {/* Info Box */}
+            <View style={styles.infoBox}>
+              <IconSymbol 
+                ios_icon_name="info.circle" 
+                android_material_icon_name="info" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+              <Text style={styles.infoText}>
+                Choose a strong password that you haven&apos;t used before. After resetting, you&apos;ll be signed in automatically.
+              </Text>
+            </View>
           </View>
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleResetPassword}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Reset Password</Text>
-            )}
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
