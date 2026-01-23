@@ -108,6 +108,17 @@ export default function RootLayout() {
               {/* Main app with tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
+              {/* Auth screens */}
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="reset-password" 
+                options={{ 
+                  headerShown: true,
+                  title: "Reset Password",
+                  presentation: "card"
+                }} 
+              />
+
               {/* Modal Demo Screens */}
               <Stack.Screen
                 name="modal"

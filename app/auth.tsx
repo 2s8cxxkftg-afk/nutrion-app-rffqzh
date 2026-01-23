@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
 import { supabase } from "@/utils/supabase";
@@ -7,6 +7,7 @@ import Toast from "@/components/Toast";
 import Logo from "@/components/Logo";
 import { useRouter, Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import {
   View,
   Text,
@@ -119,6 +120,35 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Handle deep links for password reset
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      console.log('Deep link received:', event.url);
+      
+      const url = Linking.parse(event.url);
+      
+      // Check if this is a password reset link
+      if (url.path === 'reset-password' || url.queryParams?.type === 'recovery') {
+        console.log('Password reset link detected, navigating to reset screen');
+        router.push('/reset-password');
+      }
+    };
+
+    // Listen for deep links
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened with a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
+
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -167,18 +197,36 @@ export default function AuthScreen() {
   };
 
   const handleForgotPassword = async () => {
+    console.log('User tapped Forgot Password button');
+    
     if (!validateEmail(email)) {
       Toast.show("Please enter your email address", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     setLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) throw error;
-      Toast.show("Password reset email sent!", "success");
+      console.log('Sending password reset email to:', email);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'nutrion://reset-password',
+      });
+      
+      if (error) {
+        console.error('Password reset error:', error);
+        throw error;
+      }
+      
+      console.log('Password reset email sent successfully');
+      Toast.show("Password reset email sent! Check your inbox.", "success");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
+      console.error('Failed to send reset email:', error);
       Toast.show(error.message || "Failed to send reset email", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
