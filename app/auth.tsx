@@ -127,11 +127,38 @@ export default function AuthScreen() {
       console.log('Deep link received:', event.url);
       
       const url = Linking.parse(event.url);
+      console.log('Parsed URL:', url);
       
       // Check if this is a password reset link
+      // Supabase sends recovery links with type=recovery in the URL
       if (url.path === 'reset-password' || url.queryParams?.type === 'recovery') {
-        console.log('Password reset link detected, navigating to reset screen');
-        router.push('/reset-password');
+        console.log('Password reset link detected');
+        
+        // Extract the access token and refresh token from the URL
+        const accessToken = url.queryParams?.access_token as string;
+        const refreshToken = url.queryParams?.refresh_token as string;
+        
+        if (accessToken) {
+          console.log('Setting session from URL tokens');
+          
+          // Set the session using the tokens from the URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            console.error('Error setting session:', error);
+            Toast.show("Invalid or expired reset link", "error");
+            return;
+          }
+          
+          console.log('Session set successfully, navigating to reset screen');
+          router.push('/reset-password');
+        } else {
+          console.log('No access token found in URL, navigating to reset screen anyway');
+          router.push('/reset-password');
+        }
       }
     };
 
@@ -141,6 +168,7 @@ export default function AuthScreen() {
     // Check if app was opened with a deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
+        console.log('Initial URL:', url);
         handleDeepLink({ url });
       }
     });
@@ -212,8 +240,12 @@ export default function AuthScreen() {
     try {
       console.log('Sending password reset email to:', email);
       
+      // Use the app's deep link scheme for password reset
+      const redirectUrl = Linking.createURL('reset-password');
+      console.log('Redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'nutrion://reset-password',
+        redirectTo: redirectUrl,
       });
       
       if (error) {

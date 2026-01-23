@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { colors, spacing, borderRadius, typography } from "@/styles/commonStyles";
 import { supabase } from "@/utils/supabase";
 import Toast from "@/components/Toast";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
   View,
@@ -114,13 +114,23 @@ export default function ResetPasswordScreen() {
     
     // Check if user has a valid session from the reset link
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
       console.log('Current session:', session ? 'Valid' : 'None');
       
+      if (error) {
+        console.error('Session error:', error);
+      }
+      
       if (!session) {
-        console.log('No valid session found, redirecting to auth');
-        Toast.show("Invalid or expired reset link", "error");
-        router.replace('/auth');
+        console.log('No valid session found');
+        Toast.show("Please click the reset link in your email first", "error");
+        
+        // Delay redirect to give user time to read the message
+        setTimeout(() => {
+          router.replace('/auth');
+        }, 2000);
+      } else {
+        console.log('Valid session found, user can reset password');
       }
     };
     
@@ -190,6 +200,11 @@ export default function ResetPasswordScreen() {
   if (success) {
     return (
       <SafeAreaView style={styles.container}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
         <View style={styles.successContainer}>
           <Text style={styles.successTitle}>Password Reset Complete!</Text>
           <Text style={styles.successMessage}>
@@ -203,6 +218,12 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          title: "Reset Password",
+          headerShown: true,
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}

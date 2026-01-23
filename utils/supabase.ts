@@ -25,7 +25,7 @@ const createSupabaseClient = () => {
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true, // Enable session detection from URL for password reset
     },
   });
 };
