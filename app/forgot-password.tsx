@@ -15,7 +15,7 @@ import { useRouter, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
-import { supabase } from '@/utils/supabase';
+import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
@@ -147,6 +147,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
   },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF3CD',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#FFE69C',
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    color: '#856404',
+    lineHeight: 20,
+    marginLeft: spacing.sm,
+  },
 });
 
 export default function ForgotPasswordScreen() {
@@ -163,6 +181,14 @@ export default function ForgotPasswordScreen() {
 
   const handleResetPassword = async () => {
     console.log('User tapped Send Reset Link button');
+    
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      console.error('Supabase is not configured');
+      Toast.show('Supabase is not configured. Please check your environment variables.', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     
     if (!email) {
       Toast.show('Please enter your email', 'error');
@@ -194,20 +220,28 @@ export default function ForgotPasswordScreen() {
         const redirectUrl = Linking.createURL('reset-password');
         console.log('Redirect URL:', redirectUrl);
         
-        // Set a timeout for the request (30 seconds)
+        // Set a shorter timeout for the request (10 seconds instead of 30)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
+          setTimeout(() => {
+            console.log('Request timeout after 10 seconds');
+            reject(new Error('Request timeout after 10 seconds'));
+          }, 10000);
         });
         
         const resetPromise = supabase.auth.resetPasswordForEmail(email, {
           redirectTo: redirectUrl,
         });
         
+        console.log('Waiting for password reset response...');
+        
         // Race between the actual request and timeout
         const result = await Promise.race([resetPromise, timeoutPromise]) as any;
         
+        console.log('Password reset response received:', result);
+        
         if (result.error) {
           console.error('Password reset error:', result.error);
+          console.error('Error details:', JSON.stringify(result.error, null, 2));
           lastError = result.error;
           
           // Handle specific error types
@@ -215,9 +249,10 @@ export default function ForgotPasswordScreen() {
             // Retry on timeout errors
             retryCount++;
             if (retryCount < maxRetries) {
-              console.log(`Retrying in ${retryCount * 2} seconds...`);
+              const waitTime = retryCount * 2;
+              console.log(`Retrying in ${waitTime} seconds...`);
               Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
-              await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+              await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
               continue;
             }
             throw new Error('Connection timeout. Please check your internet connection and try again.');
@@ -247,14 +282,19 @@ export default function ForgotPasswordScreen() {
         
       } catch (error: any) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
+        console.error('Error type:', typeof error);
+        console.error('Error name:', error?.name);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
         lastError = error;
         
         // If it's a timeout and we have retries left, continue
         if ((error.message?.includes('timeout') || error.message?.includes('Timeout')) && retryCount < maxRetries - 1) {
           retryCount++;
-          console.log(`Retrying in ${retryCount * 2} seconds...`);
+          const waitTime = retryCount * 2;
+          console.log(`Retrying in ${waitTime} seconds...`);
           Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
-          await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
           continue;
         }
         
@@ -265,6 +305,7 @@ export default function ForgotPasswordScreen() {
     
     // If we get here, all retries failed
     console.error('All retry attempts failed. Last error:', lastError);
+    console.error('Last error details:', JSON.stringify(lastError, null, 2));
     
     // Extract a meaningful error message
     let errorMessage = 'Failed to send reset email. Please try again later.';
@@ -292,6 +333,7 @@ export default function ForgotPasswordScreen() {
   };
 
   const retryText = retryAttempt > 0 ? `Attempt ${retryAttempt}/3` : '';
+  const isConfigured = isSupabaseConfigured();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -335,12 +377,27 @@ export default function ForgotPasswordScreen() {
             </View>
             <Text style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
-              Enter your email address and we'll send you a link to reset your password
+              Enter your email address and we&apos;ll send you a link to reset your password
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
+            {/* Warning if Supabase not configured */}
+            {!isConfigured && (
+              <View style={styles.warningBox}>
+                <IconSymbol 
+                  ios_icon_name="exclamationmark.triangle" 
+                  android_material_icon_name="warning" 
+                  size={20} 
+                  color="#856404" 
+                />
+                <Text style={styles.warningText}>
+                  Supabase is not configured. Please set up your Supabase credentials in the environment variables.
+                </Text>
+              </View>
+            )}
+
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
@@ -360,15 +417,15 @@ export default function ForgotPasswordScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                editable={!loading && !emailSent}
+                editable={!loading && !emailSent && isConfigured}
               />
             </View>
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.submitButton, (loading || emailSent) && styles.submitButtonDisabled]}
+              style={[styles.submitButton, (loading || emailSent || !isConfigured) && styles.submitButtonDisabled]}
               onPress={handleResetPassword}
-              disabled={loading || emailSent}
+              disabled={loading || emailSent || !isConfigured}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
@@ -400,7 +457,7 @@ export default function ForgotPasswordScreen() {
                 color={colors.textSecondary} 
               />
               <Text style={styles.infoText}>
-                You will receive an email with instructions to reset your password. Please check your spam folder if you don't see it.
+                You will receive an email with instructions to reset your password. Please check your spam folder if you don&apos;t see it.
               </Text>
             </View>
 
