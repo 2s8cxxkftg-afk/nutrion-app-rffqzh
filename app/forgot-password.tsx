@@ -51,45 +51,117 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://natively.dev/email-confirmed',
-      });
-
-      if (error) {
-        console.error('Password reset error:', error);
-        Toast.show({
-          message: error.message || t('auth.resetPasswordError') || 'Failed to send reset email',
-          type: 'error',
+    // Retry logic with exponential backoff
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: any = null;
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempt ${retryCount + 1}/${maxRetries}: Sending password reset email to:`, email);
+        
+        // Set a timeout for the request (30 seconds)
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
         });
+        
+        const resetPromise = supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://natively.dev/email-confirmed',
+        });
+        
+        // Race between the actual request and timeout
+        const result = await Promise.race([resetPromise, timeoutPromise]) as any;
+        
+        if (result.error) {
+          console.error('Password reset error:', result.error);
+          lastError = result.error;
+          
+          // Handle specific error types
+          if (result.error.status === 504 || result.error.name === 'AuthRetryableFetchError') {
+            // Retry on timeout errors
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`Retrying in ${retryCount * 2} seconds...`);
+              await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+              continue;
+            }
+            throw new Error('Connection timeout. Please check your internet connection and try again.');
+          } else if (result.error.status === 429) {
+            throw new Error('Too many requests. Please wait a few minutes and try again.');
+          } else if (result.error.message) {
+            throw new Error(result.error.message);
+          } else {
+            throw new Error('Failed to send reset email. Please try again.');
+          }
+        }
+        
+        // Success!
+        console.log('Password reset email sent successfully');
+        setEmailSent(true);
+        Toast.show({
+          message: t('auth.resetPasswordEmailSent') || 'Password reset email sent!',
+          type: 'success',
+        });
+        
+        Alert.alert(
+          t('auth.checkEmail') || 'Check Your Email',
+          t('auth.resetPasswordEmailSent') || 'We have sent you a password reset link. Please check your email.',
+          [
+            {
+              text: t('ok') || 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+        
+        setLoading(false);
         return;
+        
+      } catch (error: any) {
+        console.error(`Attempt ${retryCount + 1} failed:`, error);
+        lastError = error;
+        
+        // If it's a timeout and we have retries left, continue
+        if ((error.message?.includes('timeout') || error.message?.includes('Timeout')) && retryCount < maxRetries - 1) {
+          retryCount++;
+          console.log(`Retrying in ${retryCount * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+          continue;
+        }
+        
+        // Otherwise, break and show error
+        break;
       }
-
-      setEmailSent(true);
-      Toast.show({
-        message: t('auth.resetPasswordEmailSent') || 'Password reset email sent!',
-        type: 'success',
-      });
-      
-      Alert.alert(
-        t('auth.checkEmail') || 'Check Your Email',
-        t('auth.resetPasswordEmailSent') || 'We have sent you a password reset link. Please check your email.',
-        [
-          {
-            text: t('ok') || 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      );
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      Toast.show({
-        message: t('auth.unexpectedError') || 'An unexpected error occurred',
-        type: 'error',
-      });
-    } finally {
-      setLoading(false);
     }
+    
+    // If we get here, all retries failed
+    console.error('All retry attempts failed. Last error:', lastError);
+    
+    // Extract a meaningful error message
+    let errorMessage = 'Failed to send reset email. Please try again later.';
+    
+    if (lastError?.message) {
+      if (lastError.message.includes('timeout') || lastError.message.includes('Timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (lastError.message.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a few minutes and try again.';
+      } else {
+        errorMessage = lastError.message;
+      }
+    } else if (lastError?.status === 504) {
+      errorMessage = 'Server timeout. Please try again in a few moments.';
+    } else if (lastError?.status === 429) {
+      errorMessage = 'Too many requests. Please wait a few minutes and try again.';
+    } else if (lastError?.name === 'AuthRetryableFetchError') {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    }
+    
+    Toast.show({
+      message: errorMessage,
+      type: 'error',
+    });
+    
+    setLoading(false);
   };
 
   return (
