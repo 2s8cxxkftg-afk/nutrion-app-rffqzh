@@ -250,7 +250,17 @@ export default function AuthScreen() {
       
       if (error) {
         console.error('Password reset error:', error);
-        throw error;
+        
+        // Handle specific error types
+        if (error.status === 504 || error.name === 'AuthRetryableFetchError') {
+          throw new Error('Connection timeout. Please check your internet connection and try again.');
+        } else if (error.status === 429) {
+          throw new Error('Too many requests. Please wait a few minutes and try again.');
+        } else if (error.message) {
+          throw new Error(error.message);
+        } else {
+          throw new Error('Failed to send reset email. Please try again.');
+        }
       }
       
       console.log('Password reset email sent successfully');
@@ -258,7 +268,21 @@ export default function AuthScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       console.error('Failed to send reset email:', error);
-      Toast.show(error.message || "Failed to send reset email", "error");
+      
+      // Extract a meaningful error message
+      let errorMessage = 'Failed to send reset email. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.status === 504) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (error.status === 429) {
+        errorMessage = 'Too many requests. Please wait a few minutes and try again.';
+      } else if (error.name === 'AuthRetryableFetchError') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      Toast.show(errorMessage, "error");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
