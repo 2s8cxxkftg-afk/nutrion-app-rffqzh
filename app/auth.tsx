@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: spacing.xl * 2,
+    paddingTop: spacing.lg,
   },
   title: {
     fontSize: 28,
