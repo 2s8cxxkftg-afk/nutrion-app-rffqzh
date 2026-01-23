@@ -111,6 +111,13 @@ export default function RootLayout() {
               {/* Auth screens */}
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen 
+                name="forgot-password" 
+                options={{ 
+                  headerShown: false,
+                  presentation: "card"
+                }} 
+              />
+              <Stack.Screen 
                 name="reset-password" 
                 options={{ 
                   headerShown: true,

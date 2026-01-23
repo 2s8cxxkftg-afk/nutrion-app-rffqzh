@@ -10,22 +10,151 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
-import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+    lineHeight: 24,
+  },
+  form: {
+    flex: 1,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inputIconContainer: {
+    marginRight: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.text,
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.semibold,
+    color: '#FFFFFF',
+    marginRight: spacing.sm,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginLeft: spacing.sm,
+  },
+  backToLoginButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  backToLoginText: {
+    fontSize: 15,
+    fontFamily: typography.fontFamily.semibold,
+    color: colors.primary,
+  },
+  retryText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+});
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,23 +162,23 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleResetPassword = async () => {
+    console.log('User tapped Send Reset Link button');
+    
     if (!email) {
-      Toast.show({
-        message: t('auth.enterEmail') || 'Please enter your email',
-        type: 'error',
-      });
+      Toast.show('Please enter your email', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (!validateEmail(email)) {
-      Toast.show({
-        message: t('auth.invalidEmail') || 'Please enter a valid email',
-        type: 'error',
-      });
+      Toast.show('Please enter a valid email', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     setLoading(true);
+    setRetryAttempt(0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Retry logic with exponential backoff
     const maxRetries = 3;
@@ -58,7 +187,12 @@ export default function ForgotPasswordScreen() {
     
     while (retryCount < maxRetries) {
       try {
+        setRetryAttempt(retryCount + 1);
         console.log(`Attempt ${retryCount + 1}/${maxRetries}: Sending password reset email to:`, email);
+        
+        // Use the app's deep link scheme for password reset
+        const redirectUrl = Linking.createURL('reset-password');
+        console.log('Redirect URL:', redirectUrl);
         
         // Set a timeout for the request (30 seconds)
         const timeoutPromise = new Promise((_, reject) => {
@@ -66,7 +200,7 @@ export default function ForgotPasswordScreen() {
         });
         
         const resetPromise = supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://natively.dev/email-confirmed',
+          redirectTo: redirectUrl,
         });
         
         // Race between the actual request and timeout
@@ -82,6 +216,7 @@ export default function ForgotPasswordScreen() {
             retryCount++;
             if (retryCount < maxRetries) {
               console.log(`Retrying in ${retryCount * 2} seconds...`);
+              Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
               await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
               continue;
             }
@@ -98,23 +233,16 @@ export default function ForgotPasswordScreen() {
         // Success!
         console.log('Password reset email sent successfully');
         setEmailSent(true);
-        Toast.show({
-          message: t('auth.resetPasswordEmailSent') || 'Password reset email sent!',
-          type: 'success',
-        });
+        Toast.show('Password reset email sent! Check your inbox.', 'success');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
-        Alert.alert(
-          t('auth.checkEmail') || 'Check Your Email',
-          t('auth.resetPasswordEmailSent') || 'We have sent you a password reset link. Please check your email.',
-          [
-            {
-              text: t('ok') || 'OK',
-              onPress: () => router.back(),
-            },
-          ]
-        );
+        // Navigate back after a short delay
+        setTimeout(() => {
+          router.back();
+        }, 2000);
         
         setLoading(false);
+        setRetryAttempt(0);
         return;
         
       } catch (error: any) {
@@ -125,6 +253,7 @@ export default function ForgotPasswordScreen() {
         if ((error.message?.includes('timeout') || error.message?.includes('Timeout')) && retryCount < maxRetries - 1) {
           retryCount++;
           console.log(`Retrying in ${retryCount * 2} seconds...`);
+          Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
           await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
           continue;
         }
@@ -156,16 +285,21 @@ export default function ForgotPasswordScreen() {
       errorMessage = 'Network error. Please check your connection and try again.';
     }
     
-    Toast.show({
-      message: errorMessage,
-      type: 'error',
-    });
-    
+    Toast.show(errorMessage, 'error');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     setLoading(false);
+    setRetryAttempt(0);
   };
+
+  const retryText = retryAttempt > 0 ? `Attempt ${retryAttempt}/3` : '';
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          headerShown: false,
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -175,21 +309,33 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            disabled={loading}
           >
-            <IconSymbol name="chevron.left" size={24} color={colors.text} />
+            <IconSymbol 
+              ios_icon_name="chevron.left" 
+              android_material_icon_name="arrow-back" 
+              size={24} 
+              color={colors.text} 
+            />
           </TouchableOpacity>
 
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <IconSymbol name="lock.fill" size={48} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="lock.fill" 
+                android_material_icon_name="lock" 
+                size={48} 
+                color={colors.primary} 
+              />
             </View>
-            <Text style={styles.title}>{t('auth.forgotPassword') || 'Forgot Password'}</Text>
+            <Text style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
-              {t('auth.forgotPasswordDesc') || 'Enter your email to receive a password reset link'}
+              Enter your email address and we'll send you a link to reset your password
             </Text>
           </View>
 
@@ -198,11 +344,16 @@ export default function ForgotPasswordScreen() {
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
-                <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+                <IconSymbol 
+                  ios_icon_name="envelope.fill" 
+                  android_material_icon_name="email" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
               </View>
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.emailAddress') || 'Email Address'}
+                placeholder="your@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={setEmail}
@@ -222,20 +373,34 @@ export default function ForgotPasswordScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <>
+                <React.Fragment>
                   <Text style={styles.submitButtonText}>
-                    {t('auth.sendResetLink') || 'Send Reset Link'}
+                    {emailSent ? 'Email Sent!' : 'Send Reset Link'}
                   </Text>
-                  <IconSymbol name="arrow_forward" size={20} color="#FFFFFF" />
-                </>
+                  <IconSymbol 
+                    ios_icon_name="arrow.right" 
+                    android_material_icon_name="arrow-forward" 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                </React.Fragment>
               )}
             </TouchableOpacity>
 
+            {retryText ? (
+              <Text style={styles.retryText}>{retryText}</Text>
+            ) : null}
+
             {/* Info Box */}
             <View style={styles.infoBox}>
-              <IconSymbol name="info.circle" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="info.circle" 
+                android_material_icon_name="info" 
+                size={20} 
+                color={colors.textSecondary} 
+              />
               <Text style={styles.infoText}>
-                {t('auth.resetPasswordInfo') || 'You will receive an email with instructions to reset your password'}
+                You will receive an email with instructions to reset your password. Please check your spam folder if you don't see it.
               </Text>
             </View>
 
@@ -246,7 +411,7 @@ export default function ForgotPasswordScreen() {
               disabled={loading}
             >
               <Text style={styles.backToLoginText}>
-                {t('auth.backToLogin') || 'Back to Login'}
+                Back to Login
               </Text>
             </TouchableOpacity>
           </View>
@@ -255,124 +420,3 @@ export default function ForgotPasswordScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-    paddingHorizontal: 20,
-  },
-  form: {
-    flex: 1,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 56,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  inputIconContainer: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-    gap: 12,
-    boxShadow: '0px 8px 24px rgba(46, 139, 87, 0.3)',
-    elevation: 6,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  backToLoginButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  backToLoginText: {
-    fontSize: 15,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
