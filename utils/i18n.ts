@@ -40,24 +40,31 @@ const en = {
 };
 
 // Initialize i18next with English translations
-i18next
-  .use(initReactI18next)
-  .init({
-    compatibilityJSON: 'v3',
-    lng: 'en',
-    fallbackLng: 'en',
-    resources: {
-      en: {
-        translation: en,
+try {
+  i18next
+    .use(initReactI18next)
+    .init({
+      compatibilityJSON: 'v3',
+      lng: 'en',
+      fallbackLng: 'en',
+      resources: {
+        en: {
+          translation: en,
+        },
       },
-    },
-    interpolation: {
-      escapeValue: false,
-    },
-  })
-  .catch((error) => {
-    console.error('i18next initialization error:', error);
-  });
+      interpolation: {
+        escapeValue: false,
+      },
+      react: {
+        useSuspense: false, // Disable suspense to prevent crashes
+      },
+    })
+    .catch((error) => {
+      console.error('i18next initialization error:', error);
+    });
+} catch (error) {
+  console.error('Failed to initialize i18next:', error);
+}
 
 export const changeLanguage = async (languageCode: string) => {
   console.log('Language switching disabled - English only');

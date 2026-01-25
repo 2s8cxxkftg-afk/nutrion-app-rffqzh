@@ -26,17 +26,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session with error handling
+    // Get initial session with error handling and timeout
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting initial session:', error);
+        console.log('Initializing auth...');
+        
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error('Auth initialization timeout')), 5000)
+        );
+        
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        if (result && result.data) {
+          const { session, error } = result.data;
+          
+          if (error) {
+            console.error('Error getting initial session:', error.message);
+          }
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+          console.log('Auth initialized, user:', session?.user?.email || 'none');
         }
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Failed to initialize auth:', error);
+      } catch (error: any) {
+        console.error('Failed to initialize auth:', error.message);
         setSession(null);
         setUser(null);
       } finally {
@@ -58,13 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       });
       subscription = authSubscription;
-    } catch (error) {
-      console.error('Failed to set up auth listener:', error);
+    } catch (error: any) {
+      console.error('Failed to set up auth listener:', error.message);
+      // Don't crash the app if auth listener fails
+      setLoading(false);
     }
 
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
+      try {
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      } catch (error: any) {
+        console.error('Error unsubscribing from auth:', error.message);
       }
     };
   }, []);

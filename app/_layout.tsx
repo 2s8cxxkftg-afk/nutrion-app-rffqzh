@@ -20,12 +20,49 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Toast, { setToastCallback } from "@/components/Toast";
 import { ErrorBoundary } from "react-error-boundary";
 
+// Global error handler for unhandled errors and promise rejections
+if (typeof global !== 'undefined' && typeof ErrorUtils !== 'undefined') {
+  const originalHandler = ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    console.error('=== GLOBAL ERROR CAUGHT ===');
+    console.error('Error:', error);
+    console.error('Message:', error.message);
+    console.error('Is fatal:', isFatal);
+    console.error('Stack:', error.stack);
+    console.error('=========================');
+    
+    // Call original handler
+    if (originalHandler) {
+      originalHandler(error, isFatal);
+    }
+  });
+}
+
+// Handle unhandled promise rejections
+if (typeof global !== 'undefined') {
+  const originalPromiseRejection = global.Promise.prototype.catch;
+  global.Promise.prototype.catch = function(onRejected) {
+    return originalPromiseRejection.call(this, (error: any) => {
+      console.error('=== UNHANDLED PROMISE REJECTION ===');
+      console.error('Error:', error);
+      console.error('Message:', error?.message);
+      console.error('Stack:', error?.stack);
+      console.error('===================================');
+      
+      if (onRejected) {
+        return onRejected(error);
+      }
+      throw error;
+    });
+  };
+}
+
 // Initialize i18n with error handling
 try {
   require("@/utils/i18n");
   console.log('i18n initialized successfully');
-} catch (error) {
-  console.error('Failed to initialize i18n:', error);
+} catch (error: any) {
+  console.error('Failed to initialize i18n:', error.message || error);
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.

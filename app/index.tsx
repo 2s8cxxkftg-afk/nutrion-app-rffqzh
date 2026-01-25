@@ -27,8 +27,8 @@ export default function Index() {
         const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
         completedOnboarding = onboardingValue === 'true';
         console.log('Onboarding completed:', completedOnboarding);
-      } catch (storageError) {
-        console.error('Error reading onboarding status:', storageError);
+      } catch (storageError: any) {
+        console.error('Error reading onboarding status:', storageError.message);
         completedOnboarding = false;
       }
       setHasCompletedOnboarding(completedOnboarding);
@@ -39,7 +39,7 @@ export default function Index() {
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 2000)
+          setTimeout(() => reject(new Error('Auth timeout')), 3000)
         );
         
         const result = await Promise.race([
@@ -56,6 +56,8 @@ export default function Index() {
           
           authenticated = !!session;
           console.log('Authenticated:', authenticated);
+        } else {
+          console.log('No session data returned');
         }
       } catch (authError: any) {
         console.log('Auth check timed out or failed (non-critical):', authError.message);
@@ -68,7 +70,7 @@ export default function Index() {
       console.log('Navigation ready - proceeding immediately');
       setIsLoading(false);
     } catch (error: any) {
-      console.error('Error checking app status:', error);
+      console.error('Error checking app status:', error.message || error);
       // On error, assume nothing completed and proceed to avoid crash
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);

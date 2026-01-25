@@ -53,9 +53,10 @@ export async function requestNotificationPermissions(): Promise<boolean> {
       finalStatus = status;
     }
 
+    console.log('Notification permission status:', finalStatus);
     return finalStatus === 'granted';
-  } catch (error) {
-    console.error('Error requesting notification permissions:', error);
+  } catch (error: any) {
+    console.error('Error requesting notification permissions:', error.message || error);
     return false;
   }
 }
@@ -267,6 +268,8 @@ export async function scheduleDailyReminder(): Promise<void> {
 
 export async function initializeNotifications(): Promise<void> {
   try {
+    console.log('Initializing notifications...');
+    
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
       console.log('Notification permissions not granted');
@@ -285,7 +288,10 @@ export async function initializeNotifications(): Promise<void> {
     if (settings.dailyReminder) {
       await scheduleDailyReminder();
     }
-  } catch (error) {
-    console.error('Error initializing notifications:', error);
+    
+    console.log('Notifications initialized successfully');
+  } catch (error: any) {
+    console.error('Error initializing notifications:', error.message || error);
+    // Don't throw - allow app to continue without notifications
   }
 }
