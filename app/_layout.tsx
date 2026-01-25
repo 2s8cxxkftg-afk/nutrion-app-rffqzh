@@ -6,7 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
+import { useColorScheme, Alert, View, Text, StyleSheet } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DarkTheme,
@@ -18,10 +18,20 @@ import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Toast, { setToastCallback } from "@/components/Toast";
-import "@/utils/i18n"; // Initialize i18n
+import { ErrorBoundary } from "react-error-boundary";
+
+// Initialize i18n with error handling
+try {
+  require("@/utils/i18n");
+  console.log('i18n initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize i18n:', error);
+}
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch((error) => {
+  console.error('Failed to prevent splash screen auto-hide:', error);
+});
 
 export const unstable_settings = {
   initialRouteName: "(tabs)", // Ensure any route can link back to `/`
@@ -41,7 +51,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch((error) => {
+        console.error('Failed to hide splash screen:', error);
+      });
     }
   }, [loaded]);
 
@@ -96,74 +108,96 @@ export default function RootLayout() {
     },
   };
 
+  // Error fallback component
+  const ErrorFallback = ({ error }: { error: Error }) => {
+    console.error('App Error:', error);
+    return (
+      <View style={errorStyles.container}>
+        <Text style={errorStyles.title}>Oops! Something went wrong</Text>
+        <Text style={errorStyles.message}>
+          The app encountered an error. Please restart the app.
+        </Text>
+        <Text style={errorStyles.error}>{error.message}</Text>
+      </View>
+    );
+  };
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <WidgetProvider>
-          <ThemeProvider
-            value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-          >
-            <StatusBar style="auto" animated />
-            <Stack>
-              {/* Main app with tabs */}
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthProvider>
+          <WidgetProvider>
+            <ThemeProvider
+              value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
+            >
+              <StatusBar style="auto" animated />
+              <Stack>
+                {/* Main app with tabs */}
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-              {/* Auth screens */}
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-              <Stack.Screen 
-                name="forgot-password" 
-                options={{ 
-                  headerShown: false,
-                  presentation: "card"
-                }} 
-              />
-              <Stack.Screen 
-                name="reset-password" 
-                options={{ 
-                  headerShown: true,
-                  title: "Reset Password",
-                  presentation: "card"
-                }} 
-              />
+                {/* Auth screens */}
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+                <Stack.Screen 
+                  name="forgot-password" 
+                  options={{ 
+                    headerShown: false,
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="reset-password" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Reset Password",
+                    presentation: "card"
+                  }} 
+                />
 
-              {/* Modal Demo Screens */}
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: "modal",
-                  title: "Standard Modal",
-                }}
+                {/* Modal Demo Screens - Optional */}
+                {/* Removed to prevent warnings about missing routes */}
+              </Stack>
+              <SystemBars style={"auto"} />
+              
+              {/* Global Toast */}
+              <Toast
+                visible={toastVisible}
+                message={toastMessage}
+                type={toastType}
+                onHide={() => setToastVisible(false)}
               />
-              <Stack.Screen
-                name="formsheet"
-                options={{
-                  presentation: "formSheet",
-                  title: "Form Sheet Modal",
-                  sheetGrabberVisible: true,
-                  sheetAllowedDetents: [0.5, 0.8, 1.0],
-                  sheetCornerRadius: 20,
-                }}
-              />
-              <Stack.Screen
-                name="transparent-modal"
-                options={{
-                  presentation: "transparentModal",
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-            <SystemBars style={"auto"} />
-            
-            {/* Global Toast */}
-            <Toast
-              visible={toastVisible}
-              message={toastMessage}
-              type={toastType}
-              onHide={() => setToastVisible(false)}
-            />
-          </ThemeProvider>
-        </WidgetProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
+            </ThemeProvider>
+          </WidgetProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
+
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#F5F1E8',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F5F4E',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  error: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+});

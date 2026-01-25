@@ -21,32 +21,42 @@ export default function Index() {
     try {
       console.log('=== Checking App Status ===');
 
-      // Check onboarding status
-      const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
-      const completedOnboarding = onboardingValue === 'true';
-      console.log('Onboarding completed:', completedOnboarding);
+      // Check onboarding status with error handling
+      let completedOnboarding = false;
+      try {
+        const onboardingValue = await AsyncStorage.getItem(ONBOARDING_KEY);
+        completedOnboarding = onboardingValue === 'true';
+        console.log('Onboarding completed:', completedOnboarding);
+      } catch (storageError) {
+        console.error('Error reading onboarding status:', storageError);
+        completedOnboarding = false;
+      }
       setHasCompletedOnboarding(completedOnboarding);
 
-      // Check authentication status with short timeout
+      // Check authentication status with short timeout and better error handling
       let authenticated = false;
       
       try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 1500)
+          setTimeout(() => reject(new Error('Auth timeout')), 2000)
         );
         
-        const { data: { session }, error: sessionError } = await Promise.race([
+        const result = await Promise.race([
           sessionPromise,
           timeoutPromise
         ]);
         
-        if (sessionError) {
-          console.log('Session error (non-critical):', sessionError.message);
+        if (result && result.data) {
+          const { session, error: sessionError } = result.data;
+          
+          if (sessionError) {
+            console.log('Session error (non-critical):', sessionError.message);
+          }
+          
+          authenticated = !!session;
+          console.log('Authenticated:', authenticated);
         }
-        
-        authenticated = !!session;
-        console.log('Authenticated:', authenticated);
       } catch (authError: any) {
         console.log('Auth check timed out or failed (non-critical):', authError.message);
         authenticated = false;
@@ -59,7 +69,7 @@ export default function Index() {
       setIsLoading(false);
     } catch (error: any) {
       console.error('Error checking app status:', error);
-      // On error, assume nothing completed and proceed
+      // On error, assume nothing completed and proceed to avoid crash
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
       setIsLoading(false);
