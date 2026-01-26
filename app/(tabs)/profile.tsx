@@ -6,6 +6,7 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useRouter, useFocusEffect } from "expo-router";
 import { colors, commonStyles, spacing, borderRadius, typography } from "@/styles/commonStyles";
 import { supabase } from "@/utils/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import * as Haptics from 'expo-haptics';
 import Toast from '@/components/Toast';
 import { isPremiumUser } from '@/utils/subscription';
@@ -19,7 +20,7 @@ interface ProfileStats {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [displayName, setDisplayName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [isPremium, setIsPremium] = useState(false);
@@ -38,41 +39,54 @@ export default function ProfileScreen() {
 
   const loadUserData = useCallback(async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('[Profile] Loading user data from AuthContext');
       
-      if (currentUser) {
-        setUser(currentUser);
-        setEmail(currentUser.email || '');
+      if (user) {
+        setEmail(user.email || '');
         
         // Try to get display name from user metadata or profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name')
-          .eq('id', currentUser.id)
+          .eq('id', user.id)
           .single();
         
         let rawName = '';
         if (profile?.display_name) {
           rawName = profile.display_name;
-        } else if (currentUser.user_metadata?.display_name) {
-          rawName = currentUser.user_metadata.display_name;
-        } else if (currentUser.user_metadata?.full_name) {
-          rawName = currentUser.user_metadata.full_name;
-        } else if (currentUser.email) {
-          rawName = currentUser.email.split('@')[0].replace(/[._-]/g, ' ');
+          console.log('[Profile] Using display name from profile:', rawName);
+        } else if (user.user_metadata?.display_name) {
+          rawName = user.user_metadata.display_name;
+          console.log('[Profile] Using display name from user metadata:', rawName);
+        } else if (user.user_metadata?.full_name) {
+          rawName = user.user_metadata.full_name;
+          console.log('[Profile] Using full name from user metadata:', rawName);
+        } else if (user.user_metadata?.name) {
+          rawName = user.user_metadata.name;
+          console.log('[Profile] Using name from user metadata:', rawName);
+        } else if (user.email) {
+          rawName = user.email.split('@')[0].replace(/[._-]/g, ' ');
+          console.log('[Profile] Using email-derived name:', rawName);
         } else {
           rawName = 'User';
+          console.log('[Profile] Using default name: User');
         }
         
         setDisplayName(formatDisplayName(rawName));
+      } else {
+        console.log('[Profile] No user found in AuthContext');
+        setDisplayName('User');
+        setEmail('');
       }
     } catch (error) {
-      console.log('Error loading user data:', error);
+      console.log('[Profile] Error loading user data:', error);
+      setDisplayName('User');
     }
-  }, []);
+  }, [user]);
 
   const loadStats = useCallback(async () => {
     try {
+      console.log('[Profile] Loading pantry stats');
       const items = await loadPantryItems();
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -97,14 +111,16 @@ export default function ProfileScreen() {
         expiringSoon,
         expired,
       });
+      console.log('[Profile] Stats loaded:', { totalItems: items.length, expiringSoon, expired });
     } catch (error) {
-      console.log('Error loading stats:', error);
+      console.log('[Profile] Error loading stats:', error);
     }
   }, []);
 
   const checkPremiumStatus = useCallback(async () => {
     const premium = await isPremiumUser();
     setIsPremium(premium);
+    console.log('[Profile] Premium status:', premium);
   }, []);
 
   useFocusEffect(
@@ -142,6 +158,7 @@ export default function ProfileScreen() {
   };
 
   const handleNavigation = (route: string) => {
+    console.log('[Profile] Navigating to:', route);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(route as any);
   };
