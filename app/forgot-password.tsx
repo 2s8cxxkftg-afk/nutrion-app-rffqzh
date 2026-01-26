@@ -206,133 +206,101 @@ export default function ForgotPasswordScreen() {
     setRetryAttempt(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Retry logic with exponential backoff
-    const maxRetries = 3;
-    let retryCount = 0;
-    let lastError: any = null;
-    
-    while (retryCount < maxRetries) {
-      try {
-        setRetryAttempt(retryCount + 1);
-        console.log(`Attempt ${retryCount + 1}/${maxRetries}: Sending password reset email to:`, email);
-        
-        // Use the app's deep link scheme for password reset
-        const redirectUrl = Linking.createURL('reset-password');
-        console.log('Redirect URL:', redirectUrl);
-        
-        // Set a shorter timeout for the request (10 seconds instead of 30)
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
-            console.log('Request timeout after 10 seconds');
-            reject(new Error('Request timeout after 10 seconds'));
-          }, 10000);
-        });
-        
-        const resetPromise = supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: redirectUrl,
-        });
-        
-        console.log('Waiting for password reset response...');
-        
-        // Race between the actual request and timeout
-        const result = await Promise.race([resetPromise, timeoutPromise]) as any;
-        
-        console.log('Password reset response received:', result);
-        
-        if (result.error) {
-          console.error('Password reset error:', result.error);
-          console.error('Error details:', JSON.stringify(result.error, null, 2));
-          lastError = result.error;
-          
-          // Handle specific error types
-          if (result.error.status === 504 || result.error.name === 'AuthRetryableFetchError') {
-            // Retry on timeout errors
-            retryCount++;
-            if (retryCount < maxRetries) {
-              const waitTime = retryCount * 2;
-              console.log(`Retrying in ${waitTime} seconds...`);
-              Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
-              await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
-              continue;
-            }
-            throw new Error('Connection timeout. Please check your internet connection and try again.');
-          } else if (result.error.status === 429) {
-            throw new Error('Too many requests. Please wait a few minutes and try again.');
-          } else if (result.error.message) {
-            throw new Error(result.error.message);
-          } else {
-            throw new Error('Failed to send reset email. Please try again.');
-          }
-        }
-        
-        // Success!
-        console.log('Password reset email sent successfully');
-        setEmailSent(true);
-        Toast.show('Password reset email sent! Check your inbox.', 'success');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        // Navigate back after a short delay
+    try {
+      console.log('Sending password reset email to:', email);
+      
+      // Use the app's deep link scheme for password reset
+      const redirectUrl = Linking.createURL('reset-password');
+      console.log('Redirect URL:', redirectUrl);
+      
+      // Increase timeout to 30 seconds (more reasonable for email sending)
+      const timeoutDuration = 30000;
+      console.log(`Setting timeout to ${timeoutDuration / 1000} seconds`);
+      
+      const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          router.back();
-        }, 2000);
+          console.log(`Request timeout after ${timeoutDuration / 1000} seconds`);
+          reject(new Error(`Request timeout after ${timeoutDuration / 1000} seconds`));
+        }, timeoutDuration);
+      });
+      
+      const resetPromise = supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      
+      console.log('Waiting for password reset response...');
+      
+      // Race between the actual request and timeout
+      const result = await Promise.race([resetPromise, timeoutPromise]) as any;
+      
+      console.log('Password reset response received');
+      console.log('Response data:', JSON.stringify(result?.data, null, 2));
+      console.log('Response error:', JSON.stringify(result?.error, null, 2));
+      
+      if (result.error) {
+        console.error('Password reset error:', result.error);
+        console.error('Error status:', result.error.status);
+        console.error('Error message:', result.error.message);
+        console.error('Error name:', result.error.name);
         
-        setLoading(false);
-        setRetryAttempt(0);
-        return;
-        
-      } catch (error: any) {
-        console.error(`Attempt ${retryCount + 1} failed:`, error);
-        console.error('Error type:', typeof error);
-        console.error('Error name:', error?.name);
-        console.error('Error message:', error?.message);
-        console.error('Error stack:', error?.stack);
-        lastError = error;
-        
-        // If it's a timeout and we have retries left, continue
-        if ((error.message?.includes('timeout') || error.message?.includes('Timeout')) && retryCount < maxRetries - 1) {
-          retryCount++;
-          const waitTime = retryCount * 2;
-          console.log(`Retrying in ${waitTime} seconds...`);
-          Toast.show(`Connection timeout. Retrying (${retryCount}/${maxRetries})...`, 'info');
-          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
-          continue;
+        // Handle specific error types
+        if (result.error.status === 429) {
+          throw new Error('Too many requests. Please wait a few minutes and try again.');
+        } else if (result.error.message) {
+          throw new Error(result.error.message);
+        } else {
+          throw new Error('Failed to send reset email. Please try again.');
         }
-        
-        // Otherwise, break and show error
-        break;
       }
-    }
-    
-    // If we get here, all retries failed
-    console.error('All retry attempts failed. Last error:', lastError);
-    console.error('Last error details:', JSON.stringify(lastError, null, 2));
-    
-    // Extract a meaningful error message
-    let errorMessage = 'Failed to send reset email. Please try again later.';
-    
-    if (lastError?.message) {
-      if (lastError.message.includes('timeout') || lastError.message.includes('Timeout')) {
-        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
-      } else if (lastError.message.includes('Too many requests')) {
+      
+      // Success!
+      console.log('Password reset email sent successfully');
+      setEmailSent(true);
+      Toast.show('Password reset email sent! Check your inbox.', 'success');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Navigate back after a short delay
+      setTimeout(() => {
+        router.back();
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Error sending password reset email:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+      
+      // Extract a meaningful error message
+      let errorMessage = 'Failed to send reset email. Please try again later.';
+      
+      if (error?.message) {
+        if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+          errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Too many requests. Please wait a few minutes and try again.';
+        } else if (error.message.includes('User not found')) {
+          // For security, don't reveal if email exists or not
+          errorMessage = 'If this email is registered, you will receive a password reset link.';
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error?.status === 504) {
+        errorMessage = 'Server timeout. Please try again in a few moments.';
+      } else if (error?.status === 429) {
         errorMessage = 'Too many requests. Please wait a few minutes and try again.';
-      } else {
-        errorMessage = lastError.message;
+      } else if (error?.name === 'AuthRetryableFetchError') {
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
-    } else if (lastError?.status === 504) {
-      errorMessage = 'Server timeout. Please try again in a few moments.';
-    } else if (lastError?.status === 429) {
-      errorMessage = 'Too many requests. Please wait a few minutes and try again.';
-    } else if (lastError?.name === 'AuthRetryableFetchError') {
-      errorMessage = 'Network error. Please check your connection and try again.';
+      
+      Toast.show(errorMessage, 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+      setRetryAttempt(0);
     }
-    
-    Toast.show(errorMessage, 'error');
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    setLoading(false);
-    setRetryAttempt(0);
   };
 
-  const retryText = retryAttempt > 0 ? `Attempt ${retryAttempt}/3` : '';
   const isConfigured = isSupabaseConfigured();
 
   return (
@@ -443,10 +411,6 @@ export default function ForgotPasswordScreen() {
                 </React.Fragment>
               )}
             </TouchableOpacity>
-
-            {retryText ? (
-              <Text style={styles.retryText}>{retryText}</Text>
-            ) : null}
 
             {/* Info Box */}
             <View style={styles.infoBox}>
