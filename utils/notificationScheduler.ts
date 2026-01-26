@@ -45,18 +45,35 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    // Add timeout to prevent hanging
+    const permissionPromise = Notifications.getPermissionsAsync();
+    const timeoutPromise = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error('Permission check timeout')), 3000)
+    );
+    
+    const result = await Promise.race([permissionPromise, timeoutPromise]);
+    const { status: existingStatus } = result;
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+      try {
+        const requestPromise = Notifications.requestPermissionsAsync();
+        const requestTimeout = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error('Permission request timeout')), 5000)
+        );
+        
+        const requestResult = await Promise.race([requestPromise, requestTimeout]);
+        finalStatus = requestResult.status;
+      } catch (requestError: any) {
+        console.error('Error requesting permissions:', requestError?.message || requestError);
+        return false;
+      }
     }
 
     console.log('Notification permission status:', finalStatus);
     return finalStatus === 'granted';
   } catch (error: any) {
-    console.error('Error requesting notification permissions:', error.message || error);
+    console.error('Error checking notification permissions:', error?.message || error);
     return false;
   }
 }
@@ -270,28 +287,45 @@ export async function initializeNotifications(): Promise<void> {
   try {
     console.log('Initializing notifications...');
     
-    const hasPermission = await requestNotificationPermissions();
-    if (!hasPermission) {
-      console.log('Notification permissions not granted');
-      return;
-    }
+    // Add timeout for entire initialization
+    const initPromise = (async () => {
+      const hasPermission = await requestNotificationPermissions();
+      if (!hasPermission) {
+        console.log('Notification permissions not granted');
+        return;
+      }
 
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
+      try {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+      } catch (handlerError: any) {
+        console.error('Error setting notification handler:', handlerError?.message || handlerError);
+      }
 
-    const settings = await getNotificationSettings();
-    if (settings.dailyReminder) {
-      await scheduleDailyReminder();
-    }
-    
-    console.log('Notifications initialized successfully');
+      try {
+        const settings = await getNotificationSettings();
+        if (settings.dailyReminder) {
+          await scheduleDailyReminder();
+        }
+      } catch (settingsError: any) {
+        console.error('Error loading notification settings:', settingsError?.message || settingsError);
+      }
+      
+      console.log('Notifications initialized successfully');
+    })();
+
+    const timeoutPromise = new Promise<void>((_, reject) => 
+      setTimeout(() => reject(new Error('Notification initialization timeout')), 8000)
+    );
+
+    await Promise.race([initPromise, timeoutPromise]);
   } catch (error: any) {
-    console.error('Error initializing notifications:', error.message || error);
+    console.error('Error initializing notifications:', error?.message || error);
     // Don't throw - allow app to continue without notifications
   }
 }

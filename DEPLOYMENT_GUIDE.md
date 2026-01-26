@@ -1,6 +1,41 @@
 
 # Nutrion App Deployment Guide
 
+## 🚨 CRITICAL: iOS Crash Fix Required BEFORE Deployment
+
+### The app currently crashes on iOS due to an incompatible dependency
+
+**YOU MUST DO THIS FIRST:**
+
+1. **Remove react-native-maps from package.json**
+   ```bash
+   # Open package.json and DELETE this line:
+   "react-native-maps": "^1.20.1",
+   ```
+
+2. **Reinstall dependencies**
+   ```bash
+   npm install
+   # or
+   pnpm install
+   ```
+
+3. **Why this is critical:**
+   - `react-native-maps` is NOT supported in Natively
+   - It causes immediate crashes on iOS launch
+   - The app WILL NOT pass App Store review with this bug
+   - Must be removed before building for production
+
+### Additional Fixes Already Applied:
+✅ Enhanced error handling throughout the app
+✅ Added timeouts to prevent hanging operations
+✅ Improved platform-specific code safety
+✅ Better async initialization with error recovery
+✅ Widget context safety checks
+✅ Notification initialization improvements
+
+---
+
 ## Prerequisites
 
 Before you can deploy to the App Store and Play Store, you need to complete these setup steps:

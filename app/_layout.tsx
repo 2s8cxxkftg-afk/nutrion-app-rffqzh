@@ -21,40 +21,57 @@ import Toast, { setToastCallback } from "@/components/Toast";
 import { ErrorBoundary } from "react-error-boundary";
 
 // Global error handler for unhandled errors and promise rejections
-if (typeof global !== 'undefined' && typeof ErrorUtils !== 'undefined') {
-  const originalHandler = ErrorUtils.getGlobalHandler();
-  ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.error('=== GLOBAL ERROR CAUGHT ===');
-    console.error('Error:', error);
-    console.error('Message:', error.message);
-    console.error('Is fatal:', isFatal);
-    console.error('Stack:', error.stack);
-    console.error('=========================');
-    
-    // Call original handler
-    if (originalHandler) {
-      originalHandler(error, isFatal);
-    }
-  });
+try {
+  if (typeof global !== 'undefined' && typeof ErrorUtils !== 'undefined') {
+    const originalHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error, isFatal) => {
+      console.error('=== GLOBAL ERROR CAUGHT ===');
+      console.error('Error:', error);
+      console.error('Message:', error?.message || 'No message');
+      console.error('Is fatal:', isFatal);
+      console.error('Stack:', error?.stack || 'No stack trace');
+      console.error('=========================');
+      
+      // Call original handler
+      if (originalHandler) {
+        try {
+          originalHandler(error, isFatal);
+        } catch (handlerError) {
+          console.error('Error in original handler:', handlerError);
+        }
+      }
+    });
+  }
+} catch (setupError) {
+  console.error('Failed to set up global error handler:', setupError);
 }
 
 // Handle unhandled promise rejections
-if (typeof global !== 'undefined') {
-  const originalPromiseRejection = global.Promise.prototype.catch;
-  global.Promise.prototype.catch = function(onRejected) {
-    return originalPromiseRejection.call(this, (error: any) => {
-      console.error('=== UNHANDLED PROMISE REJECTION ===');
-      console.error('Error:', error);
-      console.error('Message:', error?.message);
-      console.error('Stack:', error?.stack);
-      console.error('===================================');
-      
-      if (onRejected) {
-        return onRejected(error);
-      }
-      throw error;
-    });
-  };
+try {
+  if (typeof global !== 'undefined' && global.Promise) {
+    const originalPromiseRejection = global.Promise.prototype.catch;
+    global.Promise.prototype.catch = function(onRejected) {
+      return originalPromiseRejection.call(this, (error: any) => {
+        console.error('=== UNHANDLED PROMISE REJECTION ===');
+        console.error('Error:', error);
+        console.error('Message:', error?.message || 'No message');
+        console.error('Stack:', error?.stack || 'No stack trace');
+        console.error('===================================');
+        
+        if (onRejected) {
+          try {
+            return onRejected(error);
+          } catch (rejectionError) {
+            console.error('Error in rejection handler:', rejectionError);
+            throw rejectionError;
+          }
+        }
+        throw error;
+      });
+    };
+  }
+} catch (setupError) {
+  console.error('Failed to set up promise rejection handler:', setupError);
 }
 
 // Initialize i18n with error handling

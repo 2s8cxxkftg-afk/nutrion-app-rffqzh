@@ -26,6 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    let subscription: any = null;
+
     // Get initial session with error handling and timeout
     const initializeAuth = async () => {
       try {
@@ -39,6 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         const result = await Promise.race([sessionPromise, timeoutPromise]);
         
+        if (!isMounted) {
+          console.log('Component unmounted during auth init');
+          return;
+        }
+        
         if (result && result.data) {
           const { session, error } = result.data;
           
@@ -49,24 +57,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           console.log('Auth initialized, user:', session?.user?.email || 'none');
+        } else {
+          console.log('No session data returned');
+          setSession(null);
+          setUser(null);
         }
       } catch (error: any) {
-        console.error('Failed to initialize auth:', error.message);
-        setSession(null);
-        setUser(null);
+        console.error('Failed to initialize auth:', error?.message || error);
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
+    // Initialize auth
     initializeAuth();
 
     // Listen for auth changes with error handling
-    let subscription: any;
     try {
       const {
         data: { subscription: authSubscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!isMounted) {
+          console.log('Component unmounted, ignoring auth change');
+          return;
+        }
+        
         console.log('Auth state changed:', _event);
         setSession(session);
         setUser(session?.user ?? null);
@@ -74,18 +95,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       subscription = authSubscription;
     } catch (error: any) {
-      console.error('Failed to set up auth listener:', error.message);
+      console.error('Failed to set up auth listener:', error?.message || error);
       // Don't crash the app if auth listener fails
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
 
     return () => {
+      isMounted = false;
       try {
         if (subscription) {
           subscription.unsubscribe();
         }
       } catch (error: any) {
-        console.error('Error unsubscribing from auth:', error.message);
+        console.error('Error unsubscribing from auth:', error?.message || error);
       }
     };
   }, []);

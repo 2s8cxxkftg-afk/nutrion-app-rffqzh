@@ -58,12 +58,20 @@ try {
       react: {
         useSuspense: false, // Disable suspense to prevent crashes
       },
+      // Add error handling options
+      saveMissing: false,
+      missingKeyHandler: (lng, ns, key) => {
+        console.warn(`Missing translation key: ${key}`);
+      },
     })
-    .catch((error) => {
-      console.error('i18next initialization error:', error);
+    .then(() => {
+      console.log('i18next initialized successfully');
+    })
+    .catch((error: any) => {
+      console.error('i18next initialization error:', error?.message || error);
     });
-} catch (error) {
-  console.error('Failed to initialize i18next:', error);
+} catch (error: any) {
+  console.error('Failed to initialize i18next:', error?.message || error);
 }
 
 export const changeLanguage = async (languageCode: string) => {
