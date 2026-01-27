@@ -11,7 +11,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   Keyboard,
@@ -267,12 +266,12 @@ export default function EditItemScreen() {
         const formattedDate = parseISOToMMDDYYYY(item.expirationDate);
         setExpirationDate(formattedDate);
       } else {
-        Toast.show({ message: 'Item not found', type: 'error' });
+        Toast.show('Item not found', 'error');
         router.back();
       }
     } catch (error) {
       console.error('[EditItem] Error loading item:', error);
-      Toast.show({ message: 'Failed to load item', type: 'error' });
+      Toast.show('Failed to load item', 'error');
       router.back();
     }
   }, [id, router]);
@@ -353,27 +352,27 @@ export default function EditItemScreen() {
     console.log('[EditItem] Save button pressed');
     
     if (!name.trim()) {
-      Toast.show({ message: 'Please enter an item name', type: 'error' });
+      Toast.show('Please enter an item name', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (!expirationDate.trim() || expirationDate.length !== 10) {
-      Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
+      Toast.show('Please enter a valid expiration date (MM/DD/YYYY)', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     const isoDate = parseMMDDYYYYToISO(expirationDate);
     if (!isoDate) {
-      Toast.show({ message: 'Invalid date format. Please use MM/DD/YYYY', type: 'error' });
+      Toast.show('Invalid date format. Please use MM/DD/YYYY', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
+      Toast.show('Please enter a valid quantity', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -392,11 +391,11 @@ export default function EditItemScreen() {
       console.log('[EditItem] Updating item:', updatedItem);
       await updatePantryItem(updatedItem);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ message: 'Item updated successfully', type: 'success' });
+      Toast.show('Item updated successfully', 'success');
       router.back();
     } catch (error) {
       console.error('[EditItem] Error updating item:', error);
-      Toast.show({ message: 'Failed to update item', type: 'error' });
+      Toast.show('Failed to update item', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }

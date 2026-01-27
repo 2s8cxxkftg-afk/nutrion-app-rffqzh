@@ -111,6 +111,10 @@ export const commonStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   content: {
     flex: 1,
     alignItems: 'center',

@@ -15,7 +15,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  Alert,
   Platform,
   TextInput,
   Modal,
@@ -206,12 +205,69 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonDelete: {
+    backgroundColor: colors.error,
+  },
+  modalButtonText: {
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+  },
+  modalButtonTextCancel: {
+    color: colors.text,
+  },
+  modalButtonTextDelete: {
+    color: '#FFFFFF',
+  },
 });
 
 export default function ScanReceiptScreen() {
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [expirationDates, setExpirationDates] = useState<{ [key: number]: string }>({});
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ index: number; name: string } | null>(null);
   const { scanReceipt, isLoading } = useReceiptScanner();
   const router = useRouter();
 
@@ -233,22 +289,7 @@ export default function ScanReceiptScreen() {
     
     if (status !== 'granted') {
       console.log('Camera permission denied by user');
-      Alert.alert(
-        'Camera Permission Required',
-        'Please allow camera access to scan receipts. You can enable this in your device settings.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Open Settings', 
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                // On iOS, we can't directly open settings, but the user can do it manually
-                Alert.alert('Open Settings', 'Go to Settings > Nutrion > Camera to enable camera access.');
-              }
-            }
-          }
-        ]
-      );
+      Toast.show('Camera permission is required to scan receipts. Please enable it in your device settings.', 'error');
       return false;
     }
     
@@ -262,22 +303,7 @@ export default function ScanReceiptScreen() {
     
     if (status !== 'granted') {
       console.log('Media library permission denied by user');
-      Alert.alert(
-        'Photo Library Permission Required',
-        'Please allow photo library access to select images. You can enable this in your device settings.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Open Settings', 
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                // On iOS, we can't directly open settings, but the user can do it manually
-                Alert.alert('Open Settings', 'Go to Settings > Nutrion > Photos to enable photo library access.');
-              }
-            }
-          }
-        ]
-      );
+      Toast.show('Photo library permission is required to select images. Please enable it in your device settings.', 'error');
       return false;
     }
     
@@ -381,58 +407,62 @@ export default function ScanReceiptScreen() {
 
   const handleDeleteItem = (index: number, itemName: string) => {
     console.log(`User tapped delete button for item: ${itemName} at index ${index}`);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setItemToDelete({ index, name: itemName });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+
+    const { index, name } = itemToDelete;
+    console.log(`Deleting item: ${name} at index ${index}`);
     
-    Alert.alert(
-      'Delete Item',
-      `Remove "${itemName}" from the scanned list?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => console.log('Delete cancelled by user'),
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            console.log(`Deleting item: ${itemName} at index ${index}`);
-            
-            // Remove the item from scannedItems
-            const newScannedItems = scannedItems.filter((_, idx) => idx !== index);
-            setScannedItems(newScannedItems);
-            
-            // Update selectedItems - need to rebuild the set with adjusted indices
-            const newSelectedItems = new Set<number>();
-            selectedItems.forEach(selectedIdx => {
-              if (selectedIdx < index) {
-                newSelectedItems.add(selectedIdx);
-              } else if (selectedIdx > index) {
-                newSelectedItems.add(selectedIdx - 1);
-              }
-              // Skip if selectedIdx === index (the deleted item)
-            });
-            setSelectedItems(newSelectedItems);
-            
-            // Update expirationDates - rebuild with adjusted indices
-            const newExpirationDates: { [key: number]: string } = {};
-            Object.keys(expirationDates).forEach(key => {
-              const idx = parseInt(key);
-              if (idx < index) {
-                newExpirationDates[idx] = expirationDates[idx];
-              } else if (idx > index) {
-                newExpirationDates[idx - 1] = expirationDates[idx];
-              }
-              // Skip if idx === index (the deleted item)
-            });
-            setExpirationDates(newExpirationDates);
-            
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Toast.show({ message: `${itemName} removed`, type: 'success' });
-            console.log(`Successfully deleted item: ${itemName}`);
-          },
-        },
-      ]
-    );
+    // Close modal first
+    setDeleteModalVisible(false);
+    
+    // Remove the item from scannedItems
+    const newScannedItems = scannedItems.filter((_, idx) => idx !== index);
+    setScannedItems(newScannedItems);
+    
+    // Update selectedItems - need to rebuild the set with adjusted indices
+    const newSelectedItems = new Set<number>();
+    selectedItems.forEach(selectedIdx => {
+      if (selectedIdx < index) {
+        newSelectedItems.add(selectedIdx);
+      } else if (selectedIdx > index) {
+        newSelectedItems.add(selectedIdx - 1);
+      }
+      // Skip if selectedIdx === index (the deleted item)
+    });
+    setSelectedItems(newSelectedItems);
+    
+    // Update expirationDates - rebuild with adjusted indices
+    const newExpirationDates: { [key: number]: string } = {};
+    Object.keys(expirationDates).forEach(key => {
+      const idx = parseInt(key);
+      if (idx < index) {
+        newExpirationDates[idx] = expirationDates[idx];
+      } else if (idx > index) {
+        newExpirationDates[idx - 1] = expirationDates[idx];
+      }
+      // Skip if idx === index (the deleted item)
+    });
+    setExpirationDates(newExpirationDates);
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Toast.show(`${name} removed`, 'success');
+    console.log(`Successfully deleted item: ${name}`);
+    
+    // Clear the item to delete
+    setItemToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    console.log('User cancelled delete');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDeleteModalVisible(false);
+    setItemToDelete(null);
   };
 
   const handleExpirationDateChange = (index: number, text: string) => {
@@ -441,7 +471,7 @@ export default function ScanReceiptScreen() {
 
   const handleAddToPantry = async () => {
     if (selectedItems.size === 0) {
-      Toast.show({ message: 'Please select at least one item', type: 'error' });
+      Toast.show('Please select at least one item', 'error');
       return;
     }
 
@@ -452,7 +482,7 @@ export default function ScanReceiptScreen() {
       const expirationDate = expirationDates[index];
 
       if (!expirationDate) {
-        Toast.show({ message: `Please set expiration date for ${item.name}`, type: 'error' });
+        Toast.show(`Please set expiration date for ${item.name}`, 'error');
         continue;
       }
 
@@ -471,7 +501,7 @@ export default function ScanReceiptScreen() {
     if (addedCount > 0) {
       console.log(`Successfully added ${addedCount} items to pantry`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ message: `${addedCount} items added to pantry!`, type: 'success' });
+      Toast.show(`${addedCount} items added to pantry!`, 'success');
       router.back();
     }
   };
@@ -508,7 +538,7 @@ export default function ScanReceiptScreen() {
           </View>
           <Text style={styles.emptyTitle}>Scan Your Receipt</Text>
           <Text style={styles.emptyDescription}>
-            Take a photo of your grocery receipt and we&apos;ll automatically extract items with quantities
+            Take a photo of your grocery receipt and we'll automatically extract items with quantities
           </Text>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -627,6 +657,41 @@ export default function ScanReceiptScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Item</Text>
+            <Text style={styles.modalMessage}>
+              Remove "{itemToDelete?.name}" from the scanned list?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={cancelDelete}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonDelete]}
+                onPress={confirmDelete}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

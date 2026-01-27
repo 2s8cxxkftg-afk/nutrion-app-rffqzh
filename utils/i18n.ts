@@ -37,6 +37,18 @@ const en = {
     addItem: 'Add Item',
     noItems: 'No items in your shopping list',
   },
+  about: {
+    title: 'About',
+    version: 'Version',
+    description: 'Nutrion helps you manage your pantry, track food expiration dates, and reduce food waste. Built with care by Solvra Labs.',
+    website: 'Website',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
+    support: 'Contact Support',
+    rateApp: 'Rate This App',
+    madeWith: 'Made with 💚 by Solvra Labs',
+    copyright: '© 2024 Solvra Labs. All rights reserved.',
+  },
 };
 
 // Initialize i18next with English translations

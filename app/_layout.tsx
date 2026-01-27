@@ -207,8 +207,8 @@ export default function RootLayout() {
                   }} 
                 />
 
-                {/* Modal Demo Screens - Optional */}
-                {/* Removed to prevent warnings about missing routes */}
+                {/* 404 Not Found */}
+                <Stack.Screen name="+not-found" options={{ headerShown: false }} />
               </Stack>
               <SystemBars style={"auto"} />
               

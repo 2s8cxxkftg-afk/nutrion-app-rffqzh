@@ -8,9 +8,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
@@ -138,6 +138,68 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginLeft: Platform.OS === 'ios' ? 0 : spacing.sm,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButtonConfirm: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonDanger: {
+    backgroundColor: colors.error,
+  },
+  modalButtonText: {
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+  },
+  modalButtonTextCancel: {
+    color: colors.text,
+  },
+  modalButtonTextConfirm: {
+    color: '#FFFFFF',
+  },
+  modalButtonTextDanger: {
+    color: '#FFFFFF',
+  },
 });
 
 export default function SubscriptionManagementScreen() {
@@ -145,6 +207,8 @@ export default function SubscriptionManagementScreen() {
   const [subscription, setSubscription] = useState<any>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [trialDaysLeft, setTrialDaysLeft] = useState(0);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -169,54 +233,47 @@ export default function SubscriptionManagementScreen() {
   }
 
   async function handleUpgradeToPremium() {
-    Alert.alert(
-      'Upgrade to Premium',
-      'Unlock AI Recipe Generator, Receipt Scanner, and remove all ads for $1.99/month',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Subscribe',
-          onPress: async () => {
-            try {
-              // TODO: Backend Integration - Integrate with payment provider (Stripe, etc.)
-              // For now, we'll just activate premium locally
-              await activatePremiumSubscription();
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Toast.show('Premium activated! All features unlocked.', 'success');
-              await loadSubscriptionData();
-            } catch (error) {
-              console.error('Error upgrading to premium:', error);
-              Toast.show('Failed to upgrade to premium', 'error');
-            }
-          },
-        },
-      ]
-    );
+    console.log('[Subscription] User tapped upgrade to premium');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setUpgradeModalVisible(true);
+  }
+
+  async function confirmUpgrade() {
+    try {
+      console.log('[Subscription] User confirmed upgrade');
+      setUpgradeModalVisible(false);
+      
+      // TODO: Backend Integration - Integrate with payment provider (Stripe, etc.)
+      // For now, we'll just activate premium locally
+      await activatePremiumSubscription();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show('Premium activated! All features unlocked.', 'success');
+      await loadSubscriptionData();
+    } catch (error) {
+      console.error('Error upgrading to premium:', error);
+      Toast.show('Failed to upgrade to premium', 'error');
+    }
   }
 
   async function handleCancelSubscription() {
-    Alert.alert(
-      'Cancel Premium',
-      'Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator, Receipt Scanner, and ads will return.',
-      [
-        { text: 'Keep Premium', style: 'cancel' },
-        {
-          text: 'Cancel Premium',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelSubscription();
-              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              Toast.show('Premium cancelled', 'success');
-              await loadSubscriptionData();
-            } catch (error) {
-              console.error('Error cancelling subscription:', error);
-              Toast.show('Failed to cancel subscription', 'error');
-            }
-          },
-        },
-      ]
-    );
+    console.log('[Subscription] User tapped cancel subscription');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCancelModalVisible(true);
+  }
+
+  async function confirmCancel() {
+    try {
+      console.log('[Subscription] User confirmed cancel');
+      setCancelModalVisible(false);
+      
+      await cancelSubscription();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Toast.show('Premium cancelled', 'success');
+      await loadSubscriptionData();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      Toast.show('Failed to cancel subscription', 'error');
+    }
   }
 
   const subscriptionPrice = getSubscriptionPrice();
@@ -415,6 +472,84 @@ export default function SubscriptionManagementScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* Upgrade Confirmation Modal */}
+      <Modal
+        visible={upgradeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setUpgradeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Upgrade to Premium</Text>
+            <Text style={styles.modalMessage}>
+              Unlock AI Recipe Generator, Receipt Scanner, and remove all ads for ${subscriptionPrice.toFixed(2)}/month
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  console.log('[Subscription] User cancelled upgrade');
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setUpgradeModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={confirmUpgrade}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>
+                  Subscribe
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={cancelModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCancelModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cancel Premium</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator, Receipt Scanner, and ads will return.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  console.log('[Subscription] User kept premium');
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setCancelModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Keep Premium
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonDanger]}
+                onPress={confirmCancel}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDanger]}>
+                  Cancel Premium
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

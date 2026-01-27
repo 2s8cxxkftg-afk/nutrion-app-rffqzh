@@ -15,7 +15,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   Keyboard,
@@ -313,27 +312,27 @@ export default function AddItemScreen() {
     console.log('[AddItem] Save button pressed');
     
     if (!name.trim()) {
-      Toast.show({ message: 'Please enter an item name', type: 'error' });
+      Toast.show('Please enter an item name', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     const quantityNum = parseFloat(quantity);
     if (!quantityNum || quantityNum <= 0) {
-      Toast.show({ message: 'Please enter a valid quantity', type: 'error' });
+      Toast.show('Please enter a valid quantity', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (!expirationDate || expirationDate.length !== 10) {
-      Toast.show({ message: 'Please enter a valid expiration date (MM/DD/YYYY)', type: 'error' });
+      Toast.show('Please enter a valid expiration date (MM/DD/YYYY)', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     const isoDate = parseMMDDYYYYToISO(expirationDate);
     if (!isoDate) {
-      Toast.show({ message: 'Invalid date format. Please use MM/DD/YYYY', type: 'error' });
+      Toast.show('Invalid date format. Please use MM/DD/YYYY', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -351,7 +350,7 @@ export default function AddItemScreen() {
     console.log('[AddItem] Adding item to pantry:', newItem);
     await addPantryItem(newItem);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Toast.show({ message: `${name} added to pantry!`, type: 'success' });
+    Toast.show(`${name} added to pantry!`, 'success');
     router.back();
   };
 

@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   Switch,
   Platform,
-  Alert,
   Linking,
 } from 'react-native';
 import { loadPantryItems } from '@/utils/storage';
@@ -105,24 +104,11 @@ export default function NotificationSettingsScreen() {
       setToast({ visible: true, message: 'Notifications enabled!', type: 'success' });
     } else {
       setPermissionStatus('denied');
-      
-      Alert.alert(
-        'Permission Denied',
-        'Please enable notifications in your device settings to receive alerts.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Open Settings', 
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('app-settings:');
-              } else {
-                Linking.openSettings();
-              }
-            }
-          },
-        ]
-      );
+      setToast({ 
+        visible: true, 
+        message: 'Please enable notifications in your device settings to receive alerts.', 
+        type: 'error' 
+      });
     }
   };
 
