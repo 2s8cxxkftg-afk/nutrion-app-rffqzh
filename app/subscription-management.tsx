@@ -327,7 +327,7 @@ export default function SubscriptionManagementScreen() {
               ]}
             >
               <Text style={styles.statusText}>
-                {isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free (with ads)'}
+                {isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free'}
               </Text>
             </View>
 
@@ -348,7 +348,7 @@ export default function SubscriptionManagementScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Ads</Text>
               <Text style={styles.infoValue}>
-                {isPremium ? 'Removed' : 'Enabled'}
+                None
               </Text>
             </View>
 
@@ -372,7 +372,7 @@ export default function SubscriptionManagementScreen() {
               <Text style={styles.sectionTitle}>Upgrade to Premium</Text>
               
               <Text style={styles.description}>
-                Unlock powerful AI features and enjoy an ad-free experience
+                Unlock powerful AI features for your pantry management
               </Text>
 
               <Text style={styles.priceText}>
@@ -398,15 +398,7 @@ export default function SubscriptionManagementScreen() {
                   />
                   <Text style={styles.featureText}>Receipt Scanner</Text>
                 </View>
-                <View style={styles.featureItem}>
-                  <IconSymbol
-                    ios_icon_name="checkmark.circle.fill"
-                    android_material_icon_name="check-circle"
-                    size={20}
-                    color={colors.success}
-                  />
-                  <Text style={styles.featureText}>No advertisements</Text>
-                </View>
+
                 <View style={styles.featureItem}>
                   <IconSymbol
                     ios_icon_name="checkmark.circle.fill"
@@ -459,7 +451,7 @@ export default function SubscriptionManagementScreen() {
               <Text style={styles.sectionTitle}>Manage Premium</Text>
               
               <Text style={styles.description}>
-                You are currently subscribed to Premium. Cancel anytime to return to the free version with ads and limited features.
+                You are currently subscribed to Premium. Cancel anytime to return to the free version with limited features.
               </Text>
               
               <TouchableOpacity
@@ -484,7 +476,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Upgrade to Premium</Text>
             <Text style={styles.modalMessage}>
-              Unlock AI Recipe Generator, Receipt Scanner, and remove all ads for ${subscriptionPrice.toFixed(2)}/month
+              Unlock AI Recipe Generator and Receipt Scanner for ${subscriptionPrice.toFixed(2)}/month
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -523,7 +515,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cancel Premium</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator, Receipt Scanner, and ads will return.
+              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator and Receipt Scanner.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
