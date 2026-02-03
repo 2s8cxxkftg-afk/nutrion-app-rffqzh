@@ -18,7 +18,6 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
 
 const styles = StyleSheet.create({
   container: {
@@ -140,13 +139,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semibold,
     color: colors.primary,
   },
-  retryText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.regular,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
   warningBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -165,53 +157,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginLeft: spacing.sm,
   },
-  debugButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    marginTop: spacing.md,
-  },
-  debugButtonText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  debugBox: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  debugText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.regular,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
   successBox: {
     backgroundColor: colors.primary + '10',
     borderColor: colors.primary + '30',
   },
   successText: {
     color: colors.primary,
-  },
-  testButton: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  testButtonText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.medium,
-    color: colors.text,
-    marginRight: spacing.sm,
   },
 });
 
@@ -220,36 +171,10 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [retryAttempt, setRetryAttempt] = useState(0);
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
-  const [testingConnection, setTestingConnection] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  const testSupabaseConnection = async () => {
-    console.log('Testing Supabase connection...');
-    setTestingConnection(true);
-    
-    try {
-      // Test basic Supabase connectivity
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Supabase connection test failed:', error);
-        Toast.show('Supabase connection failed: ' + error.message, 'error');
-      } else {
-        console.log('Supabase connection successful');
-        Toast.show('Supabase connection successful! ✓', 'success');
-      }
-    } catch (error: any) {
-      console.error('Supabase connection test error:', error);
-      Toast.show('Connection test failed: ' + (error?.message || 'Unknown error'), 'error');
-    } finally {
-      setTestingConnection(false);
-    }
   };
 
   const handleResetPassword = async () => {
@@ -276,72 +201,25 @@ export default function ForgotPasswordScreen() {
     }
 
     setLoading(true);
-    setRetryAttempt(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       console.log('Sending password reset email to:', email);
       
-      // Build redirect URLs for all platforms
-      // Note: app.json has scheme "Nutrion" (capital N)
-      const appScheme = 'Nutrion';
-      
-      // For production/native apps
-      const nativeRedirectUrl = `${appScheme}://reset-password`;
-      
-      // For development (Expo Go)
-      const expoRedirectUrl = Linking.createURL('reset-password');
-      
-      // For web
-      const webRedirectUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/reset-password`
-        : 'http://localhost:8081/reset-password';
-      
-      // Use the appropriate redirect URL based on platform
-      const redirectUrl = Platform.OS === 'web' ? webRedirectUrl : expoRedirectUrl;
-      
-      console.log('Platform:', Platform.OS);
-      console.log('Redirect URL:', redirectUrl);
-      console.log('Native URL:', nativeRedirectUrl);
-      console.log('Expo URL:', expoRedirectUrl);
-      console.log('Web URL:', webRedirectUrl);
-      
-      // Send password reset email
-      console.log('Calling supabase.auth.resetPasswordForEmail...');
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
-      
-      console.log('Password reset response received');
-      console.log('Response data:', JSON.stringify(data, null, 2));
-      console.log('Response error:', JSON.stringify(error, null, 2));
-      
-      if (error) {
-        console.error('Password reset error:', error);
-        console.error('Error status:', error.status);
-        console.error('Error message:', error.message);
-        console.error('Error name:', error.name);
-        console.error('Error code:', error.code);
-        
-        // Handle specific error types
-        if (error.status === 429 || error.message?.includes('rate limit')) {
-          throw new Error('Too many password reset attempts. Please wait 10 minutes and try again, or configure custom SMTP in Supabase.');
-        } else if (error.message?.includes('Email rate limit exceeded')) {
-          throw new Error('Email rate limit exceeded. Please wait 10 minutes or configure custom SMTP in Supabase dashboard.');
-        } else if (error.message?.includes('Invalid redirect URL') || error.message?.includes('redirect_to')) {
-          throw new Error('Redirect URL not whitelisted. Please add redirect URLs in Supabase dashboard (see Setup Instructions below).');
-        } else if (error.message?.includes('SMTP')) {
-          throw new Error('Email configuration error. Please configure SMTP settings in Supabase dashboard.');
-        } else if (error.message?.includes('Email not enabled')) {
-          throw new Error('Email authentication not enabled. Please enable email auth in Supabase dashboard.');
-        } else if (error.message) {
-          throw new Error(error.message);
-        } else {
-          throw new Error('Failed to send reset email. Please check Supabase configuration (tap "Show Setup Instructions" below).');
+      // Step 4: Send password reset email with deep link redirect
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: 'nutrion://reset-password'
         }
+      );
+
+      if (error) {
+        console.error('Password reset error:', error.message);
+        throw new Error(error.message);
       }
       
-      // Success! Supabase always returns success even if email doesn't exist (for security)
+      // Success! Email sent
       console.log('Password reset email sent successfully');
       setEmailSent(true);
       Toast.show('Password reset email sent! Check your inbox and spam folder.', 'success');
@@ -354,60 +232,26 @@ export default function ForgotPasswordScreen() {
       
     } catch (error: any) {
       console.error('Error sending password reset email:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error name:', error?.name);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
       
       // Extract a meaningful error message
       let errorMessage = 'Failed to send reset email. Please try again later.';
-      let shouldShowSetup = false;
       
       if (error?.message) {
-        if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-          errorMessage = 'Connection timeout. Please check your internet connection and try again.';
-        } else if (error.message.includes('Too many requests') || error.message.includes('rate limit')) {
-          errorMessage = 'Too many password reset attempts. Please wait 10 minutes and try again, or configure custom SMTP in Supabase.';
-          shouldShowSetup = true;
+        if (error.message.includes('rate limit')) {
+          errorMessage = 'Too many password reset attempts. Please wait 10 minutes and try again.';
         } else if (error.message.includes('redirect URL') || error.message.includes('redirect_to')) {
-          errorMessage = 'Configuration error: Redirect URLs not whitelisted. Please see setup instructions below.';
-          shouldShowSetup = true;
+          errorMessage = 'Configuration error: Redirect URLs not whitelisted in Supabase dashboard.';
         } else if (error.message.includes('SMTP') || error.message.includes('Email not enabled')) {
-          errorMessage = 'Email configuration error. Please see setup instructions below.';
-          shouldShowSetup = true;
-        } else if (error.message.includes('User not found')) {
-          // For security, don't reveal if email exists or not
-          errorMessage = 'If this email is registered, you will receive a password reset link.';
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Please verify your email address first before resetting your password.';
+          errorMessage = 'Email configuration error. Please check Supabase settings.';
         } else {
           errorMessage = error.message;
-          // Show setup for any configuration-related errors
-          if (error.message.includes('configuration') || error.message.includes('not enabled') || error.message.includes('not configured')) {
-            shouldShowSetup = true;
-          }
         }
-      } else if (error?.status === 504) {
-        errorMessage = 'Server timeout. Please try again in a few moments.';
-      } else if (error?.status === 429) {
-        errorMessage = 'Too many requests. Please wait 10 minutes and try again.';
-        shouldShowSetup = true;
-      } else if (error?.name === 'AuthRetryableFetchError') {
-        errorMessage = 'Network error. Please check your connection and try again.';
       }
       
       Toast.show(errorMessage, 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      // Automatically show setup instructions for configuration errors
-      if (shouldShowSetup && !showDebugInfo) {
-        setTimeout(() => {
-          setShowDebugInfo(true);
-        }, 1000);
-      }
     } finally {
       setLoading(false);
-      setRetryAttempt(0);
     }
   };
 
@@ -564,90 +408,6 @@ export default function ForgotPasswordScreen() {
                 Back to Login
               </Text>
             </TouchableOpacity>
-
-            {/* Debug Info Toggle (for troubleshooting) */}
-            <TouchableOpacity
-              style={styles.debugButton}
-              onPress={() => {
-                setShowDebugInfo(!showDebugInfo);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-            >
-              <Text style={styles.debugButtonText}>
-                {showDebugInfo ? 'Hide' : 'Show'} Setup Instructions
-              </Text>
-            </TouchableOpacity>
-
-            {/* Debug Info */}
-            {showDebugInfo && (
-              <View style={styles.debugBox}>
-                <Text style={[styles.debugText, { fontFamily: typography.fontFamily.semibold, marginBottom: spacing.sm, fontSize: 14 }]}>
-                  📧 Supabase Email Configuration Checklist:
-                </Text>
-                <Text style={styles.debugText}>
-                  {'\n'}✓ Step 1: Enable Email Template
-                  {'\n'}   Go to: Supabase Dashboard → Authentication → Email Templates
-                  {'\n'}   Enable: &quot;Reset Password&quot; template
-                  {'\n'}   Verify: Template is active and not disabled
-                  {'\n'}
-                  {'\n'}✓ Step 2: Configure Redirect URLs
-                  {'\n'}   Go to: Authentication → URL Configuration
-                  {'\n'}   Add ALL these URLs to &quot;Redirect URLs&quot; list:
-                  {'\n'}   • Nutrion://reset-password
-                  {'\n'}   • exp://localhost:8081/--/reset-password
-                  {'\n'}   • http://localhost:8081/reset-password
-                  {'\n'}   • https://yourdomain.com/reset-password
-                  {'\n'}
-                  {'\n'}✓ Step 3: Configure SMTP (CRITICAL for production)
-                  {'\n'}   Go to: Authentication → Settings → SMTP Settings
-                  {'\n'}   Issue: Default Supabase emails are rate-limited (4/hour)
-                  {'\n'}   Solution: Add custom SMTP provider:
-                  {'\n'}   • Gmail SMTP (smtp.gmail.com:587)
-                  {'\n'}   • SendGrid (smtp.sendgrid.net:587)
-                  {'\n'}   • AWS SES, Mailgun, etc.
-                  {'\n'}
-                  {'\n'}✓ Step 4: Test Email Delivery
-                  {'\n'}   • Enter your email above and tap &quot;Send Reset Link&quot;
-                  {'\n'}   • Check inbox AND spam folder
-                  {'\n'}   • Email should arrive within 1-2 minutes
-                  {'\n'}   • If no email: Check SMTP settings and Supabase logs
-                  {'\n'}
-                  {'\n'}🔍 Current Configuration:
-                  {'\n'}   Platform: {Platform.OS}
-                  {'\n'}   Supabase URL: {process.env.EXPO_PUBLIC_SUPABASE_URL || 'Not configured'}
-                  {'\n'}   Configured: {isConfigured ? 'Yes ✓' : 'No ✗'}
-                  {'\n'}
-                  {'\n'}⚠️ Common Issues:
-                  {'\n'}   • No email received: Check SMTP settings or use custom SMTP
-                  {'\n'}   • Rate limit error: Wait 5-10 minutes or configure custom SMTP
-                  {'\n'}   • Invalid link: Verify redirect URLs are whitelisted
-                  {'\n'}   • Link expired: Links expire after 1 hour, request new one
-                </Text>
-
-                {/* Test Connection Button */}
-                <TouchableOpacity
-                  style={styles.testButton}
-                  onPress={testSupabaseConnection}
-                  disabled={testingConnection}
-                >
-                  {testingConnection ? (
-                    <ActivityIndicator size="small" color={colors.text} />
-                  ) : (
-                    <React.Fragment>
-                      <Text style={styles.testButtonText}>
-                        Test Supabase Connection
-                      </Text>
-                      <IconSymbol 
-                        ios_icon_name="network" 
-                        android_material_icon_name="wifi" 
-                        size={16} 
-                        color={colors.text} 
-                      />
-                    </React.Fragment>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -158,10 +158,9 @@ export default function ResetPasswordScreen() {
 
   const checkSession = async () => {
     console.log('Checking for valid session...');
-    console.log('Current URL:', window?.location?.href || 'N/A');
     
     try {
-      // First, check if there are tokens in the URL hash (Supabase sends them there)
+      // Check if there are tokens in the URL hash (Supabase sends them there)
       if (typeof window !== 'undefined' && window.location.hash) {
         console.log('URL hash detected:', window.location.hash);
         
@@ -254,13 +253,14 @@ export default function ResetPasswordScreen() {
     try {
       console.log('Updating password...');
       
+      // Step 5: Update user password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (error) {
-        console.error('Password update error:', error);
-        throw error;
+        console.error('Password update error:', error.message);
+        throw new Error(error.message);
       }
 
       console.log('Password updated successfully');
