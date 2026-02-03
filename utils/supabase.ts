@@ -28,35 +28,11 @@ const createSupabaseClient = () => {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true, // Enable session detection from URL for password reset
+      flowType: 'pkce', // Use PKCE flow for better security
     },
     global: {
       headers: {
         'x-client-info': 'nutrion-app',
-      },
-      fetch: (url, options = {}) => {
-        console.log('Supabase fetch:', url);
-        
-        // Add timeout to fetch requests (30 seconds)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.log('Fetch timeout - aborting request');
-          controller.abort();
-        }, 30000);
-
-        return fetch(url, {
-          ...options,
-          signal: controller.signal,
-        })
-          .then((response) => {
-            clearTimeout(timeoutId);
-            console.log('Supabase response status:', response.status);
-            return response;
-          })
-          .catch((error) => {
-            clearTimeout(timeoutId);
-            console.error('Supabase fetch error:', error);
-            throw error;
-          });
       },
     },
   });

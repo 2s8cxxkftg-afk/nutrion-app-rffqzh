@@ -124,41 +124,61 @@ export default function AuthScreen() {
   // Handle deep links for password reset
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
-      console.log('Deep link received:', event.url);
+      console.log('Deep link received in auth screen:', event.url);
       
-      const url = Linking.parse(event.url);
-      console.log('Parsed URL:', url);
-      
-      // Check if this is a password reset link
-      // Supabase sends recovery links with type=recovery in the URL
-      if (url.path === 'reset-password' || url.queryParams?.type === 'recovery') {
-        console.log('Password reset link detected');
+      try {
+        const url = Linking.parse(event.url);
+        console.log('Parsed URL:', JSON.stringify(url, null, 2));
         
-        // Extract the access token and refresh token from the URL
-        const accessToken = url.queryParams?.access_token as string;
-        const refreshToken = url.queryParams?.refresh_token as string;
+        // Check if this is a password reset link
+        // Supabase sends recovery links with type=recovery in the URL
+        const isResetLink = url.path === 'reset-password' || 
+                           url.queryParams?.type === 'recovery' ||
+                           event.url.includes('reset-password') ||
+                           event.url.includes('type=recovery');
         
-        if (accessToken) {
-          console.log('Setting session from URL tokens');
+        if (isResetLink) {
+          console.log('Password reset link detected');
           
-          // Set the session using the tokens from the URL
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          });
+          // Extract the access token and refresh token from the URL
+          const accessToken = url.queryParams?.access_token as string;
+          const refreshToken = url.queryParams?.refresh_token as string;
+          const type = url.queryParams?.type as string;
           
-          if (error) {
-            console.error('Error setting session:', error);
-            Toast.show("Invalid or expired reset link", "error");
-            return;
+          console.log('Token info - type:', type, 'has access_token:', !!accessToken, 'has refresh_token:', !!refreshToken);
+          
+          if (accessToken && type === 'recovery') {
+            console.log('Setting session from URL tokens');
+            
+            // Set the session using the tokens from the URL
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            });
+            
+            if (error) {
+              console.error('Error setting session:', error);
+              Toast.show("Invalid or expired reset link. Please request a new one.", "error");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              return;
+            }
+            
+            console.log('Session set successfully:', data.session?.user?.email);
+            Toast.show("Reset link verified! Set your new password.", "success");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            
+            // Navigate to reset password screen
+            setTimeout(() => {
+              router.push('/reset-password');
+            }, 500);
+          } else {
+            console.log('No valid tokens found in URL, navigating to reset screen to check session');
+            router.push('/reset-password');
           }
-          
-          console.log('Session set successfully, navigating to reset screen');
-          router.push('/reset-password');
-        } else {
-          console.log('No access token found in URL, navigating to reset screen anyway');
-          router.push('/reset-password');
         }
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+        Toast.show("Error processing reset link", "error");
       }
     };
 
@@ -168,9 +188,11 @@ export default function AuthScreen() {
     // Check if app was opened with a deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
-        console.log('Initial URL:', url);
+        console.log('Initial URL on auth screen:', url);
         handleDeepLink({ url });
       }
+    }).catch((error) => {
+      console.error('Error getting initial URL:', error);
     });
 
     return () => {

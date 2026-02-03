@@ -158,8 +158,42 @@ export default function ResetPasswordScreen() {
 
   const checkSession = async () => {
     console.log('Checking for valid session...');
+    console.log('Current URL:', window?.location?.href || 'N/A');
     
     try {
+      // First, check if there are tokens in the URL hash (Supabase sends them there)
+      if (typeof window !== 'undefined' && window.location.hash) {
+        console.log('URL hash detected:', window.location.hash);
+        
+        // Parse the hash to extract tokens
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
+        
+        console.log('Hash params - type:', type, 'has access_token:', !!accessToken);
+        
+        if (type === 'recovery' && accessToken) {
+          console.log('Recovery link detected, setting session from URL tokens');
+          
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (sessionError) {
+            console.error('Error setting session from URL:', sessionError);
+            throw sessionError;
+          }
+          
+          console.log('Session set successfully from URL tokens');
+          setHasValidSession(true);
+          setSessionChecked(true);
+          return;
+        }
+      }
+      
+      // If no tokens in URL, check for existing session
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -167,6 +201,7 @@ export default function ResetPasswordScreen() {
         setHasValidSession(false);
       } else if (session) {
         console.log('Valid session found');
+        console.log('Session user:', session.user?.email);
         setHasValidSession(true);
       } else {
         console.log('No valid session found');
@@ -179,6 +214,10 @@ export default function ResetPasswordScreen() {
     } catch (error) {
       console.error('Error checking session:', error);
       setHasValidSession(false);
+      Toast.show('Error validating reset link. Please try again.', 'error');
+      setTimeout(() => {
+        router.replace('/forgot-password');
+      }, 2000);
     } finally {
       setSessionChecked(true);
     }
