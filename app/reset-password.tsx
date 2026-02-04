@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 import { supabase } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 
 const styles = StyleSheet.create({
   container: {
@@ -158,13 +159,56 @@ export default function ResetPasswordScreen() {
 
   const checkSession = async () => {
     console.log('Checking for valid session...');
+    console.log('Platform:', Platform.OS);
     
     try {
-      // Check if there are tokens in the URL hash (Supabase sends them there)
-      if (typeof window !== 'undefined' && window.location.hash) {
-        console.log('URL hash detected:', window.location.hash);
+      // For iOS/Android, check if we were opened via deep link
+      if (Platform.OS !== 'web') {
+        console.log('Native platform detected, checking deep link...');
         
-        // Parse the hash to extract tokens
+        const url = await Linking.getInitialURL();
+        console.log('Initial URL:', url);
+        
+        if (url && url.includes('reset-password')) {
+          console.log('Reset password deep link detected');
+          
+          // Parse URL for tokens (Supabase may include them as query params)
+          const parsedUrl = Linking.parse(url);
+          console.log('Parsed URL:', parsedUrl);
+          
+          // Extract tokens from query params if present
+          const accessToken = parsedUrl.queryParams?.access_token as string;
+          const refreshToken = parsedUrl.queryParams?.refresh_token as string;
+          const type = parsedUrl.queryParams?.type as string;
+          
+          console.log('URL params - type:', type, 'has access_token:', !!accessToken);
+          
+          if (type === 'recovery' && accessToken) {
+            console.log('Recovery tokens found in deep link, setting session');
+            
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            });
+            
+            if (sessionError) {
+              console.error('Error setting session from deep link:', sessionError);
+              throw sessionError;
+            }
+            
+            console.log('Session set successfully from deep link tokens');
+            setHasValidSession(true);
+            setSessionChecked(true);
+            return;
+          }
+        }
+      }
+      
+      // For web, check URL hash for tokens
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hash) {
+        console.log('Web platform, checking URL hash for tokens');
+        console.log('URL hash:', window.location.hash);
+        
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
@@ -173,7 +217,7 @@ export default function ResetPasswordScreen() {
         console.log('Hash params - type:', type, 'has access_token:', !!accessToken);
         
         if (type === 'recovery' && accessToken) {
-          console.log('Recovery link detected, setting session from URL tokens');
+          console.log('Recovery link detected in hash, setting session from URL tokens');
           
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -181,18 +225,19 @@ export default function ResetPasswordScreen() {
           });
           
           if (sessionError) {
-            console.error('Error setting session from URL:', sessionError);
+            console.error('Error setting session from URL hash:', sessionError);
             throw sessionError;
           }
           
-          console.log('Session set successfully from URL tokens');
+          console.log('Session set successfully from URL hash tokens');
           setHasValidSession(true);
           setSessionChecked(true);
           return;
         }
       }
       
-      // If no tokens in URL, check for existing session
+      // If no tokens in URL/deep link, check for existing session
+      console.log('No tokens in URL, checking for existing session');
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
