@@ -1,6 +1,7 @@
 
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { Platform } from 'react-native';
 
 // Inline English translations to avoid file loading issues
 const en = {
@@ -37,6 +38,21 @@ const en = {
     addItem: 'Add Item',
     noItems: 'No items in your shopping list',
   },
+  onboarding: {
+    next: 'Next',
+    skip: 'Skip',
+    getStarted: 'Get Started',
+    'page1.title': 'Smart Pantry Management',
+    'page1.description': 'Track every item in your pantry and never miss an expiration date again!',
+    'page2.title': 'Expiration Alerts',
+    'page2.description': 'Get notified before items expire and reduce food waste.',
+    'page3.title': 'Meal Planning',
+    'page3.description': 'Plan your meals based on what you have in your pantry.',
+    'page4.title': 'Receipt Scanning',
+    'page4.description': 'Scan receipts to automatically add items to your pantry.',
+    'page5.title': 'AI Recipe Generator',
+    'page5.description': 'Get personalized recipe suggestions based on your pantry items.',
+  },
   about: {
     title: 'About',
     version: 'Version',
@@ -53,6 +69,8 @@ const en = {
 
 // Initialize i18next with English translations
 try {
+  console.log('[i18n] Initializing on platform:', Platform.OS);
+  
   i18next
     .use(initReactI18next)
     .init({
@@ -68,26 +86,25 @@ try {
         escapeValue: false,
       },
       react: {
-        useSuspense: false, // Disable suspense to prevent crashes
+        useSuspense: false,
       },
-      // Add error handling options
       saveMissing: false,
       missingKeyHandler: (lng, ns, key) => {
-        console.warn(`Missing translation key: ${key}`);
+        console.warn('[i18n] Missing translation key:', key);
       },
     })
     .then(() => {
-      console.log('i18next initialized successfully');
+      console.log('[i18n] Initialized successfully');
     })
     .catch((error: any) => {
-      console.error('i18next initialization error:', error?.message || error);
+      console.error('[i18n] Initialization error:', error?.message || error);
     });
 } catch (error: any) {
-  console.error('Failed to initialize i18next:', error?.message || error);
+  console.error('[i18n] Failed to initialize:', error?.message || error);
 }
 
 export const changeLanguage = async (languageCode: string) => {
-  console.log('Language switching disabled - English only');
+  console.log('[i18n] Language switching disabled - English only');
   return true;
 };
 

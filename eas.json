@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 13.2.0",
@@ -8,13 +9,21 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
@@ -22,7 +31,8 @@
       "ios": {
         "resourceClass": "m-medium",
         "buildConfiguration": "Release",
-        "bitcode": false
+        "bitcode": false,
+        "simulator": false
       },
       "android": {
         "buildType": "apk"
@@ -37,7 +47,11 @@
   },
   "submit": {
     "production": {
-      "ios": {},
+      "ios": {
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "1234567890",
+        "appleTeamId": "ABCDE12345"
+      },
       "android": {
         "track": "internal"
       }

@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { PantryItem } from '@/types/pantry';
+import { Platform } from 'react-native';
 
 export type Recipe = {
   name: string;
@@ -43,6 +44,7 @@ export function useAIRecipes() {
     setState({ status: 'loading', data: null, error: null });
 
     try {
+      console.log('[AIRecipes] Platform:', Platform.OS);
       console.log('[AIRecipes] Generating recipes for', pantryItems.length, 'items');
       
       // Check if user is authenticated

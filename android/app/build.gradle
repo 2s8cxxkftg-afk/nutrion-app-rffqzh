@@ -106,9 +106,9 @@ android {
         }
         release {
             storeFile file('release.keystore')
-            storePassword 'natively_8172e21f_79292'
+            storePassword 'natively_8172e21f_47571'
             keyAlias 'natively-release-key'
-            keyPassword 'natively_8172e21f_79292'
+            keyPassword 'natively_8172e21f_47571'
         }
 
     }

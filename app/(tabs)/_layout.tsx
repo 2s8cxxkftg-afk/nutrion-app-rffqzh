@@ -33,6 +33,7 @@ export default function TabLayout() {
           animation: 'none',
         }}
       >
+        <Stack.Screen name="(home)" options={{ headerShown: false }} />
         <Stack.Screen name="pantry" />
         <Stack.Screen name="shopping" />
         <Stack.Screen name="profile" />

@@ -3,6 +3,7 @@ import { PantryItem } from '@/types/pantry';
 import { getExpirationStatus } from './expirationHelper';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -11,7 +12,7 @@ interface NotificationSettings {
   dailyReminder: boolean;
   dailyReminderTime: string;
   shoppingListReminders: boolean;
-  recipeAlerts: boolean; // New: AI recipe suggestions for expiring items
+  recipeAlerts: boolean;
 }
 
 interface ScheduledNotification {
@@ -30,7 +31,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   dailyReminder: false,
   dailyReminderTime: '09:00',
   shoppingListReminders: true,
-  recipeAlerts: true, // Enable AI recipe suggestions by default
+  recipeAlerts: true,
 };
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
@@ -38,13 +39,15 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
     const settings = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
     return settings ? JSON.parse(settings) : DEFAULT_SETTINGS;
   } catch (error) {
-    console.error('Error loading notification settings:', error);
+    console.error('[Notifications] Error loading settings:', error);
     return DEFAULT_SETTINGS;
   }
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   try {
+    console.log('[Notifications] Requesting permissions on', Platform.OS);
+    
     // Add timeout to prevent hanging
     const permissionPromise = Notifications.getPermissionsAsync();
     const timeoutPromise = new Promise<any>((_, reject) => 
@@ -65,15 +68,15 @@ export async function requestNotificationPermissions(): Promise<boolean> {
         const requestResult = await Promise.race([requestPromise, requestTimeout]);
         finalStatus = requestResult.status;
       } catch (requestError: any) {
-        console.error('Error requesting permissions:', requestError?.message || requestError);
+        console.error('[Notifications] Error requesting permissions:', requestError?.message || requestError);
         return false;
       }
     }
 
-    console.log('Notification permission status:', finalStatus);
+    console.log('[Notifications] Permission status:', finalStatus);
     return finalStatus === 'granted';
   } catch (error: any) {
-    console.error('Error checking notification permissions:', error?.message || error);
+    console.error('[Notifications] Error checking permissions:', error?.message || error);
     return false;
   }
 }
@@ -81,7 +84,10 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 export async function scheduleExpirationNotification(item: PantryItem): Promise<void> {
   try {
     const settings = await getNotificationSettings();
-    if (!settings.enabled || !settings.expirationAlerts) return;
+    if (!settings.enabled || !settings.expirationAlerts) {
+      console.log('[Notifications] Notifications disabled, skipping');
+      return;
+    }
 
     const expirationDate = new Date(item.expirationDate);
     const now = new Date();
@@ -91,7 +97,6 @@ export async function scheduleExpirationNotification(item: PantryItem): Promise<
       const notificationDate = new Date();
       notificationDate.setHours(9, 0, 0, 0);
 
-      // Enhanced notification with recipe suggestion hint
       const body = settings.recipeAlerts
         ? `${item.name} expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}. Tap to see AI recipe suggestions!`
         : `${item.name} expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`;
@@ -112,6 +117,8 @@ export async function scheduleExpirationNotification(item: PantryItem): Promise<
         },
       });
 
+      console.log('[Notifications] Scheduled notification for', item.name);
+
       await saveScheduledNotification({
         itemId: item.id,
         notificationId,
@@ -119,7 +126,7 @@ export async function scheduleExpirationNotification(item: PantryItem): Promise<
       });
     }
   } catch (error) {
-    console.error('Error scheduling expiration notification:', error);
+    console.error('[Notifications] Error scheduling expiration notification:', error);
   }
 }
 
@@ -148,8 +155,10 @@ export async function sendImmediateExpirationNotification(
       },
       trigger: null,
     });
+
+    console.log('[Notifications] Sent immediate notification for', item.name);
   } catch (error) {
-    console.error('Error sending immediate notification:', error);
+    console.error('[Notifications] Error sending immediate notification:', error);
   }
 }
 
@@ -162,14 +171,16 @@ export async function cancelNotificationForItem(itemId: string): Promise<void> {
       await Notifications.cancelScheduledNotificationAsync(notification.notificationId);
       const updatedNotifications = notifications.filter(n => n.itemId !== itemId);
       await AsyncStorage.setItem(SCHEDULED_NOTIFICATIONS_KEY, JSON.stringify(updatedNotifications));
+      console.log('[Notifications] Cancelled notification for item:', itemId);
     }
   } catch (error) {
-    console.error('Error canceling notification:', error);
+    console.error('[Notifications] Error canceling notification:', error);
   }
 }
 
 export async function scheduleAllExpirationNotifications(items: PantryItem[]): Promise<void> {
   try {
+    console.log('[Notifications] Scheduling notifications for', items.length, 'items');
     await cancelAllNotifications();
     
     for (const item of items) {
@@ -178,7 +189,7 @@ export async function scheduleAllExpirationNotifications(items: PantryItem[]): P
       }
     }
   } catch (error) {
-    console.error('Error scheduling all notifications:', error);
+    console.error('[Notifications] Error scheduling all notifications:', error);
   }
 }
 
@@ -186,8 +197,9 @@ export async function cancelAllNotifications(): Promise<void> {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
     await AsyncStorage.removeItem(SCHEDULED_NOTIFICATIONS_KEY);
+    console.log('[Notifications] Cancelled all notifications');
   } catch (error) {
-    console.error('Error canceling all notifications:', error);
+    console.error('[Notifications] Error canceling all notifications:', error);
   }
 }
 
@@ -196,7 +208,7 @@ async function getScheduledNotifications(): Promise<ScheduledNotification[]> {
     const notifications = await AsyncStorage.getItem(SCHEDULED_NOTIFICATIONS_KEY);
     return notifications ? JSON.parse(notifications) : [];
   } catch (error) {
-    console.error('Error loading scheduled notifications:', error);
+    console.error('[Notifications] Error loading scheduled notifications:', error);
     return [];
   }
 }
@@ -207,7 +219,7 @@ async function saveScheduledNotification(notification: ScheduledNotification): P
     notifications.push(notification);
     await AsyncStorage.setItem(SCHEDULED_NOTIFICATIONS_KEY, JSON.stringify(notifications));
   } catch (error) {
-    console.error('Error saving scheduled notification:', error);
+    console.error('[Notifications] Error saving scheduled notification:', error);
   }
 }
 
@@ -235,7 +247,7 @@ export async function checkAndNotifyExpiringItems(items: PantryItem[]): Promise<
       }
     }
   } catch (error) {
-    console.error('Error checking expiring items:', error);
+    console.error('[Notifications] Error checking expiring items:', error);
   }
 }
 
@@ -243,7 +255,7 @@ async function getLastNotificationDate(itemId: string): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(`@last_notification_${itemId}`);
   } catch (error) {
-    console.error('Error getting last notification date:', error);
+    console.error('[Notifications] Error getting last notification date:', error);
     return null;
   }
 }
@@ -252,7 +264,7 @@ async function saveLastNotificationDate(itemId: string, date: string): Promise<v
   try {
     await AsyncStorage.setItem(`@last_notification_${itemId}`, date);
   } catch (error) {
-    console.error('Error saving last notification date:', error);
+    console.error('[Notifications] Error saving last notification date:', error);
   }
 }
 
@@ -278,20 +290,22 @@ export async function scheduleDailyReminder(): Promise<void> {
         repeats: true,
       },
     });
+
+    console.log('[Notifications] Scheduled daily reminder for', hours, ':', minutes);
   } catch (error) {
-    console.error('Error scheduling daily reminder:', error);
+    console.error('[Notifications] Error scheduling daily reminder:', error);
   }
 }
 
 export async function initializeNotifications(): Promise<void> {
   try {
-    console.log('Initializing notifications...');
+    console.log('[Notifications] Initializing on', Platform.OS);
     
     // Add timeout for entire initialization
     const initPromise = (async () => {
       const hasPermission = await requestNotificationPermissions();
       if (!hasPermission) {
-        console.log('Notification permissions not granted');
+        console.log('[Notifications] Permissions not granted');
         return;
       }
 
@@ -303,8 +317,9 @@ export async function initializeNotifications(): Promise<void> {
             shouldSetBadge: true,
           }),
         });
+        console.log('[Notifications] Handler set successfully');
       } catch (handlerError: any) {
-        console.error('Error setting notification handler:', handlerError?.message || handlerError);
+        console.error('[Notifications] Error setting handler:', handlerError?.message || handlerError);
       }
 
       try {
@@ -313,10 +328,10 @@ export async function initializeNotifications(): Promise<void> {
           await scheduleDailyReminder();
         }
       } catch (settingsError: any) {
-        console.error('Error loading notification settings:', settingsError?.message || settingsError);
+        console.error('[Notifications] Error loading settings:', settingsError?.message || settingsError);
       }
       
-      console.log('Notifications initialized successfully');
+      console.log('[Notifications] Initialized successfully');
     })();
 
     const timeoutPromise = new Promise<void>((_, reject) => 
@@ -325,7 +340,7 @@ export async function initializeNotifications(): Promise<void> {
 
     await Promise.race([initPromise, timeoutPromise]);
   } catch (error: any) {
-    console.error('Error initializing notifications:', error?.message || error);
+    console.error('[Notifications] Error initializing:', error?.message || error);
     // Don't throw - allow app to continue without notifications
   }
 }

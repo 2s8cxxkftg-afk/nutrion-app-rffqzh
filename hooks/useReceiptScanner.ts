@@ -4,6 +4,7 @@ import { supabase } from '@/utils/supabase';
 import { PantryItem } from '@/types/pantry';
 import { predictExpirationDate } from '@/utils/expirationHelper';
 import { categorizeFoodItem } from '@/utils/categoryHelper';
+import { Platform } from 'react-native';
 
 export type ScannedItem = {
   name: string;
@@ -27,6 +28,9 @@ export function useReceiptScanner() {
     setState({ status: 'scanning', data: null, error: null });
 
     try {
+      console.log('[ReceiptScanner] Platform:', Platform.OS);
+      console.log('[ReceiptScanner] Scanning receipt from URI:', imageUri);
+      
       // TODO: Backend Integration - Call the receipt scanning endpoint
       // This will use GPT-4o vision to extract items from receipt photos
       const prompt = `Analyze this receipt image and extract all food items. For each item, identify: name, quantity (estimate if not shown), unit (pieces, kg, lbs, etc), and price if visible. Return as JSON array: [{"name": "Item Name", "quantity": 1, "unit": "pieces", "price": 5.99}]. Only include food items, skip non-food products.`;
@@ -42,12 +46,14 @@ export function useReceiptScanner() {
         reader.readAsDataURL(blob);
       });
 
+      console.log('[ReceiptScanner] Image converted to base64, calling Edge Function');
+
       const { data, error } = await supabase.functions.invoke('generate-text', {
         body: {
           prompt,
           images: [base64Image],
           system: 'You are an expert at reading receipts and extracting structured data. Always return valid JSON with accurate item information.',
-          temperature: 0.3, // Lower temperature for more accurate extraction
+          temperature: 0.3,
           max_tokens: 1500,
           format: 'json',
           model: 'gpt-4o-mini'
@@ -55,19 +61,24 @@ export function useReceiptScanner() {
       });
 
       if (error) {
+        console.error('[ReceiptScanner] Edge Function error:', error);
         throw new Error(error.message || 'Failed to scan receipt');
       }
+
+      console.log('[ReceiptScanner] Edge Function response:', data);
 
       // Fetch the generated text from the URL
       const textResponse = await fetch(data.url);
       const textContent = await textResponse.text();
+      
+      console.log('[ReceiptScanner] Generated text:', textContent);
       
       // Parse the JSON response
       let scannedItems: ScannedItem[];
       try {
         scannedItems = JSON.parse(textContent);
       } catch (parseError) {
-        console.error('Failed to parse receipt JSON:', textContent);
+        console.error('[ReceiptScanner] Failed to parse receipt JSON:', textContent);
         throw new Error('Could not read receipt. Please try again with a clearer photo.');
       }
 
@@ -75,13 +86,15 @@ export function useReceiptScanner() {
       const enhancedItems = scannedItems.map(item => ({
         ...item,
         category: categorizeFoodItem(item.name),
-        expirationDate: predictExpirationDate(item.name, true) // Assume refrigerated
+        expirationDate: predictExpirationDate(item.name, true)
       }));
+
+      console.log('[ReceiptScanner] Successfully scanned', enhancedItems.length, 'items');
 
       setState({ status: 'success', data: enhancedItems, error: null });
       return enhancedItems;
     } catch (e: any) {
-      console.error('Receipt scanning error:', e);
+      console.error('[ReceiptScanner] Receipt scanning error:', e);
       setState({ 
         status: 'error', 
         data: null, 

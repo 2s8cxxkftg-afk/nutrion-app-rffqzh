@@ -9,6 +9,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/utils/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 interface AuthContextType {
   user: User | null;
@@ -29,10 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     let subscription: any = null;
 
+    console.log('[AuthProvider] Initializing on platform:', Platform.OS);
+
     // Get initial session with error handling and timeout
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
+        console.log('[AuthProvider] Getting initial session...');
         
         // Add timeout to prevent hanging
         const sessionPromise = supabase.auth.getSession();
@@ -43,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (!isMounted) {
-          console.log('Component unmounted during auth init');
+          console.log('[AuthProvider] Component unmounted during auth init');
           return;
         }
         
@@ -51,19 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { session, error } = result.data;
           
           if (error) {
-            console.error('Error getting initial session:', error.message);
+            console.error('[AuthProvider] Error getting initial session:', error.message);
           }
           
           setSession(session);
           setUser(session?.user ?? null);
-          console.log('Auth initialized, user:', session?.user?.email || 'none');
+          console.log('[AuthProvider] Auth initialized, user:', session?.user?.email || 'none');
         } else {
-          console.log('No session data returned');
+          console.log('[AuthProvider] No session data returned');
           setSession(null);
           setUser(null);
         }
       } catch (error: any) {
-        console.error('Failed to initialize auth:', error?.message || error);
+        console.error('[AuthProvider] Failed to initialize auth:', error?.message || error);
         if (isMounted) {
           setSession(null);
           setUser(null);
@@ -84,18 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: { subscription: authSubscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!isMounted) {
-          console.log('Component unmounted, ignoring auth change');
+          console.log('[AuthProvider] Component unmounted, ignoring auth change');
           return;
         }
         
-        console.log('Auth state changed:', _event);
+        console.log('[AuthProvider] Auth state changed:', _event);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       });
       subscription = authSubscription;
     } catch (error: any) {
-      console.error('Failed to set up auth listener:', error?.message || error);
+      console.error('[AuthProvider] Failed to set up auth listener:', error?.message || error);
       // Don't crash the app if auth listener fails
       if (isMounted) {
         setLoading(false);
@@ -109,31 +112,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           subscription.unsubscribe();
         }
       } catch (error: any) {
-        console.error('Error unsubscribing from auth:', error?.message || error);
+        console.error('[AuthProvider] Error unsubscribing from auth:', error?.message || error);
       }
     };
   }, []);
 
   const signOut = async () => {
     try {
+      console.log('[AuthProvider] Signing out user');
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('[AuthProvider] Sign out error:', error);
+        throw error;
+      }
       setUser(null);
       setSession(null);
+      console.log('[AuthProvider] Sign out successful');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('[AuthProvider] Error signing out:', error);
+      // Clear local state even if API call fails
+      setUser(null);
+      setSession(null);
       throw error;
     }
   };
 
   const refreshSession = async () => {
     try {
+      console.log('[AuthProvider] Refreshing session');
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
+      if (error) {
+        console.error('[AuthProvider] Refresh session error:', error);
+        throw error;
+      }
       setSession(session);
       setUser(session?.user ?? null);
+      console.log('[AuthProvider] Session refreshed');
     } catch (error) {
-      console.error('Error refreshing session:', error);
+      console.error('[AuthProvider] Error refreshing session:', error);
       throw error;
     }
   };

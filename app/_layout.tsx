@@ -6,8 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert, View, Text, StyleSheet } from "react-native";
-import { useNetworkState } from "expo-network";
+import { useColorScheme, View, Text, StyleSheet, Platform } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -26,6 +25,7 @@ try {
     const originalHandler = ErrorUtils.getGlobalHandler();
     ErrorUtils.setGlobalHandler((error, isFatal) => {
       console.error('=== GLOBAL ERROR CAUGHT ===');
+      console.error('Platform:', Platform.OS);
       console.error('Error:', error);
       console.error('Message:', error?.message || 'No message');
       console.error('Is fatal:', isFatal);
@@ -46,54 +46,25 @@ try {
   console.error('Failed to set up global error handler:', setupError);
 }
 
-// Handle unhandled promise rejections
-try {
-  if (typeof global !== 'undefined' && global.Promise) {
-    const originalPromiseRejection = global.Promise.prototype.catch;
-    global.Promise.prototype.catch = function(onRejected) {
-      return originalPromiseRejection.call(this, (error: any) => {
-        console.error('=== UNHANDLED PROMISE REJECTION ===');
-        console.error('Error:', error);
-        console.error('Message:', error?.message || 'No message');
-        console.error('Stack:', error?.stack || 'No stack trace');
-        console.error('===================================');
-        
-        if (onRejected) {
-          try {
-            return onRejected(error);
-          } catch (rejectionError) {
-            console.error('Error in rejection handler:', rejectionError);
-            throw rejectionError;
-          }
-        }
-        throw error;
-      });
-    };
-  }
-} catch (setupError) {
-  console.error('Failed to set up promise rejection handler:', setupError);
-}
-
 // Initialize i18n with error handling
 try {
   require("@/utils/i18n");
-  console.log('i18n initialized successfully');
+  console.log('[i18n] Initialized successfully');
 } catch (error: any) {
-  console.error('Failed to initialize i18n:', error.message || error);
+  console.error('[i18n] Failed to initialize:', error?.message || error);
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync().catch((error) => {
-  console.error('Failed to prevent splash screen auto-hide:', error);
+  console.error('[SplashScreen] Failed to prevent auto-hide:', error);
 });
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)", // Ensure any route can link back to `/`
+  initialRouteName: "(tabs)",
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -105,8 +76,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
+      console.log('[RootLayout] Fonts loaded, hiding splash screen');
       SplashScreen.hideAsync().catch((error) => {
-        console.error('Failed to hide splash screen:', error);
+        console.error('[SplashScreen] Failed to hide:', error);
       });
     }
   }, [loaded]);
@@ -114,24 +86,12 @@ export default function RootLayout() {
   // Set up toast callback
   useEffect(() => {
     setToastCallback((message: string, type: 'success' | 'error' | 'info') => {
-      console.log('[Toast] Showing toast:', message, type);
+      console.log('[Toast] Showing:', message, type);
       setToastMessage(message);
       setToastType(type);
       setToastVisible(true);
     });
   }, []);
-
-  React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
-      Alert.alert(
-        "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
-      );
-    }
-  }, [networkState.isConnected, networkState.isInternetReachable]);
 
   if (!loaded) {
     return null;
@@ -141,30 +101,30 @@ export default function RootLayout() {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "rgb(0, 122, 255)", // System Blue
-      background: "rgb(242, 242, 247)", // Light mode background
-      card: "rgb(255, 255, 255)", // White cards/surfaces
-      text: "rgb(0, 0, 0)", // Black text for light mode
-      border: "rgb(216, 216, 220)", // Light gray for separators/borders
-      notification: "rgb(255, 59, 48)", // System Red
+      primary: "rgb(76, 175, 80)",
+      background: "rgb(255, 255, 255)",
+      card: "rgb(255, 255, 255)",
+      text: "rgb(33, 33, 33)",
+      border: "rgb(224, 224, 224)",
+      notification: "rgb(244, 67, 54)",
     },
   };
 
   const CustomDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
-      primary: "rgb(10, 132, 255)", // System Blue (Dark Mode)
-      background: "rgb(1, 1, 1)", // True black background for OLED displays
-      card: "rgb(28, 28, 30)", // Dark card/surface color
-      text: "rgb(255, 255, 255)", // White text for dark mode
-      border: "rgb(44, 44, 46)", // Dark gray for separators/borders
-      notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
+      primary: "rgb(76, 175, 80)",
+      background: "rgb(18, 18, 18)",
+      card: "rgb(28, 28, 30)",
+      text: "rgb(255, 255, 255)",
+      border: "rgb(44, 44, 46)",
+      notification: "rgb(244, 67, 54)",
     },
   };
 
   // Error fallback component
   const ErrorFallback = ({ error }: { error: Error }) => {
-    console.error('App Error:', error);
+    console.error('[ErrorBoundary] App Error:', error);
     return (
       <View style={errorStyles.container}>
         <Text style={errorStyles.title}>Oops! Something went wrong</Text>
@@ -186,6 +146,13 @@ export default function RootLayout() {
             >
               <StatusBar style="auto" animated />
               <Stack>
+                {/* Index/splash screen */}
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+
+                {/* Onboarding */}
+                <Stack.Screen name="introduction" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+
                 {/* Main app with tabs */}
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
@@ -204,6 +171,159 @@ export default function RootLayout() {
                     headerShown: true,
                     title: "Reset Password",
                     presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="confirm-email" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Confirm Email",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="email-confirmed" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Email Confirmed",
+                    presentation: "card"
+                  }} 
+                />
+
+                {/* Subscription screens */}
+                <Stack.Screen 
+                  name="subscription-intro" 
+                  options={{ 
+                    headerShown: false,
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="paywall" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Premium",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="subscription-success" 
+                  options={{ 
+                    headerShown: false,
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="subscription-management" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Manage Subscription",
+                    presentation: "card"
+                  }} 
+                />
+
+                {/* Feature screens */}
+                <Stack.Screen 
+                  name="add-item" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Add Item",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="edit-item" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Edit Item",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="scan-receipt" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Scan Receipt",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="ai-recipes" 
+                  options={{ 
+                    headerShown: true,
+                    title: "AI Recipe Generator",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="food-search" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Search Food",
+                    presentation: "card"
+                  }} 
+                />
+
+                {/* Settings screens */}
+                <Stack.Screen 
+                  name="notification-settings" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Notification Settings",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="edit-profile" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Edit Profile",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="change-password" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Change Password",
+                    presentation: "card"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="about" 
+                  options={{ 
+                    headerShown: true,
+                    title: "About",
+                    presentation: "card"
+                  }} 
+                />
+
+                {/* Test/Debug screens */}
+                <Stack.Screen 
+                  name="test-connection" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Test Connection",
+                    presentation: "card"
+                  }} 
+                />
+
+                {/* Modal examples */}
+                <Stack.Screen 
+                  name="modal" 
+                  options={{ 
+                    presentation: "modal",
+                    title: "Modal"
+                  }} 
+                />
+                <Stack.Screen 
+                  name="formsheet" 
+                  options={{ 
+                    presentation: "formSheet",
+                    title: "Form Sheet",
+                    sheetGrabberVisible: true,
+                    sheetAllowedDetents: [0.5, 0.8, 1.0],
+                    sheetCornerRadius: 20
                   }} 
                 />
 
@@ -252,6 +372,6 @@ const errorStyles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
-    fontFamily: 'monospace',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });

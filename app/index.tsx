@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { View, Image, StyleSheet, Text, ActivityIndicator, Platform } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
@@ -14,12 +14,13 @@ export default function Index() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    console.log('[Index] Platform:', Platform.OS);
     checkAppStatus();
   }, []);
 
   const checkAppStatus = async () => {
     try {
-      console.log('=== Checking App Status ===');
+      console.log('[Index] === Checking App Status ===');
 
       // Check onboarding status with error handling and timeout
       let completedOnboarding = false;
@@ -31,9 +32,9 @@ export default function Index() {
         
         const onboardingValue = await Promise.race([storagePromise, storageTimeout]);
         completedOnboarding = onboardingValue === 'true';
-        console.log('Onboarding completed:', completedOnboarding);
+        console.log('[Index] Onboarding completed:', completedOnboarding);
       } catch (storageError: any) {
-        console.error('Error reading onboarding status:', storageError?.message || storageError);
+        console.error('[Index] Error reading onboarding status:', storageError?.message || storageError);
         completedOnboarding = false;
       }
       setHasCompletedOnboarding(completedOnboarding);
@@ -56,26 +57,26 @@ export default function Index() {
           const { session, error: sessionError } = result.data;
           
           if (sessionError) {
-            console.log('Session error (non-critical):', sessionError.message);
+            console.log('[Index] Session error (non-critical):', sessionError.message);
           }
           
           authenticated = !!session;
-          console.log('Authenticated:', authenticated);
+          console.log('[Index] Authenticated:', authenticated);
         } else {
-          console.log('No session data returned');
+          console.log('[Index] No session data returned');
         }
       } catch (authError: any) {
-        console.log('Auth check timed out or failed (non-critical):', authError?.message || authError);
+        console.log('[Index] Auth check timed out or failed (non-critical):', authError?.message || authError);
         authenticated = false;
       }
       
       setIsAuthenticated(authenticated);
       
       // Navigate immediately without artificial delay
-      console.log('Navigation ready - proceeding immediately');
+      console.log('[Index] Navigation ready - proceeding immediately');
       setIsLoading(false);
     } catch (error: any) {
-      console.error('Error checking app status:', error?.message || error);
+      console.error('[Index] Error checking app status:', error?.message || error);
       // On error, assume nothing completed and proceed to avoid crash
       setHasCompletedOnboarding(false);
       setIsAuthenticated(false);
@@ -100,21 +101,21 @@ export default function Index() {
   }
 
   // Navigation logic
-  console.log('=== Navigation Decision ===');
-  console.log('Onboarding:', hasCompletedOnboarding);
-  console.log('Authenticated:', isAuthenticated);
+  console.log('[Index] === Navigation Decision ===');
+  console.log('[Index] Onboarding:', hasCompletedOnboarding);
+  console.log('[Index] Authenticated:', isAuthenticated);
 
   if (!hasCompletedOnboarding) {
-    console.log('→ /introduction');
+    console.log('[Index] → /introduction');
     return <Redirect href="/introduction" />;
   }
 
   if (!isAuthenticated) {
-    console.log('→ /auth');
+    console.log('[Index] → /auth');
     return <Redirect href="/auth" />;
   }
 
-  console.log('→ /(tabs)/pantry');
+  console.log('[Index] → /(tabs)/pantry');
   return <Redirect href="/(tabs)/pantry" />;
 }
 

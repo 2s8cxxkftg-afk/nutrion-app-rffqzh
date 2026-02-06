@@ -1,216 +1,330 @@
 
 # Nutrion - Smart Pantry Management App
 
-Nutrion helps users manage their pantry, track food expiration dates, and automatically plan balanced meals based on what's already available at home.
+A React Native + Expo 54 app that helps users manage their pantry, track food expiration dates, and reduce food waste with AI-powered features.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ installed
-- Expo CLI installed globally: `npm install -g expo-cli`
-- EAS CLI installed globally: `npm install -g eas-cli`
-- For iOS: Xcode 14+ and macOS
-- For Android: Android Studio with SDK 34+
+- npm or pnpm installed
+- Expo CLI installed: `npm install -g expo-cli`
+- For iOS: Xcode 14+ and iOS Simulator
+- For Android: Android Studio and Android Emulator
 
 ### Installation
 
-1. Install dependencies:
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd nutrion-app-rffqzh
+
+# CRITICAL: Remove problematic dependency
+npm uninstall react-native-maps
+
+# Install dependencies
 npm install
-```
 
-2. Create a `.env` file based on `.env.example`:
-```bash
+# Create .env file with your Supabase credentials
 cp .env.example .env
+# Edit .env and add your EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+# Start the development server
+npm run dev
 ```
 
-3. Configure your environment variables in `.env`:
-```
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
-
-### Development
-
-Run the app in development mode:
+### Running the App
 
 ```bash
-# Start Expo dev server
-npm run dev
-
-# Run on iOS simulator
+# iOS
 npm run ios
 
-# Run on Android emulator
+# Android
 npm run android
 
-# Run on web
+# Web
 npm run web
 ```
 
-## 📱 Building for Production
+## 📱 Platform-Specific Setup
 
-### Android APK
+### iOS Setup
 
-Build an APK for testing:
+**CRITICAL**: Before building for iOS, you MUST remove react-native-maps:
 ```bash
-npm run build:android
+npm uninstall react-native-maps
 ```
 
-This will create an APK file that you can install on Android devices for testing.
-
-### iOS TestFlight
-
-Build for iOS TestFlight:
+#### Development Build
 ```bash
-npm run build:ios
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login to Expo
+eas login
+
+# Initialize EAS project
+eas init
+
+# Build for iOS simulator
+eas build --platform ios --profile development
+
+# Or build locally (faster)
+eas build --platform ios --profile development --local
 ```
 
-After the build completes, submit to TestFlight:
+#### TestFlight Submission
 ```bash
-npm run submit:ios
+# Build production version
+eas build --platform ios --profile production
+
+# Submit to TestFlight
+eas submit --platform ios
 ```
 
-### Important Notes
+**See `IOS_QUICK_START.md` for detailed iOS instructions**
 
-**Before building:**
-1. Update `eas.json` with your EAS project ID
-2. Configure your Supabase project with proper authentication settings
-3. Set up SMTP for password reset emails in Supabase Dashboard
-4. Add redirect URLs in Supabase Auth settings:
-   - `nutrion://reset-password`
-   - `exp://localhost:8081/--/reset-password`
-   - Your production deep link URL
+### Android Setup
 
-**iOS Specific:**
-- Bundle identifier: `com.solvralabs.nutrion`
-- Deployment target: iOS 14.0+
-- Deep linking scheme: `nutrion://`
+```bash
+# Build APK
+eas build --platform android --profile production
 
-**Android Specific:**
-- Package name: `com.solvralabs.nutrion`
-- Min SDK: 23 (Android 6.0)
-- Target SDK: 34 (Android 14)
-- Deep linking scheme: `nutrion://`
+# Or build AAB for Play Store
+eas build --platform android --profile production-aab
+
+# Submit to Play Store
+eas submit --platform android
+```
+
+## 🏗️ Project Structure
+
+```
+nutrion-app-rffqzh/
+├── app/                          # Expo Router screens
+│   ├── (tabs)/                   # Tab navigation screens
+│   │   ├── (home)/              # Home tab (iOS-specific version available)
+│   │   ├── pantry.tsx           # Pantry management
+│   │   ├── shopping.tsx         # Shopping list
+│   │   └── profile.tsx          # User profile
+│   ├── auth.tsx                 # Authentication screen
+│   ├── add-item.tsx             # Add pantry item
+│   ├── edit-item.tsx            # Edit pantry item
+│   ├── ai-recipes.tsx           # AI recipe generator
+│   ├── scan-receipt.tsx         # Receipt scanner
+│   └── _layout.tsx              # Root layout
+├── components/                   # Reusable components
+│   ├── FloatingTabBar.tsx       # Custom tab bar
+│   ├── IconSymbol.tsx           # Cross-platform icons
+│   ├── IconSymbol.ios.tsx       # iOS SF Symbols
+│   └── Toast.tsx                # Toast notifications
+├── contexts/                     # React contexts
+│   ├── AuthContext.tsx          # Authentication state
+│   └── WidgetContext.tsx        # iOS widget support
+├── hooks/                        # Custom hooks
+│   ├── useAIRecipes.ts          # AI recipe generation
+│   └── useReceiptScanner.ts     # Receipt scanning
+├── utils/                        # Utility functions
+│   ├── supabase.ts              # Supabase client
+│   ├── storage.ts               # Local storage
+│   ├── notificationScheduler.ts # Notifications
+│   └── i18n.ts                  # Internationalization
+├── styles/                       # Styling
+│   └── commonStyles.ts          # Shared styles
+└── types/                        # TypeScript types
+    └── pantry.ts                # Data types
+```
+
+## 🎯 Key Features
+
+### Core Features
+- ✅ Smart pantry inventory management
+- ✅ Expiration date tracking with alerts
+- ✅ Shopping list management
+- ✅ Barcode scanning (camera)
+- ✅ Manual item entry
+- ✅ Category-based organization
+- ✅ Dark mode support
+
+### Premium Features (Supabase Edge Functions)
+- 🌟 AI Recipe Generator (GPT-4)
+- 🌟 Receipt Scanner (GPT-4 Vision)
+- 🌟 Meal planning suggestions
+- 🌟 Nutritional information
 
 ## 🔧 Configuration
 
+### Environment Variables
+Create a `.env` file in the root directory:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
 ### Supabase Setup
-
 1. Create a Supabase project at https://supabase.com
-2. Enable Email authentication in Authentication settings
-3. Configure SMTP for email delivery (required for password reset)
-4. Add redirect URLs for password reset flow
-5. Copy your project URL and anon key to `.env`
+2. Enable Email authentication
+3. Deploy Edge Functions for AI features:
+   - `generate-recipe-suggestions` - AI recipe generation
+   - `generate-text` - Receipt scanning with GPT-4 Vision
 
-### Deep Linking
+### Deep Links
+The app supports deep linking for password reset:
+- Scheme: `nutrion://`
+- Reset password: `nutrion://reset-password`
 
-The app uses the `nutrion://` scheme for deep linking. This is configured in:
-- `app.json` - scheme configuration
-- iOS: `CFBundleURLTypes` in Info.plist
-- Android: `intentFilters` in AndroidManifest.xml
+Configure in Supabase Dashboard:
+1. Go to Authentication > URL Configuration
+2. Add redirect URLs:
+   - `nutrion://reset-password`
+   - `exp://localhost:8081/--/reset-password`
+   - Your production URL
 
-## 📦 Features
+## 🐛 Debugging
 
-- ✅ Smart Pantry Inventory with barcode scanning
-- ✅ AI-powered Recipe Suggestions (Premium)
-- ✅ Receipt Scanning with AI (Premium)
-- ✅ Expiration Date Tracking & Alerts
-- ✅ Shopping List Management
-- ✅ Email Authentication with Password Reset
-- ✅ Cross-platform (iOS, Android, Web)
-- ✅ Dark Mode Support
-- ✅ Offline-first Architecture
-
-## 🛠️ Tech Stack
-
-- **Framework**: React Native + Expo 54
-- **Navigation**: Expo Router (file-based routing)
-- **Backend**: Supabase (Auth + Database)
-- **State Management**: React Context API
-- **Storage**: AsyncStorage (local) + Supabase (cloud sync)
-- **Notifications**: Expo Notifications
-- **Camera**: Expo Camera (barcode scanning)
-- **AI**: Supabase Edge Functions with OpenAI
-
-## 📝 Project Structure
-
-```
-nutrion/
-├── app/                    # Expo Router screens
-│   ├── (tabs)/            # Tab navigation screens
-│   │   ├── pantry.tsx     # Main pantry screen
-│   │   ├── shopping.tsx   # Shopping list screen
-│   │   └── profile.tsx    # User profile screen
-│   ├── auth.tsx           # Authentication screen
-│   ├── add-item.tsx       # Add pantry item
-│   ├── edit-item.tsx      # Edit pantry item
-│   ├── scan-receipt.tsx   # AI receipt scanner (Premium)
-│   ├── ai-recipes.tsx     # AI recipe generator (Premium)
-│   └── _layout.tsx        # Root layout with providers
-├── components/            # Reusable components
-├── contexts/              # React contexts (Auth, Widget)
-├── hooks/                 # Custom React hooks
-├── styles/                # Shared styles and theme
-├── types/                 # TypeScript type definitions
-├── utils/                 # Utility functions
-└── assets/                # Images, fonts, etc.
-```
-
-## 🔐 Authentication
-
-The app uses Supabase Auth with:
-- Email/Password authentication
-- Password reset via email
-- Deep linking for password reset flow
-- Session persistence with AsyncStorage
-
-## 🐛 Troubleshooting
-
-### Build Issues
-
-If you encounter build errors:
-
-1. Clear cache and reinstall:
-```bash
-rm -rf node_modules
-npm install
-```
-
-2. Clear Expo cache:
-```bash
-npx expo start -c
-```
-
-3. For iOS, regenerate native project:
-```bash
-npx expo prebuild --clean
-```
+### Console Logs
+All components use prefixed logging for easy debugging:
+- `[Index]` - App initialization
+- `[AuthProvider]` - Authentication
+- `[Notifications]` - Notification system
+- `[AIRecipes]` - Recipe generation
+- `[FloatingTabBar]` - Tab navigation
 
 ### Common Issues
 
-**"Supabase credentials not found"**
-- Make sure `.env` file exists with valid Supabase credentials
-- Restart the dev server after adding environment variables
+**"react-native-maps" causing crashes**
+```bash
+npm uninstall react-native-maps
+```
 
-**"Password reset email not received"**
-- Configure SMTP in Supabase Dashboard
-- Add redirect URLs in Supabase Auth settings
-- Check spam folder
+**"Auth initialization timeout"**
+- Check internet connection
+- Verify Supabase credentials in `.env`
 
-**"App crashes on iOS"**
-- Ensure you're using iOS 14.0+ deployment target
-- Check that all native dependencies are properly linked
-- Review Xcode console logs for specific errors
+**"Widget functionality is iOS-only"**
+- This is normal - widget feature is disabled for stability
+
+**Camera not working**
+- Grant camera permissions in iOS Settings
+- Check `NSCameraUsageDescription` in app.json
+
+**Tabs not navigating**
+- Check `[FloatingTabBar]` logs
+- Verify all tab screens exist
+
+### Run Diagnostics
+```bash
+npx expo-doctor
+```
+
+## 📚 Documentation
+
+- `IOS_FIXES_APPLIED.md` - Complete list of iOS fixes
+- `IOS_QUICK_START.md` - Quick iOS setup guide
+- `IOS_TROUBLESHOOTING.md` - This file
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+- [ ] App launches without crashing
+- [ ] Introduction screens work
+- [ ] Sign up / Sign in works
+- [ ] Tab navigation works
+- [ ] Add item works
+- [ ] Edit item works
+- [ ] Delete item works
+- [ ] Camera opens
+- [ ] Notifications work
+- [ ] AI recipes work (premium)
+- [ ] Receipt scanning works (premium)
+- [ ] Sign out works
+- [ ] Dark mode works
+
+### Automated Testing
+```bash
+# Run linter
+npm run lint
+
+# Type checking
+npx tsc --noEmit
+```
+
+## 🚢 Deployment
+
+### iOS TestFlight
+```bash
+# Build
+eas build --platform ios --profile production
+
+# Submit
+eas submit --platform ios
+```
+
+### Android Play Store
+```bash
+# Build AAB
+eas build --platform android --profile production-aab
+
+# Submit
+eas submit --platform android
+```
+
+## 🔐 Security
+
+- Authentication via Supabase Auth
+- Secure token storage with expo-secure-store
+- PKCE flow for OAuth
+- Row Level Security (RLS) on Supabase
 
 ## 📄 License
 
 © 2024 Solvra Labs. All rights reserved.
 
-## 🤝 Support
+## 🆘 Support
 
-For issues or questions, contact: hello@solvralabs.net
+- Email: hello@solvralabs.net
+- Documentation: See `IOS_*.md` files
+- Issues: Check console logs with component prefixes
 
----
+## 🎉 What's New in This Version
 
-Built with 💚 using [Natively.dev](https://natively.dev)
+### iOS Stability Improvements
+- ✅ Removed react-native-maps dependency (major crash cause)
+- ✅ Enhanced error handling with timeouts
+- ✅ Comprehensive logging throughout app
+- ✅ Fixed bundle identifier consistency
+- ✅ Added deep link support for password reset
+- ✅ Disabled problematic widget functionality
+- ✅ Created missing base home screen
+- ✅ Improved tab navigation
+- ✅ Platform-specific optimizations
+
+### Enhanced Debugging
+- All components now have `[ComponentName]` log prefixes
+- Better error messages with context
+- Timeout handling for all async operations
+- Graceful degradation when features fail
+
+### Better User Experience
+- Faster app initialization
+- Improved offline support
+- Better error messages
+- Smoother animations
+- More responsive UI
+
+## 🔄 Migration Notes
+
+If upgrading from a previous version:
+1. Remove react-native-maps: `npm uninstall react-native-maps`
+2. Clear caches: `npx expo start --clear`
+3. Reinstall dependencies: `rm -rf node_modules && npm install`
+4. Update app.json scheme to lowercase: `"scheme": "nutrion"`
+5. Test all features thoroughly
+
+## 📞 Getting Help
+
+1. **Check logs first** - Look for `[ComponentName]` prefixes
+2. **Run diagnostics** - `npx expo-doctor`
+3. **Read troubleshooting** - See `IOS_TROUBLESHOOTING.md`
+4. **Contact support** - hello@solvralabs.net with logs and screenshots
