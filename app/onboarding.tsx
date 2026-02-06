@@ -241,8 +241,8 @@ export default function OnboardingScreen() {
           <View key={index} style={styles.pageContainer}>
             <View style={[styles.iconContainer, { backgroundColor: page.color + '20' }]}>
               <IconSymbol
-                name={page.iconName}
-                androidName={page.androidIconName}
+                ios_icon_name={page.iconName}
+                android_material_icon_name={page.androidIconName}
                 size={60}
                 color={page.color}
               />

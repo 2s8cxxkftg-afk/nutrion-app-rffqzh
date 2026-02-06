@@ -19,6 +19,8 @@ export const colors = {
   warning: '#FF9800',    // Warning color
   warningLight: '#FFF3E0',  // Light warning background
   shadow: '#000000',     // Shadow color
+  info: '#2196F3',       // Info color (blue)
+  premium: '#FFD700',    // Premium gold color
 };
 
 export const typography = {
