@@ -9,18 +9,21 @@ export default function TabLayout() {
       name: 'pantry',
       route: '/(tabs)/pantry',
       icon: 'kitchen',
+      iosIcon: 'archivebox.fill', // SF Symbol for iOS
       label: 'Pantry',
     },
     {
       name: 'shopping',
       route: '/(tabs)/shopping',
       icon: 'shopping-cart',
+      iosIcon: 'cart.fill', // SF Symbol for iOS
       label: 'Shopping',
     },
     {
       name: 'profile',
       route: '/(tabs)/profile',
       icon: 'person',
+      iosIcon: 'person.fill', // SF Symbol for iOS
       label: 'Profile',
     },
   ];

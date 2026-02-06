@@ -20,7 +20,7 @@ interface ProfileStats {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [displayName, setDisplayName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [isPremium, setIsPremium] = useState(false);
@@ -28,6 +28,7 @@ export default function ProfileScreen() {
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const formatDisplayName = (name: string): string => {
     if (!name) return 'User';
@@ -141,15 +142,30 @@ export default function ProfileScreen() {
 
   const confirmSignOut = async () => {
     try {
-      console.log('[Profile] User confirmed sign out');
+      console.log('[Profile] User confirmed sign out - starting sign out process');
+      setIsSigningOut(true);
       setSignOutModalVisible(false);
+      
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await supabase.auth.signOut();
+      
+      // Use the signOut function from AuthContext if available
+      if (signOut) {
+        console.log('[Profile] Using AuthContext signOut function');
+        await signOut();
+      } else {
+        console.log('[Profile] Using direct Supabase signOut');
+        await supabase.auth.signOut();
+      }
+      
+      console.log('[Profile] Sign out successful, redirecting to auth');
       Toast.show('Signed out successfully', 'success');
       router.replace('/auth');
     } catch (error) {
-      console.log('[Profile] Error signing out:', error);
-      Toast.show('Failed to sign out', 'error');
+      console.error('[Profile] Error signing out:', error);
+      Toast.show('Failed to sign out. Please try again.', 'error');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -476,14 +492,17 @@ export default function ProfileScreen() {
           style={styles.signOutButton}
           onPress={handleSignOut}
           activeOpacity={0.7}
+          disabled={isSigningOut}
         >
           <IconSymbol 
-            ios_icon_name="arrow.right.square" 
+            ios_icon_name="arrow.right.square.fill" 
             android_material_icon_name="exit-to-app" 
             size={20} 
             color={colors.error} 
           />
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
+          <Text style={styles.signOutButtonText}>
+            {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: spacing.xl }} />
@@ -496,38 +515,34 @@ export default function ProfileScreen() {
         animationType="fade"
         onRequestClose={cancelSignOut}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={cancelSignOut}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Sign Out</Text>
-              <Text style={styles.modalMessage}>
-                Are you sure you want to sign out?
-              </Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={cancelSignOut}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonSignOut]}
-                  onPress={confirmSignOut}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextSignOut]}>
-                    Sign Out
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to sign out?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={cancelSignOut}
+                disabled={isSigningOut}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSignOut]}
+                onPress={confirmSignOut}
+                disabled={isSigningOut}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSignOut]}>
+                  {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Delete Account Confirmation Modal */}
@@ -537,48 +552,42 @@ export default function ProfileScreen() {
         animationType="fade"
         onRequestClose={cancelDeleteAccount}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={cancelDeleteAccount}
-        >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={styles.modalContent}>
-              <View style={styles.warningIconContainer}>
-                <IconSymbol 
-                  ios_icon_name="exclamationmark.triangle.fill" 
-                  android_material_icon_name="warning" 
-                  size={48} 
-                  color={colors.error} 
-                />
-              </View>
-              <Text style={styles.modalTitle}>Delete Account</Text>
-              <Text style={styles.modalMessage}>
-                Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
-              </Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                  onPress={cancelDeleteAccount}
-                  disabled={isDeleting}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonDelete]}
-                  onPress={confirmDeleteAccount}
-                  disabled={isDeleting}
-                >
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.warningIconContainer}>
+              <IconSymbol 
+                ios_icon_name="exclamationmark.triangle.fill" 
+                android_material_icon_name="warning" 
+                size={48} 
+                color={colors.error} 
+              />
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+            <Text style={styles.modalTitle}>Delete Account</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={cancelDeleteAccount}
+                disabled={isDeleting}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonDelete]}
+                onPress={confirmDeleteAccount}
+                disabled={isDeleting}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -804,12 +813,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.lg,
   },
   modalContent: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.xl,
-    width: '80%',
+    width: '90%',
     maxWidth: 400,
   },
   warningIconContainer: {

@@ -73,10 +73,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  pickerButtonText: {
-    fontSize: 16,
-    color: colors.text,
-  },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -208,6 +204,18 @@ const styles = StyleSheet.create({
     color: colors.success,
     marginLeft: 4,
   },
+  dateInputContainer: {
+    position: 'relative',
+  },
+  clearDateButton: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    padding: 4,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    zIndex: 10,
+  },
 });
 
 export default function AddItemScreen() {
@@ -287,6 +295,18 @@ export default function AddItemScreen() {
   };
 
   const handleDateChange = (text: string) => {
+    console.log('[AddItem] Date input changed:', text);
+    
+    // If user is deleting (text is shorter than current), allow it
+    if (text.length < dateText.length) {
+      setDateText(text);
+      // Clear expiration date if text is empty
+      if (text.length === 0) {
+        setExpirationDate('');
+      }
+      return;
+    }
+    
     // Auto-format as user types: MM/DD/YYYY
     let cleaned = text.replace(/[^0-9]/g, '');
     
@@ -306,6 +326,13 @@ export default function AddItemScreen() {
         setExpirationDate(cleaned);
       }
     }
+  };
+
+  const handleClearDate = () => {
+    console.log('[AddItem] User cleared expiration date');
+    setDateText('');
+    setExpirationDate('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleSave = async () => {
@@ -490,19 +517,35 @@ export default function AddItemScreen() {
 
           <View style={styles.section}>
             <Text style={styles.label}>Expiration Date *</Text>
-            <TextInput
-              ref={dateInputRef}
-              style={[styles.input, focusedInput === 'date' && styles.inputFocused]}
-              placeholder="MM/DD/YYYY"
-              placeholderTextColor={colors.textSecondary}
-              value={dateText}
-              onChangeText={handleDateChange}
-              onFocus={() => setFocusedInput('date')}
-              onBlur={() => setFocusedInput(null)}
-              keyboardType="number-pad"
-              maxLength={10}
-              returnKeyType="done"
-            />
+            <View style={styles.dateInputContainer}>
+              <TextInput
+                ref={dateInputRef}
+                style={[styles.input, focusedInput === 'date' && styles.inputFocused]}
+                placeholder="MM/DD/YYYY"
+                placeholderTextColor={colors.textSecondary}
+                value={dateText}
+                onChangeText={handleDateChange}
+                onFocus={() => setFocusedInput('date')}
+                onBlur={() => setFocusedInput(null)}
+                keyboardType="number-pad"
+                maxLength={10}
+                returnKeyType="done"
+              />
+              {dateText.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearDateButton}
+                  onPress={handleClearDate}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    ios_icon_name="xmark.circle.fill"
+                    android_material_icon_name="cancel"
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
             
             {aiPrediction && (
               <View style={styles.aiPredictionBox}>
@@ -526,7 +569,7 @@ export default function AddItemScreen() {
             
             <Text style={styles.hint}>
               {aiPrediction 
-                ? 'AI-suggested date (you can edit it)' 
+                ? 'AI-suggested date (tap X to clear and enter your own)' 
                 : 'Enter date in MM/DD/YYYY format'}
             </Text>
           </View>

@@ -29,6 +29,7 @@ export interface TabBarItem {
   name: string;
   route: Href;
   icon: keyof typeof MaterialIcons.glyphMap;
+  iosIcon?: string; // SF Symbol name for iOS
   label: string;
 }
 
@@ -187,8 +188,8 @@ export default function FloatingTabBar({
                 >
                   <View style={styles.tabContent}>
                     <IconSymbol
+                      ios_icon_name={tab.iosIcon || tab.icon}
                       android_material_icon_name={tab.icon}
-                      ios_icon_name={tab.icon}
                       size={24}
                       color={isActive ? colors.primary : (theme.dark ? '#98989D' : colors.text)}
                     />
