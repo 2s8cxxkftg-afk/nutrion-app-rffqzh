@@ -26,6 +26,8 @@ export default function ProfileScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({ totalItems: 0, expiringSoon: 0, expired: 0 });
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatDisplayName = (name: string): string => {
     if (!name) return 'User';
@@ -155,6 +157,50 @@ export default function ProfileScreen() {
     console.log('[Profile] User cancelled sign out');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSignOutModalVisible(false);
+  };
+
+  const handleDeleteAccount = () => {
+    console.log('[Profile] User tapped Delete Account button');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setDeleteAccountModalVisible(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      console.log('[Profile] User confirmed account deletion');
+      setIsDeleting(true);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+      if (!user) {
+        throw new Error('No user found');
+      }
+
+      // Delete user account from Supabase
+      const { error } = await supabase.rpc('delete_user');
+      
+      if (error) {
+        console.error('[Profile] Error deleting account:', error);
+        throw error;
+      }
+
+      // Sign out after deletion
+      await supabase.auth.signOut();
+      
+      setDeleteAccountModalVisible(false);
+      Toast.show('Account deleted successfully', 'success');
+      router.replace('/auth');
+    } catch (error) {
+      console.error('[Profile] Error deleting account:', error);
+      setIsDeleting(false);
+      setDeleteAccountModalVisible(false);
+      Toast.show('Failed to delete account. Please try again.', 'error');
+    }
+  };
+
+  const cancelDeleteAccount = () => {
+    console.log('[Profile] User cancelled account deletion');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDeleteAccountModalVisible(false);
   };
 
   const handleNavigation = (route: string) => {
@@ -352,6 +398,28 @@ export default function ProfileScreen() {
               />
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.menuItem, styles.deleteAccountItem]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol 
+                ios_icon_name="trash.fill" 
+                android_material_icon_name="delete" 
+                size={24} 
+                color={colors.error} 
+              />
+              <Text style={[styles.menuItemText, styles.deleteAccountText]}>Delete Account</Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.error} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
@@ -454,6 +522,57 @@ export default function ProfileScreen() {
                 >
                   <Text style={[styles.modalButtonText, styles.modalButtonTextSignOut]}>
                     Sign Out
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={deleteAccountModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDeleteAccount}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={cancelDeleteAccount}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={styles.modalContent}>
+              <View style={styles.warningIconContainer}>
+                <IconSymbol 
+                  ios_icon_name="exclamationmark.triangle.fill" 
+                  android_material_icon_name="warning" 
+                  size={48} 
+                  color={colors.error} 
+                />
+              </View>
+              <Text style={styles.modalTitle}>Delete Account</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={cancelDeleteAccount}
+                  disabled={isDeleting}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextCancel]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonDelete]}
+                  onPress={confirmDeleteAccount}
+                  disabled={isDeleting}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextDelete]}>
+                    {isDeleting ? 'Deleting...' : 'Delete'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -629,6 +748,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...commonStyles.shadow,
   },
+  deleteAccountItem: {
+    borderColor: colors.error,
+    borderWidth: 1,
+  },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -644,6 +767,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: spacing.md,
     fontWeight: '500',
+  },
+  deleteAccountText: {
+    color: colors.error,
   },
   activeBadge: {
     backgroundColor: colors.success,
@@ -686,6 +812,10 @@ const styles = StyleSheet.create({
     width: '80%',
     maxWidth: 400,
   },
+  warningIconContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   modalTitle: {
     fontSize: typography.sizes.lg,
     fontWeight: '600',
@@ -698,6 +828,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.xl,
     textAlign: 'center',
+    lineHeight: 22,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -717,6 +848,9 @@ const styles = StyleSheet.create({
   modalButtonSignOut: {
     backgroundColor: colors.error,
   },
+  modalButtonDelete: {
+    backgroundColor: colors.error,
+  },
   modalButtonText: {
     fontSize: typography.sizes.md,
     fontWeight: '600',
@@ -725,6 +859,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   modalButtonTextSignOut: {
+    color: '#FFFFFF',
+  },
+  modalButtonTextDelete: {
     color: '#FFFFFF',
   },
 });
