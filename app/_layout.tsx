@@ -307,6 +307,14 @@ export default function RootLayout() {
                     presentation: "card"
                   }} 
                 />
+                <Stack.Screen 
+                  name="test-password-reset" 
+                  options={{ 
+                    headerShown: true,
+                    title: "Password Reset Diagnostics",
+                    presentation: "card"
+                  }} 
+                />
 
                 {/* Modal examples */}
                 <Stack.Screen 

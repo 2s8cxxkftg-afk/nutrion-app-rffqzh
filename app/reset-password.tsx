@@ -143,6 +143,40 @@ const styles = StyleSheet.create({
   requirementMet: {
     color: colors.primary,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  errorIcon: {
+    marginBottom: spacing.lg,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
 });
 
 export default function ResetPasswordScreen() {
@@ -158,45 +192,46 @@ export default function ResetPasswordScreen() {
   }, []);
 
   const checkSession = async () => {
-    console.log('Checking for valid session...');
-    console.log('Platform:', Platform.OS);
+    console.log('[ResetPassword] === Checking for valid session ===');
+    console.log('[ResetPassword] Platform:', Platform.OS);
     
     try {
       // For iOS/Android, check if we were opened via deep link
       if (Platform.OS !== 'web') {
-        console.log('Native platform detected, checking deep link...');
+        console.log('[ResetPassword] Native platform detected, checking deep link...');
         
         const url = await Linking.getInitialURL();
-        console.log('Initial URL:', url);
+        console.log('[ResetPassword] Initial URL:', url);
         
-        if (url && url.includes('reset-password')) {
-          console.log('Reset password deep link detected');
+        if (url && (url.includes('reset-password') || url.includes('type=recovery'))) {
+          console.log('[ResetPassword] Reset password deep link detected');
           
-          // Parse URL for tokens (Supabase may include them as query params)
+          // Parse URL for tokens (Supabase may include them as query params or hash)
           const parsedUrl = Linking.parse(url);
-          console.log('Parsed URL:', parsedUrl);
+          console.log('[ResetPassword] Parsed URL:', JSON.stringify(parsedUrl, null, 2));
           
           // Extract tokens from query params if present
           const accessToken = parsedUrl.queryParams?.access_token as string;
           const refreshToken = parsedUrl.queryParams?.refresh_token as string;
           const type = parsedUrl.queryParams?.type as string;
           
-          console.log('URL params - type:', type, 'has access_token:', !!accessToken);
+          console.log('[ResetPassword] URL params - type:', type, 'has access_token:', !!accessToken);
           
           if (type === 'recovery' && accessToken) {
-            console.log('Recovery tokens found in deep link, setting session');
+            console.log('[ResetPassword] Recovery tokens found in deep link, setting session');
             
-            const { error: sessionError } = await supabase.auth.setSession({
+            const { data, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',
             });
             
             if (sessionError) {
-              console.error('Error setting session from deep link:', sessionError);
+              console.error('[ResetPassword] Error setting session from deep link:', sessionError);
               throw sessionError;
             }
             
-            console.log('Session set successfully from deep link tokens');
+            console.log('[ResetPassword] Session set successfully from deep link tokens');
+            console.log('[ResetPassword] User:', data.session?.user?.email);
             setHasValidSession(true);
             setSessionChecked(true);
             return;
@@ -205,31 +240,49 @@ export default function ResetPasswordScreen() {
       }
       
       // For web, check URL hash for tokens
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hash) {
-        console.log('Web platform, checking URL hash for tokens');
-        console.log('URL hash:', window.location.hash);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        console.log('[ResetPassword] Web platform, checking URL for tokens');
+        console.log('[ResetPassword] URL hash:', window.location.hash);
+        console.log('[ResetPassword] URL search:', window.location.search);
         
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const type = hashParams.get('type');
+        // Check both hash and search params
+        let accessToken = '';
+        let refreshToken = '';
+        let type = '';
         
-        console.log('Hash params - type:', type, 'has access_token:', !!accessToken);
+        // Check hash params (Supabase default)
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          accessToken = hashParams.get('access_token') || '';
+          refreshToken = hashParams.get('refresh_token') || '';
+          type = hashParams.get('type') || '';
+        }
+        
+        // Check search params as fallback
+        if (!accessToken && window.location.search) {
+          const searchParams = new URLSearchParams(window.location.search);
+          accessToken = searchParams.get('access_token') || '';
+          refreshToken = searchParams.get('refresh_token') || '';
+          type = searchParams.get('type') || '';
+        }
+        
+        console.log('[ResetPassword] Extracted params - type:', type, 'has access_token:', !!accessToken);
         
         if (type === 'recovery' && accessToken) {
-          console.log('Recovery link detected in hash, setting session from URL tokens');
+          console.log('[ResetPassword] Recovery link detected, setting session from URL tokens');
           
-          const { error: sessionError } = await supabase.auth.setSession({
+          const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
           });
           
           if (sessionError) {
-            console.error('Error setting session from URL hash:', sessionError);
+            console.error('[ResetPassword] Error setting session from URL:', sessionError);
             throw sessionError;
           }
           
-          console.log('Session set successfully from URL hash tokens');
+          console.log('[ResetPassword] Session set successfully from URL tokens');
+          console.log('[ResetPassword] User:', data.session?.user?.email);
           setHasValidSession(true);
           setSessionChecked(true);
           return;
@@ -237,26 +290,27 @@ export default function ResetPasswordScreen() {
       }
       
       // If no tokens in URL/deep link, check for existing session
-      console.log('No tokens in URL, checking for existing session');
+      console.log('[ResetPassword] No tokens in URL, checking for existing session');
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error('Error getting session:', error);
+        console.error('[ResetPassword] Error getting session:', error);
         setHasValidSession(false);
       } else if (session) {
-        console.log('Valid session found');
-        console.log('Session user:', session.user?.email);
+        console.log('[ResetPassword] Valid session found');
+        console.log('[ResetPassword] Session user:', session.user?.email);
         setHasValidSession(true);
       } else {
-        console.log('No valid session found');
+        console.log('[ResetPassword] No valid session found');
         setHasValidSession(false);
         Toast.show('Invalid or expired reset link. Please request a new one.', 'error');
         setTimeout(() => {
           router.replace('/forgot-password');
         }, 2000);
       }
-    } catch (error) {
-      console.error('Error checking session:', error);
+    } catch (error: any) {
+      console.error('[ResetPassword] Error checking session:', error);
+      console.error('[ResetPassword] Error details:', JSON.stringify(error, null, 2));
       setHasValidSession(false);
       Toast.show('Error validating reset link. Please try again.', 'error');
       setTimeout(() => {
@@ -272,7 +326,7 @@ export default function ResetPasswordScreen() {
   };
 
   const handleResetPassword = async () => {
-    console.log('User tapped Reset Password button');
+    console.log('[ResetPassword] User tapped Reset Password button');
     
     if (!newPassword || !confirmPassword) {
       Toast.show('Please fill in all fields', 'error');
@@ -296,28 +350,31 @@ export default function ResetPasswordScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      console.log('Updating password...');
+      console.log('[ResetPassword] Updating password...');
       
-      // Step 5: Update user password
-      const { error } = await supabase.auth.updateUser({
+      // Update user password
+      const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (error) {
-        console.error('Password update error:', error.message);
+        console.error('[ResetPassword] Password update error:', error.message);
+        console.error('[ResetPassword] Error details:', JSON.stringify(error, null, 2));
         throw new Error(error.message);
       }
 
-      console.log('Password updated successfully');
+      console.log('[ResetPassword] Password updated successfully');
+      console.log('[ResetPassword] Updated user:', data.user?.email);
       Toast.show('Password updated successfully!', 'success');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Navigate to pantry after a short delay
       setTimeout(() => {
+        console.log('[ResetPassword] Navigating to pantry');
         router.replace('/(tabs)/pantry');
       }, 1500);
     } catch (error: any) {
-      console.error('Error resetting password:', error);
+      console.error('[ResetPassword] Error resetting password:', error);
       Toast.show(error.message || 'Failed to reset password', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -331,9 +388,14 @@ export default function ResetPasswordScreen() {
   if (!sessionChecked) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ marginTop: spacing.md, color: colors.textSecondary }}>
+          <Text style={styles.loadingText}>
             Verifying reset link...
           </Text>
         </View>
@@ -344,18 +406,25 @@ export default function ResetPasswordScreen() {
   if (!hasValidSession) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
-          <IconSymbol 
-            ios_icon_name="exclamationmark.triangle" 
-            android_material_icon_name="warning" 
-            size={64} 
-            color={colors.error} 
-          />
-          <Text style={[styles.title, { marginTop: spacing.lg }]}>
+        <Stack.Screen 
+          options={{
+            headerShown: false,
+          }}
+        />
+        <View style={styles.errorContainer}>
+          <View style={styles.errorIcon}>
+            <IconSymbol 
+              ios_icon_name="exclamationmark.triangle" 
+              android_material_icon_name="warning" 
+              size={64} 
+              color={colors.error} 
+            />
+          </View>
+          <Text style={styles.errorTitle}>
             Invalid Reset Link
           </Text>
-          <Text style={[styles.subtitle, { marginTop: spacing.sm }]}>
-            This password reset link is invalid or has expired. Please request a new one.
+          <Text style={styles.errorMessage}>
+            This password reset link is invalid or has expired. Please request a new one from the login screen.
           </Text>
         </View>
       </SafeAreaView>
@@ -413,7 +482,10 @@ export default function ResetPasswordScreen() {
                   placeholder="Enter new password"
                   placeholderTextColor={colors.textSecondary}
                   value={newPassword}
-                  onChangeText={setNewPassword}
+                  onChangeText={(text) => {
+                    console.log('[ResetPassword] New password input changed');
+                    setNewPassword(text);
+                  }}
                   secureTextEntry
                   autoCapitalize="none"
                   editable={!loading}
@@ -438,7 +510,10 @@ export default function ResetPasswordScreen() {
                   placeholder="Confirm new password"
                   placeholderTextColor={colors.textSecondary}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(text) => {
+                    console.log('[ResetPassword] Confirm password input changed');
+                    setConfirmPassword(text);
+                  }}
                   secureTextEntry
                   autoCapitalize="none"
                   editable={!loading}

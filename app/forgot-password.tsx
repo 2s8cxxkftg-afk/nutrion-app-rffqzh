@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 
 const styles = StyleSheet.create({
   container: {
@@ -164,6 +165,42 @@ const styles = StyleSheet.create({
   successText: {
     color: colors.primary,
   },
+  setupInstructionsBox: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  setupTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.bold,
+    color: '#1565C0',
+    marginBottom: spacing.sm,
+  },
+  setupStep: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.regular,
+    color: '#1976D2',
+    lineHeight: 20,
+    marginBottom: spacing.xs,
+  },
+  debugButton: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  debugButtonText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.text,
+  },
 });
 
 export default function ForgotPasswordScreen() {
@@ -171,18 +208,41 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [showSetupInstructions, setShowSetupInstructions] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
+  const testSupabaseConnection = async () => {
+    console.log('[ForgotPassword] Testing Supabase connection...');
+    Toast.show('Testing connection...', 'info');
+    
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('[ForgotPassword] Connection test failed:', error);
+        Toast.show(`Connection failed: ${error.message}`, 'error');
+      } else {
+        console.log('[ForgotPassword] Connection successful');
+        Toast.show('Supabase connection is working!', 'success');
+      }
+    } catch (error: any) {
+      console.error('[ForgotPassword] Connection test error:', error);
+      Toast.show(`Connection error: ${error.message}`, 'error');
+    }
+  };
+
   const handleResetPassword = async () => {
-    console.log('User tapped Send Reset Link button');
+    console.log('[ForgotPassword] User tapped Send Reset Link button');
+    console.log('[ForgotPassword] Email:', email);
+    console.log('[ForgotPassword] Platform:', Platform.OS);
     
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      console.error('Supabase is not configured');
+      console.error('[ForgotPassword] Supabase is not configured');
       Toast.show('Supabase is not configured. Please check your environment variables.', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
@@ -204,23 +264,62 @@ export default function ForgotPasswordScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      console.log('Sending password reset email to:', email);
+      console.log('[ForgotPassword] Sending password reset email to:', email);
       
-      // Step 4: Send password reset email with deep link redirect
+      // Generate the correct redirect URL based on platform
+      let redirectUrl = '';
+      
+      if (Platform.OS === 'web') {
+        // For web, use the current origin + /reset-password
+        if (typeof window !== 'undefined') {
+          redirectUrl = `${window.location.origin}/reset-password`;
+        } else {
+          redirectUrl = 'http://localhost:8081/reset-password';
+        }
+      } else {
+        // For native (iOS/Android), use the deep link scheme
+        redirectUrl = 'nutrion://reset-password';
+      }
+      
+      console.log('[ForgotPassword] Redirect URL:', redirectUrl);
+      
+      // Send password reset email with deep link redirect
       const { error } = await supabase.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: 'nutrion://reset-password'
+          redirectTo: redirectUrl
         }
       );
 
       if (error) {
-        console.error('Password reset error:', error.message);
-        throw new Error(error.message);
+        console.error('[ForgotPassword] Password reset error:', error.message);
+        console.error('[ForgotPassword] Error details:', JSON.stringify(error, null, 2));
+        
+        // Specific error handling
+        if (error.message.includes('rate limit')) {
+          Toast.show('Too many password reset attempts. Please wait 10 minutes and try again.', 'error');
+        } else if (error.message.includes('redirect URL') || error.message.includes('redirect_to')) {
+          Toast.show('Configuration error: Redirect URLs not whitelisted in Supabase dashboard.', 'error');
+          setShowSetupInstructions(true);
+        } else if (error.message.includes('SMTP') || error.message.includes('Email not enabled') || error.message.includes('email')) {
+          Toast.show('Email configuration error. Please check Supabase settings.', 'error');
+          setShowSetupInstructions(true);
+        } else if (error.message.includes('User not found')) {
+          // For security, show success message even if user doesn't exist
+          setEmailSent(true);
+          Toast.show('If an account with that email exists, a password reset link has been sent.', 'success');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return;
+        } else {
+          Toast.show(error.message, 'error');
+        }
+        
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
       }
       
       // Success! Email sent
-      console.log('Password reset email sent successfully');
+      console.log('[ForgotPassword] Password reset email sent successfully');
       setEmailSent(true);
       Toast.show('Password reset email sent! Check your inbox and spam folder.', 'success');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -231,24 +330,10 @@ export default function ForgotPasswordScreen() {
       }, 3000);
       
     } catch (error: any) {
-      console.error('Error sending password reset email:', error);
+      console.error('[ForgotPassword] Unexpected error:', error);
+      console.error('[ForgotPassword] Error stack:', error?.stack);
       
-      // Extract a meaningful error message
-      let errorMessage = 'Failed to send reset email. Please try again later.';
-      
-      if (error?.message) {
-        if (error.message.includes('rate limit')) {
-          errorMessage = 'Too many password reset attempts. Please wait 10 minutes and try again.';
-        } else if (error.message.includes('redirect URL') || error.message.includes('redirect_to')) {
-          errorMessage = 'Configuration error: Redirect URLs not whitelisted in Supabase dashboard.';
-        } else if (error.message.includes('SMTP') || error.message.includes('Email not enabled')) {
-          errorMessage = 'Email configuration error. Please check Supabase settings.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      Toast.show(errorMessage, 'error');
+      Toast.show('An unexpected error occurred. Please try again.', 'error');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
@@ -276,7 +361,10 @@ export default function ForgotPasswordScreen() {
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              console.log('[ForgotPassword] User tapped back button');
+              router.back();
+            }}
             disabled={loading}
           >
             <IconSymbol 
@@ -320,6 +408,42 @@ export default function ForgotPasswordScreen() {
               </View>
             )}
 
+            {/* Setup Instructions (shown on configuration errors) */}
+            {showSetupInstructions && (
+              <View style={styles.setupInstructionsBox}>
+                <Text style={styles.setupTitle}>
+                  📋 Supabase Configuration Required
+                </Text>
+                <Text style={styles.setupStep}>
+                  1. Go to Supabase Dashboard → Authentication → URL Configuration
+                </Text>
+                <Text style={styles.setupStep}>
+                  2. Add these Redirect URLs:
+                </Text>
+                <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
+                  • nutrion://reset-password
+                </Text>
+                <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
+                  • exp://localhost:8081/--/reset-password
+                </Text>
+                <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
+                  • http://localhost:8081/reset-password
+                </Text>
+                <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
+                  • Your production URL/reset-password
+                </Text>
+                <Text style={styles.setupStep}>
+                  3. Go to Authentication → Email Templates
+                </Text>
+                <Text style={styles.setupStep}>
+                  4. Enable &quot;Reset Password&quot; template
+                </Text>
+                <Text style={styles.setupStep}>
+                  5. (Optional) Configure SMTP in Authentication → Settings
+                </Text>
+              </View>
+            )}
+
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputIconContainer}>
@@ -335,7 +459,10 @@ export default function ForgotPasswordScreen() {
                 placeholder="your@email.com"
                 placeholderTextColor={colors.textSecondary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  console.log('[ForgotPassword] Email input changed');
+                  setEmail(text);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -365,6 +492,19 @@ export default function ForgotPasswordScreen() {
                 </React.Fragment>
               )}
             </TouchableOpacity>
+
+            {/* Debug Button (only show if configured) */}
+            {isConfigured && !emailSent && (
+              <TouchableOpacity
+                style={styles.debugButton}
+                onPress={testSupabaseConnection}
+                disabled={loading}
+              >
+                <Text style={styles.debugButtonText}>
+                  🔍 Test Supabase Connection
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Info Box */}
             <View style={styles.infoBox}>
@@ -401,7 +541,10 @@ export default function ForgotPasswordScreen() {
             {/* Back to Login */}
             <TouchableOpacity
               style={styles.backToLoginButton}
-              onPress={() => router.back()}
+              onPress={() => {
+                console.log('[ForgotPassword] User tapped Back to Login');
+                router.back();
+              }}
               disabled={loading}
             >
               <Text style={styles.backToLoginText}>

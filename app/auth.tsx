@@ -124,11 +124,11 @@ export default function AuthScreen() {
   // Handle deep links for password reset
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
-      console.log('Deep link received in auth screen:', event.url);
+      console.log('[Auth] Deep link received:', event.url);
       
       try {
         const url = Linking.parse(event.url);
-        console.log('Parsed URL:', JSON.stringify(url, null, 2));
+        console.log('[Auth] Parsed URL:', JSON.stringify(url, null, 2));
         
         // Check if this is a password reset link
         // Supabase sends recovery links with type=recovery in the URL
@@ -138,17 +138,17 @@ export default function AuthScreen() {
                            event.url.includes('type=recovery');
         
         if (isResetLink) {
-          console.log('Password reset link detected');
+          console.log('[Auth] Password reset link detected, navigating to reset-password screen');
           
           // Extract the access token and refresh token from the URL
           const accessToken = url.queryParams?.access_token as string;
           const refreshToken = url.queryParams?.refresh_token as string;
           const type = url.queryParams?.type as string;
           
-          console.log('Token info - type:', type, 'has access_token:', !!accessToken, 'has refresh_token:', !!refreshToken);
+          console.log('[Auth] Token info - type:', type, 'has access_token:', !!accessToken, 'has refresh_token:', !!refreshToken);
           
           if (accessToken && type === 'recovery') {
-            console.log('Setting session from URL tokens');
+            console.log('[Auth] Setting session from URL tokens');
             
             // Set the session using the tokens from the URL
             const { data, error } = await supabase.auth.setSession({
@@ -157,13 +157,13 @@ export default function AuthScreen() {
             });
             
             if (error) {
-              console.error('Error setting session:', error);
+              console.error('[Auth] Error setting session:', error);
               Toast.show("Invalid or expired reset link. Please request a new one.", "error");
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               return;
             }
             
-            console.log('Session set successfully:', data.session?.user?.email);
+            console.log('[Auth] Session set successfully:', data.session?.user?.email);
             Toast.show("Reset link verified! Set your new password.", "success");
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             
@@ -172,12 +172,13 @@ export default function AuthScreen() {
               router.push('/reset-password');
             }, 500);
           } else {
-            console.log('No valid tokens found in URL, navigating to reset screen to check session');
+            console.log('[Auth] No valid tokens found in URL, navigating to reset screen to check session');
             router.push('/reset-password');
           }
         }
-      } catch (error) {
-        console.error('Error handling deep link:', error);
+      } catch (error: any) {
+        console.error('[Auth] Error handling deep link:', error);
+        console.error('[Auth] Error details:', JSON.stringify(error, null, 2));
         Toast.show("Error processing reset link", "error");
       }
     };
@@ -188,11 +189,11 @@ export default function AuthScreen() {
     // Check if app was opened with a deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
-        console.log('Initial URL on auth screen:', url);
+        console.log('[Auth] Initial URL on auth screen:', url);
         handleDeepLink({ url });
       }
     }).catch((error) => {
-      console.error('Error getting initial URL:', error);
+      console.error('[Auth] Error getting initial URL:', error);
     });
 
     return () => {
@@ -205,15 +206,19 @@ export default function AuthScreen() {
   };
 
   const handleEmailAuth = async () => {
-    console.log('User tapped Sign In/Sign Up button');
+    console.log('[Auth] User tapped Sign In/Sign Up button');
+    console.log('[Auth] Mode:', isLogin ? 'Login' : 'Sign Up');
+    console.log('[Auth] Email:', email);
     
     if (!validateEmail(email)) {
       Toast.show("Please enter a valid email address", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (password.length < 6) {
       Toast.show("Password must be at least 6 characters", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
@@ -222,40 +227,50 @@ export default function AuthScreen() {
 
     try {
       if (isLogin) {
-        console.log('Attempting to sign in with email:', email);
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log('[Auth] Attempting to sign in with email:', email);
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[Auth] Sign in error:', error);
+          throw error;
+        }
 
-        console.log('Sign in successful');
+        console.log('[Auth] Sign in successful, user:', data.user?.email);
         Toast.show("Welcome back!", "success");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace("/(tabs)/pantry");
       } else {
-        console.log('Attempting to sign up with email:', email);
-        const { error } = await supabase.auth.signUp({
+        console.log('[Auth] Attempting to sign up with email:', email);
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[Auth] Sign up error:', error);
+          throw error;
+        }
 
-        console.log('Sign up successful');
+        console.log('[Auth] Sign up successful, user:', data.user?.email);
         Toast.show("Account created! Please check your email to verify.", "success");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setIsLogin(true);
       }
     } catch (error: any) {
-      console.error('Authentication error:', error);
+      console.error('[Auth] Authentication error:', error);
+      console.error('[Auth] Error details:', JSON.stringify(error, null, 2));
       Toast.show(error.message || "Authentication failed", "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
-    console.log('User tapped Forgot Password button');
+    console.log('[Auth] User tapped Forgot Password button');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/forgot-password');
   };
@@ -295,7 +310,10 @@ export default function AuthScreen() {
               placeholder="your@email.com"
               placeholderTextColor={colors.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                console.log('[Auth] Email input changed');
+                setEmail(text);
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               editable={!loading}
@@ -309,7 +327,10 @@ export default function AuthScreen() {
               placeholder="••••••••"
               placeholderTextColor={colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                console.log('[Auth] Password input changed');
+                setPassword(text);
+              }}
               secureTextEntry
               editable={!loading}
             />
@@ -347,7 +368,10 @@ export default function AuthScreen() {
             </Text>
             <TouchableOpacity
               style={styles.switchButton}
-              onPress={() => setIsLogin(!isLogin)}
+              onPress={() => {
+                console.log('[Auth] Switching mode to:', isLogin ? 'Sign Up' : 'Sign In');
+                setIsLogin(!isLogin);
+              }}
               disabled={loading}
             >
               <Text style={styles.switchButtonText}>
