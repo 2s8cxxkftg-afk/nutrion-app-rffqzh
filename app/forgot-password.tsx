@@ -18,7 +18,6 @@ import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles
 import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import Toast from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
 
 const styles = StyleSheet.create({
   container: {
@@ -166,40 +165,29 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   setupInstructionsBox: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#FFE5E5',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#90CAF9',
+    borderColor: '#FFCCCC',
   },
   setupTitle: {
     fontSize: 16,
     fontFamily: typography.fontFamily.bold,
-    color: '#1565C0',
+    color: '#D32F2F',
     marginBottom: spacing.sm,
   },
   setupStep: {
     fontSize: 13,
     fontFamily: typography.fontFamily.regular,
-    color: '#1976D2',
+    color: '#C62828',
     lineHeight: 20,
     marginBottom: spacing.xs,
   },
-  debugButton: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  debugButtonText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.medium,
-    color: colors.text,
+  setupStepBold: {
+    fontFamily: typography.fontFamily.bold,
+    color: '#B71C1C',
   },
 });
 
@@ -213,26 +201,6 @@ export default function ForgotPasswordScreen() {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  const testSupabaseConnection = async () => {
-    console.log('[ForgotPassword] Testing Supabase connection...');
-    Toast.show('Testing connection...', 'info');
-    
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('[ForgotPassword] Connection test failed:', error);
-        Toast.show(`Connection failed: ${error.message}`, 'error');
-      } else {
-        console.log('[ForgotPassword] Connection successful');
-        Toast.show('Supabase connection is working!', 'success');
-      }
-    } catch (error: any) {
-      console.error('[ForgotPassword] Connection test error:', error);
-      Toast.show(`Connection error: ${error.message}`, 'error');
-    }
   };
 
   const handleResetPassword = async () => {
@@ -267,6 +235,7 @@ export default function ForgotPasswordScreen() {
       console.log('[ForgotPassword] Sending password reset email to:', email);
       
       // Generate the correct redirect URL based on platform
+      // Use lowercase scheme to match app.json
       let redirectUrl = '';
       
       if (Platform.OS === 'web') {
@@ -277,32 +246,40 @@ export default function ForgotPasswordScreen() {
           redirectUrl = 'http://localhost:8081/reset-password';
         }
       } else {
-        // For native (iOS/Android), use the deep link scheme
+        // For native (iOS/Android), use the deep link scheme from app.json
+        // The scheme in app.json is "nutrion" (lowercase)
         redirectUrl = 'nutrion://reset-password';
       }
       
       console.log('[ForgotPassword] Redirect URL:', redirectUrl);
+      console.log('[ForgotPassword] Calling supabase.auth.resetPasswordForEmail...');
       
       // Send password reset email with deep link redirect
-      const { error } = await supabase.auth.resetPasswordForEmail(
+      const { data, error } = await supabase.auth.resetPasswordForEmail(
         email,
         {
           redirectTo: redirectUrl
         }
       );
 
+      console.log('[ForgotPassword] Response data:', data);
+      console.log('[ForgotPassword] Response error:', error);
+
       if (error) {
         console.error('[ForgotPassword] Password reset error:', error.message);
+        console.error('[ForgotPassword] Error code:', error.status);
         console.error('[ForgotPassword] Error details:', JSON.stringify(error, null, 2));
         
         // Specific error handling
         if (error.message.includes('rate limit')) {
           Toast.show('Too many password reset attempts. Please wait 10 minutes and try again.', 'error');
+        } else if (error.message.includes('Error sending recovery email')) {
+          // This is the main error - SMTP/Email configuration issue
+          console.error('[ForgotPassword] ❌ SMTP/Email configuration error detected');
+          Toast.show('Email service not configured. Please check Supabase SMTP settings.', 'error');
+          setShowSetupInstructions(true);
         } else if (error.message.includes('redirect URL') || error.message.includes('redirect_to')) {
           Toast.show('Configuration error: Redirect URLs not whitelisted in Supabase dashboard.', 'error');
-          setShowSetupInstructions(true);
-        } else if (error.message.includes('SMTP') || error.message.includes('Email not enabled') || error.message.includes('email')) {
-          Toast.show('Email configuration error. Please check Supabase settings.', 'error');
           setShowSetupInstructions(true);
         } else if (error.message.includes('User not found')) {
           // For security, show success message even if user doesn't exist
@@ -312,6 +289,7 @@ export default function ForgotPasswordScreen() {
           return;
         } else {
           Toast.show(error.message, 'error');
+          setShowSetupInstructions(true);
         }
         
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -319,7 +297,7 @@ export default function ForgotPasswordScreen() {
       }
       
       // Success! Email sent
-      console.log('[ForgotPassword] Password reset email sent successfully');
+      console.log('[ForgotPassword] ✅ Password reset email sent successfully');
       setEmailSent(true);
       Toast.show('Password reset email sent! Check your inbox and spam folder.', 'success');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -331,9 +309,11 @@ export default function ForgotPasswordScreen() {
       
     } catch (error: any) {
       console.error('[ForgotPassword] Unexpected error:', error);
+      console.error('[ForgotPassword] Error message:', error?.message);
       console.error('[ForgotPassword] Error stack:', error?.stack);
       
       Toast.show('An unexpected error occurred. Please try again.', 'error');
+      setShowSetupInstructions(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
@@ -412,13 +392,34 @@ export default function ForgotPasswordScreen() {
             {showSetupInstructions && (
               <View style={styles.setupInstructionsBox}>
                 <Text style={styles.setupTitle}>
-                  📋 Supabase Configuration Required
+                  🚨 Email Service Configuration Required
                 </Text>
                 <Text style={styles.setupStep}>
-                  1. Go to Supabase Dashboard → Authentication → URL Configuration
+                  The password reset email cannot be sent because the email service is not configured in Supabase.
+                </Text>
+                <Text style={[styles.setupStep, { marginTop: spacing.sm }]}>
+                  <Text style={styles.setupStepBold}>To fix this, you need to:</Text>
                 </Text>
                 <Text style={styles.setupStep}>
-                  2. Add these Redirect URLs:
+                  1. Go to your Supabase Dashboard
+                </Text>
+                <Text style={styles.setupStep}>
+                  2. Navigate to: <Text style={styles.setupStepBold}>Authentication → Email Templates</Text>
+                </Text>
+                <Text style={styles.setupStep}>
+                  3. Enable the <Text style={styles.setupStepBold}>&quot;Reset Password&quot;</Text> template
+                </Text>
+                <Text style={styles.setupStep}>
+                  4. Go to: <Text style={styles.setupStepBold}>Project Settings → Auth → SMTP Settings</Text>
+                </Text>
+                <Text style={styles.setupStep}>
+                  5. Configure SMTP (or use Supabase&apos;s default email service)
+                </Text>
+                <Text style={[styles.setupStep, { marginTop: spacing.sm }]}>
+                  <Text style={styles.setupStepBold}>Also add these Redirect URLs:</Text>
+                </Text>
+                <Text style={styles.setupStep}>
+                  Go to: <Text style={styles.setupStepBold}>Authentication → URL Configuration</Text>
                 </Text>
                 <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
                   • nutrion://reset-password
@@ -432,14 +433,11 @@ export default function ForgotPasswordScreen() {
                 <Text style={[styles.setupStep, { marginLeft: spacing.md }]}>
                   • Your production URL/reset-password
                 </Text>
-                <Text style={styles.setupStep}>
-                  3. Go to Authentication → Email Templates
+                <Text style={[styles.setupStep, { marginTop: spacing.sm, color: '#D32F2F' }]}>
+                  ⚠️ Without SMTP configuration, password reset emails cannot be sent.
                 </Text>
-                <Text style={styles.setupStep}>
-                  4. Enable &quot;Reset Password&quot; template
-                </Text>
-                <Text style={styles.setupStep}>
-                  5. (Optional) Configure SMTP in Authentication → Settings
+                <Text style={[styles.setupStep, { marginTop: spacing.sm, color: '#1976D2' }]}>
+                  📖 See SUPABASE_EMAIL_SETUP_GUIDE.md for detailed instructions
                 </Text>
               </View>
             )}
@@ -492,19 +490,6 @@ export default function ForgotPasswordScreen() {
                 </React.Fragment>
               )}
             </TouchableOpacity>
-
-            {/* Debug Button (only show if configured) */}
-            {isConfigured && !emailSent && (
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={testSupabaseConnection}
-                disabled={loading}
-              >
-                <Text style={styles.debugButtonText}>
-                  🔍 Test Supabase Connection
-                </Text>
-              </TouchableOpacity>
-            )}
 
             {/* Info Box */}
             <View style={styles.infoBox}>
