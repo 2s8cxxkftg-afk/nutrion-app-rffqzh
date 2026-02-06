@@ -398,28 +398,6 @@ export default function ProfileScreen() {
               />
             </View>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.menuItem, styles.deleteAccountItem]}
-            onPress={handleDeleteAccount}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <IconSymbol 
-                ios_icon_name="trash.fill" 
-                android_material_icon_name="delete" 
-                size={24} 
-                color={colors.error} 
-              />
-              <Text style={[styles.menuItemText, styles.deleteAccountText]}>Delete Account</Text>
-            </View>
-            <IconSymbol 
-              ios_icon_name="chevron.right" 
-              android_material_icon_name="chevron-right" 
-              size={20} 
-              color={colors.error} 
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
@@ -467,6 +445,28 @@ export default function ProfileScreen() {
               android_material_icon_name="chevron-right" 
               size={20} 
               color={colors.textSecondary} 
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.menuItem, styles.deleteAccountItem]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <IconSymbol 
+                ios_icon_name="trash.fill" 
+                android_material_icon_name="delete" 
+                size={24} 
+                color={colors.error} 
+              />
+              <Text style={[styles.menuItemText, styles.deleteAccountText]}>Delete Account</Text>
+            </View>
+            <IconSymbol 
+              ios_icon_name="chevron.right" 
+              android_material_icon_name="chevron-right" 
+              size={20} 
+              color={colors.error} 
             />
           </TouchableOpacity>
         </View>
