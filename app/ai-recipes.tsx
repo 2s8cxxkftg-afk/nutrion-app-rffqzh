@@ -193,41 +193,47 @@ export default function AIRecipesScreen() {
             ),
           }}
         />
-        <View style={styles.premiumGateContainer}>
-          <View style={styles.premiumGateIcon}>
-            <IconSymbol
-              ios_icon_name="person.circle"
-              android_material_icon_name="account-circle"
-              size={64}
-              color={colors.primary}
-            />
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.premiumGateContainer}>
+            <View style={styles.premiumGateIcon}>
+              <IconSymbol
+                ios_icon_name="person.circle"
+                android_material_icon_name="account-circle"
+                size={64}
+                color={colors.primary}
+              />
+            </View>
+            <Text style={styles.premiumGateTitle}>Sign In Required</Text>
+            <Text style={styles.premiumGateDescription}>
+              You need to be signed in to use the AI Recipe Generator.
+            </Text>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/auth');
+              }}
+            >
+              <IconSymbol
+                ios_icon_name="person.fill"
+                android_material_icon_name="person"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.upgradeButtonText}>Sign In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backButtonAlt}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonAltText}>Go Back</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.premiumGateTitle}>Sign In Required</Text>
-          <Text style={styles.premiumGateDescription}>
-            You need to be signed in to use the AI Recipe Generator.
-          </Text>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/auth');
-            }}
-          >
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={20}
-              color="#FFFFFF"
-            />
-            <Text style={styles.upgradeButtonText}>Sign In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.backButtonAlt}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonAltText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -254,88 +260,94 @@ export default function AIRecipesScreen() {
             ),
           }}
         />
-        <View style={styles.premiumGateContainer}>
-          <View style={styles.premiumGateIcon}>
-            <IconSymbol
-              ios_icon_name="crown.fill"
-              android_material_icon_name="star"
-              size={64}
-              color="#FFD700"
-            />
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.premiumGateContainer}>
+            <View style={styles.premiumGateIcon}>
+              <IconSymbol
+                ios_icon_name="crown.fill"
+                android_material_icon_name="star"
+                size={64}
+                color="#FFD700"
+              />
+            </View>
+            <Text style={styles.premiumGateTitle}>Premium Feature</Text>
+            <Text style={styles.premiumGateDescription}>
+              AI Recipe Generator is a premium feature. Subscribe to unlock:
+            </Text>
+            <View style={styles.featuresList}>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={20}
+                  color={colors.success}
+                />
+                <Text style={styles.featureText}>AI-powered recipe suggestions</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={20}
+                  color={colors.success}
+                />
+                <Text style={styles.featureText}>Personalized based on your pantry</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={20}
+                  color={colors.success}
+                />
+                <Text style={styles.featureText}>Dietary restrictions support</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={20}
+                  color={colors.success}
+                />
+                <Text style={styles.featureText}>Receipt Scanner included</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <IconSymbol
+                  ios_icon_name="checkmark.circle.fill"
+                  android_material_icon_name="check-circle"
+                  size={20}
+                  color={colors.success}
+                />
+                <Text style={styles.featureText}>Ad-free experience</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/subscription-management');
+              }}
+            >
+              <IconSymbol
+                ios_icon_name="crown.fill"
+                android_material_icon_name="star"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backButtonAlt}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonAltText}>Go Back</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.premiumGateTitle}>Premium Feature</Text>
-          <Text style={styles.premiumGateDescription}>
-            AI Recipe Generator is a premium feature. Subscribe to unlock:
-          </Text>
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <IconSymbol
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color={colors.success}
-              />
-              <Text style={styles.featureText}>AI-powered recipe suggestions</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <IconSymbol
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color={colors.success}
-              />
-              <Text style={styles.featureText}>Personalized based on your pantry</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <IconSymbol
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color={colors.success}
-              />
-              <Text style={styles.featureText}>Dietary restrictions support</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <IconSymbol
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color={colors.success}
-              />
-              <Text style={styles.featureText}>Receipt Scanner included</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <IconSymbol
-                ios_icon_name="checkmark.circle.fill"
-                android_material_icon_name="check-circle"
-                size={20}
-                color={colors.success}
-              />
-              <Text style={styles.featureText}>Ad-free experience</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/subscription-management');
-            }}
-          >
-            <IconSymbol
-              ios_icon_name="crown.fill"
-              android_material_icon_name="star"
-              size={20}
-              color="#FFFFFF"
-            />
-            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.backButtonAlt}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonAltText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -361,7 +373,12 @@ export default function AIRecipesScreen() {
         }}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
         {/* Header Info */}
         <View style={styles.infoCard}>
           <IconSymbol
@@ -382,7 +399,10 @@ export default function AIRecipesScreen() {
         {/* Preferences */}
         <TouchableOpacity
           style={styles.preferencesButton}
-          onPress={() => setShowPreferences(!showPreferences)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowPreferences(!showPreferences);
+          }}
         >
           <IconSymbol
             ios_icon_name="slider.horizontal.3"
@@ -410,7 +430,10 @@ export default function AIRecipesScreen() {
                     styles.chip,
                     selectedCuisine === cuisine && styles.chipSelected,
                   ]}
-                  onPress={() => setSelectedCuisine(cuisine)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedCuisine(cuisine);
+                  }}
                 >
                   <Text
                     style={[
@@ -435,7 +458,10 @@ export default function AIRecipesScreen() {
                     styles.chip,
                     selectedRestrictions.includes(restriction) && styles.chipSelected,
                   ]}
-                  onPress={() => toggleRestriction(restriction)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleRestriction(restriction);
+                  }}
                 >
                   <Text
                     style={[
@@ -460,7 +486,10 @@ export default function AIRecipesScreen() {
                     styles.chip,
                     selectedDietTypes.includes(dietType) && styles.chipSelected,
                   ]}
-                  onPress={() => toggleDietType(dietType)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleDietType(dietType);
+                  }}
                 >
                   <Text
                     style={[
@@ -483,7 +512,10 @@ export default function AIRecipesScreen() {
           disabled={loading || pantryItems.length === 0}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.generateButtonText}>Generating...</Text>
+            </>
           ) : (
             <>
               <IconSymbol
@@ -510,7 +542,12 @@ export default function AIRecipesScreen() {
               <Text style={styles.errorTitle}>Unable to Generate Recipes</Text>
               <Text style={styles.errorText}>{error}</Text>
               
-              {(error.includes('configuration') || error.includes('OPENAI_API_KEY') || error.includes('quota') || error.includes('API key')) ? (
+              {(error.includes('configuration') || 
+                error.includes('OPENAI_API_KEY') || 
+                error.includes('quota') || 
+                error.includes('API key') ||
+                error.includes('insufficient_quota') ||
+                error.includes('rate_limit')) ? (
                 <View style={styles.setupInstructions}>
                   <Text style={styles.setupTitle}>⚙️ Setup Required</Text>
                   <Text style={styles.setupDescription}>
@@ -570,7 +607,11 @@ export default function AIRecipesScreen() {
                 <View style={styles.errorActions}>
                   <TouchableOpacity
                     style={styles.retryButton}
-                    onPress={handleGenerateRecipes}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      reset();
+                      handleGenerateRecipes();
+                    }}
                   >
                     <IconSymbol
                       ios_icon_name="arrow.clockwise"
@@ -594,7 +635,10 @@ export default function AIRecipesScreen() {
               <TouchableOpacity
                 key={index}
                 style={styles.recipeCard}
-                onPress={() => setSelectedRecipe(recipe)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedRecipe(recipe);
+                }}
               >
                 <View style={styles.recipeHeader}>
                   <View style={styles.recipeHeaderLeft}>
@@ -655,7 +699,7 @@ export default function AIRecipesScreen() {
           </View>
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
 
       {/* Recipe Detail Modal */}
@@ -679,7 +723,10 @@ export default function AIRecipesScreen() {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setSelectedRecipe(null)}>
+              <TouchableOpacity onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedRecipe(null);
+              }}>
                 <IconSymbol
                   ios_icon_name="xmark"
                   android_material_icon_name="close"
@@ -688,7 +735,11 @@ export default function AIRecipesScreen() {
                 />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.modalContent} 
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+            >
               {selectedRecipe.origin && (
                 <View style={styles.originSection}>
                   <IconSymbol
@@ -733,7 +784,7 @@ export default function AIRecipesScreen() {
               <Text style={styles.modalSectionTitle}>Instructions</Text>
               <Text style={styles.instructionsText}>{selectedRecipe.instructions}</Text>
 
-              <View style={{ height: spacing.xl }} />
+              <View style={{ height: spacing.xxl }} />
             </ScrollView>
           </SafeAreaView>
         )}
@@ -763,13 +814,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: spacing.md,
+    paddingBottom: spacing.xxl,
   },
   premiumGateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    paddingVertical: spacing.xxl,
   },
   premiumGateIcon: {
     marginBottom: spacing.lg,
@@ -787,6 +841,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
     lineHeight: 22,
+    paddingHorizontal: spacing.lg,
   },
   featuresList: {
     width: '100%',
@@ -1053,6 +1108,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   retryButtonText: {
     fontSize: typography.sizes.sm,

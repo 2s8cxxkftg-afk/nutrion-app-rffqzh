@@ -44,23 +44,23 @@ export function useAIRecipes() {
     setState({ status: 'loading', data: null, error: null });
 
     try {
-      console.log('[AIRecipes] Platform:', Platform.OS);
-      console.log('[AIRecipes] Generating recipes for', pantryItems.length, 'items');
+      console.log('[useAIRecipes] Platform:', Platform.OS);
+      console.log('[useAIRecipes] Generating recipes for', pantryItems.length, 'items');
       
       // Check if user is authenticated
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('[AIRecipes] Session error:', sessionError);
+        console.error('[useAIRecipes] Session error:', sessionError);
         throw new Error('Authentication error. Please sign in and try again.');
       }
       
       if (!session) {
-        console.error('[AIRecipes] No active session');
+        console.error('[useAIRecipes] No active session');
         throw new Error('You must be signed in to use the AI Recipe Generator. Please sign in and try again.');
       }
       
-      console.log('[AIRecipes] User authenticated:', session.user.email);
+      console.log('[useAIRecipes] User authenticated:', session.user.email);
       
       // Extract just the item names for the API
       const ingredientsList = pantryItems.map(item => item.name);
@@ -84,9 +84,9 @@ export function useAIRecipes() {
         preferencesObj.difficulty = preferences.difficulty;
       }
 
-      console.log('[AIRecipes] Calling Supabase Edge Function: generate-recipe-suggestions');
-      console.log('[AIRecipes] Pantry items:', ingredientsList);
-      console.log('[AIRecipes] Preferences:', preferencesObj);
+      console.log('[useAIRecipes] Calling Supabase Edge Function: generate-recipe-suggestions');
+      console.log('[useAIRecipes] Pantry items:', ingredientsList);
+      console.log('[useAIRecipes] Preferences:', preferencesObj);
       
       // Get Supabase URL and key from environment
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
@@ -100,40 +100,60 @@ export function useAIRecipes() {
       const functionUrl = `${supabaseUrl}/functions/v1/generate-recipe-suggestions`;
       const accessToken = session.access_token;
       
-      console.log('[AIRecipes] Calling function URL:', functionUrl);
+      console.log('[useAIRecipes] Calling function URL:', functionUrl);
       
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': supabaseAnonKey,
-        },
-        body: JSON.stringify({
-          pantryItems: ingredientsList,
-          preferences: Object.keys(preferencesObj).length > 0 ? preferencesObj : undefined
-        })
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
+      let response;
+      try {
+        response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+          },
+          body: JSON.stringify({
+            pantryItems: ingredientsList,
+            preferences: Object.keys(preferencesObj).length > 0 ? preferencesObj : undefined
+          }),
+          signal: controller.signal,
+        });
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        console.error('[useAIRecipes] Fetch error:', fetchError);
+        
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timed out. The AI service is taking too long to respond. Please try again.');
+        }
+        
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      
+      clearTimeout(timeoutId);
 
-      console.log('[AIRecipes] Response status:', response.status);
+      console.log('[useAIRecipes] Response status:', response.status);
+      console.log('[useAIRecipes] Response headers:', Object.fromEntries(response.headers.entries()));
       
       // Get the response text first
       const responseText = await response.text();
-      console.log('[AIRecipes] Response text (first 500 chars):', responseText.substring(0, 500));
+      console.log('[useAIRecipes] Response text (first 500 chars):', responseText.substring(0, 500));
       
       // Try to parse as JSON
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('[AIRecipes] Failed to parse response as JSON:', parseError);
+        console.error('[useAIRecipes] Failed to parse response as JSON:', parseError);
+        console.error('[useAIRecipes] Raw response:', responseText);
         throw new Error('Invalid response from server. Please try again.');
       }
 
       // Check if the response was successful
       if (!response.ok) {
-        console.error('[AIRecipes] Edge Function returned error status:', response.status);
-        console.error('[AIRecipes] Error data:', data);
+        console.error('[useAIRecipes] Edge Function returned error status:', response.status);
+        console.error('[useAIRecipes] Error data:', data);
         
         // Extract error message from response
         const errorMessage = data.userMessage || data.detail || data.error || `Server error (${response.status})`;
@@ -142,7 +162,7 @@ export function useAIRecipes() {
 
       // Check for error in response data
       if (data.error) {
-        console.error('[AIRecipes] API returned error:', data.error, data.detail);
+        console.error('[useAIRecipes] API returned error:', data.error, data.detail);
         const errorMessage = data.userMessage || data.detail || data.error || 'Failed to generate recipes';
         throw new Error(errorMessage);
       }
@@ -151,7 +171,7 @@ export function useAIRecipes() {
       const recipes = data.recipes;
       
       if (!recipes || !Array.isArray(recipes)) {
-        console.error('[AIRecipes] Invalid response format:', data);
+        console.error('[useAIRecipes] Invalid response format:', data);
         throw new Error('Invalid response format from AI service. Please try again.');
       }
       
@@ -159,13 +179,13 @@ export function useAIRecipes() {
         throw new Error('No recipes were generated. Please try again with different ingredients or preferences.');
       }
       
-      console.log('[AIRecipes] Successfully generated', recipes.length, 'recipes');
-      console.log('[AIRecipes] Cuisines:', recipes.map(r => r.cuisine));
+      console.log('[useAIRecipes] Successfully generated', recipes.length, 'recipes');
+      console.log('[useAIRecipes] Cuisines:', recipes.map(r => r.cuisine));
 
       setState({ status: 'success', data: recipes, error: null });
       return recipes;
     } catch (e: any) {
-      console.error('[AIRecipes] Recipe generation error:', e);
+      console.error('[useAIRecipes] Recipe generation error:', e);
       
       let errorMessage = 'Failed to generate recipes. Please try again.';
       
@@ -175,9 +195,11 @@ export function useAIRecipes() {
         errorMessage = e;
       }
       
-      // Add contact info for persistent errors
+      // Don't add contact info if it's already there
       if (!errorMessage.includes('hello@solvralabs.net') && 
-          (errorMessage.includes('service') || errorMessage.includes('quota') || errorMessage.includes('configuration'))) {
+          !errorMessage.includes('configuration') &&
+          !errorMessage.includes('OPENAI_API_KEY') &&
+          (errorMessage.includes('service') || errorMessage.includes('quota') || errorMessage.includes('API key'))) {
         errorMessage += '\n\nIf the problem persists, contact support at hello@solvralabs.net';
       }
       

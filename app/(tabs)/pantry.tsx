@@ -28,7 +28,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: Platform.select({
+      ios: 120,
+      android: 100,
+      default: 100,
+    }),
   },
   searchContainer: {
     padding: spacing.lg,
@@ -144,7 +148,11 @@ const styles = StyleSheet.create({
   addButton: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: spacing.xl + 80,
+    bottom: Platform.select({
+      ios: spacing.xl + 100,
+      android: spacing.xl + 80,
+      default: spacing.xl + 80,
+    }),
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -448,6 +456,8 @@ function PantryScreenContent() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

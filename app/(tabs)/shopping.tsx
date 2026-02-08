@@ -29,7 +29,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: Platform.select({
+      ios: 120,
+      android: 100,
+      default: 100,
+    }),
   },
   header: {
     padding: spacing.large,
@@ -673,6 +677,8 @@ function ShoppingScreenContent() {
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

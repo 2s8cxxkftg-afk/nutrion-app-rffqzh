@@ -229,11 +229,9 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
       >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
@@ -487,7 +485,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Sign Out Button */}
+        {/* Sign Out Button - Now with proper spacing */}
         <TouchableOpacity 
           style={styles.signOutButton}
           onPress={handleSignOut}
@@ -505,7 +503,8 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
 
-        <View style={{ height: spacing.xl }} />
+        {/* Extra padding at bottom to ensure sign out button is visible above tab bar */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* Sign Out Confirmation Modal */}
@@ -603,9 +602,11 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: spacing.lg,
-  },
-  contentContainerWithTabBar: {
-    paddingBottom: 100,
+    paddingBottom: Platform.select({
+      ios: 120,
+      android: 100,
+      default: 100,
+    }),
   },
   profileHeader: {
     alignItems: 'center',
@@ -801,12 +802,20 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderWidth: 2,
     borderColor: colors.error,
+    marginBottom: spacing.md,
     ...commonStyles.shadow,
   },
   signOutButtonText: {
     fontSize: typography.sizes.md,
     fontWeight: '600',
     color: colors.error,
+  },
+  bottomSpacer: {
+    height: Platform.select({
+      ios: spacing.xxl,
+      android: spacing.xl,
+      default: spacing.xl,
+    }),
   },
   modalOverlay: {
     flex: 1,
