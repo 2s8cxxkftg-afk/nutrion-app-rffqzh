@@ -191,10 +191,10 @@ export async function getTrialDaysRemaining(): Promise<number> {
 }
 
 /**
- * Get subscription price
+ * Get subscription price - Updated to $2.99/month
  */
 export function getSubscriptionPrice(): number {
-  return 1.99;
+  return 2.99;
 }
 
 /**
