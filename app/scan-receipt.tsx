@@ -276,6 +276,8 @@ export default function ScanReceiptScreen() {
       const checkPremium = async () => {
         const premium = await isPremiumUser();
         if (!premium) {
+          console.log('[ScanReceipt] User is not premium, redirecting to subscription');
+          Toast.show('Subscribe to Premium to use Receipt Scanner', 'error');
           router.replace('/subscription-management');
         }
       };
@@ -284,113 +286,125 @@ export default function ScanReceiptScreen() {
   );
 
   const requestCameraPermission = async () => {
-    console.log('User tapped Camera button - requesting camera permission');
+    console.log('[ScanReceipt] User tapped Camera button - requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('Camera permission denied by user');
+      console.log('[ScanReceipt] Camera permission denied by user');
       Toast.show('Camera permission is required to scan receipts. Please enable it in your device settings.', 'error');
       return false;
     }
     
-    console.log('Camera permission granted');
+    console.log('[ScanReceipt] Camera permission granted');
     return true;
   };
 
   const requestMediaLibraryPermission = async () => {
-    console.log('User tapped Gallery button - requesting media library permission');
+    console.log('[ScanReceipt] User tapped Gallery button - requesting media library permission');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('Media library permission denied by user');
+      console.log('[ScanReceipt] Media library permission denied by user');
       Toast.show('Photo library permission is required to select images. Please enable it in your device settings.', 'error');
       return false;
     }
     
-    console.log('Media library permission granted');
+    console.log('[ScanReceipt] Media library permission granted');
     return true;
   };
 
   const handleTakePhoto = async () => {
-    console.log('User initiated take photo action');
+    console.log('[ScanReceipt] User initiated take photo action');
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
-      console.log('Cannot take photo - camera permission not granted');
+      console.log('[ScanReceipt] Cannot take photo - camera permission not granted');
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('Launching camera for receipt scanning');
+    console.log('[ScanReceipt] Launching camera for receipt scanning');
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: true,
-    });
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      console.log('Photo captured successfully, scanning receipt');
-      const items = await scanReceipt(result.assets[0].uri);
-      if (items && items.length > 0) {
-        console.log(`Receipt scanned: ${items.length} items found`);
-        setScannedItems(items);
-        // Auto-select all items and set predicted expiration dates
-        const allIndices = new Set(items.map((_, idx) => idx));
-        setSelectedItems(allIndices);
-        
-        const dates: { [key: number]: string } = {};
-        items.forEach((item, idx) => {
-          dates[idx] = predictExpirationDate(item.name, true);
-        });
-        setExpirationDates(dates);
-        
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (!result.canceled && result.assets[0]) {
+        console.log('[ScanReceipt] Photo captured successfully, scanning receipt');
+        const items = await scanReceipt(result.assets[0].uri);
+        if (items && items.length > 0) {
+          console.log(`[ScanReceipt] Receipt scanned: ${items.length} items found`);
+          setScannedItems(items);
+          // Auto-select all items and set predicted expiration dates
+          const allIndices = new Set(items.map((_, idx) => idx));
+          setSelectedItems(allIndices);
+          
+          const dates: { [key: number]: string } = {};
+          items.forEach((item, idx) => {
+            dates[idx] = predictExpirationDate(item.name, true);
+          });
+          setExpirationDates(dates);
+          
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          console.log('[ScanReceipt] No items found on receipt');
+          Toast.show('No items found on receipt. Please try again.', 'error');
+        }
       } else {
-        console.log('No items found on receipt');
+        console.log('[ScanReceipt] Photo capture cancelled by user');
       }
-    } else {
-      console.log('Photo capture cancelled by user');
+    } catch (error) {
+      console.error('[ScanReceipt] Error taking photo:', error);
+      Toast.show('Failed to take photo. Please try again.', 'error');
     }
   };
 
   const handlePickImage = async () => {
-    console.log('User initiated pick image from gallery action');
+    console.log('[ScanReceipt] User initiated pick image from gallery action');
     const hasPermission = await requestMediaLibraryPermission();
     if (!hasPermission) {
-      console.log('Cannot pick image - media library permission not granted');
+      console.log('[ScanReceipt] Cannot pick image - media library permission not granted');
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('Launching image picker for receipt scanning');
+    console.log('[ScanReceipt] Launching image picker for receipt scanning');
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: true,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      console.log('Image selected successfully, scanning receipt');
-      const items = await scanReceipt(result.assets[0].uri);
-      if (items && items.length > 0) {
-        console.log(`Receipt scanned: ${items.length} items found`);
-        setScannedItems(items);
-        const allIndices = new Set(items.map((_, idx) => idx));
-        setSelectedItems(allIndices);
-        
-        const dates: { [key: number]: string } = {};
-        items.forEach((item, idx) => {
-          dates[idx] = predictExpirationDate(item.name, true);
-        });
-        setExpirationDates(dates);
-        
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (!result.canceled && result.assets[0]) {
+        console.log('[ScanReceipt] Image selected successfully, scanning receipt');
+        const items = await scanReceipt(result.assets[0].uri);
+        if (items && items.length > 0) {
+          console.log(`[ScanReceipt] Receipt scanned: ${items.length} items found`);
+          setScannedItems(items);
+          const allIndices = new Set(items.map((_, idx) => idx));
+          setSelectedItems(allIndices);
+          
+          const dates: { [key: number]: string } = {};
+          items.forEach((item, idx) => {
+            dates[idx] = predictExpirationDate(item.name, true);
+          });
+          setExpirationDates(dates);
+          
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          console.log('[ScanReceipt] No items found on receipt');
+          Toast.show('No items found on receipt. Please try again.', 'error');
+        }
       } else {
-        console.log('No items found on receipt');
+        console.log('[ScanReceipt] Image selection cancelled by user');
       }
-    } else {
-      console.log('Image selection cancelled by user');
+    } catch (error) {
+      console.error('[ScanReceipt] Error picking image:', error);
+      Toast.show('Failed to select image. Please try again.', 'error');
     }
   };
 
@@ -406,7 +420,7 @@ export default function ScanReceiptScreen() {
   };
 
   const handleDeleteItem = (index: number, itemName: string) => {
-    console.log(`User tapped delete button for item: ${itemName} at index ${index}`);
+    console.log(`[ScanReceipt] User tapped delete button for item: ${itemName} at index ${index}`);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setItemToDelete({ index, name: itemName });
     setDeleteModalVisible(true);
@@ -416,7 +430,7 @@ export default function ScanReceiptScreen() {
     if (!itemToDelete) return;
 
     const { index, name } = itemToDelete;
-    console.log(`Deleting item: ${name} at index ${index}`);
+    console.log(`[ScanReceipt] Deleting item: ${name} at index ${index}`);
     
     // Close modal first
     setDeleteModalVisible(false);
@@ -452,14 +466,14 @@ export default function ScanReceiptScreen() {
     
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Toast.show(`${name} removed`, 'success');
-    console.log(`Successfully deleted item: ${name}`);
+    console.log(`[ScanReceipt] Successfully deleted item: ${name}`);
     
     // Clear the item to delete
     setItemToDelete(null);
   };
 
   const cancelDelete = () => {
-    console.log('User cancelled delete');
+    console.log('[ScanReceipt] User cancelled delete');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDeleteModalVisible(false);
     setItemToDelete(null);
@@ -475,34 +489,40 @@ export default function ScanReceiptScreen() {
       return;
     }
 
-    console.log(`User adding ${selectedItems.size} items to pantry`);
+    console.log(`[ScanReceipt] User adding ${selectedItems.size} items to pantry`);
     let addedCount = 0;
-    for (const index of selectedItems) {
-      const item = scannedItems[index];
-      const expirationDate = expirationDates[index];
+    
+    try {
+      for (const index of selectedItems) {
+        const item = scannedItems[index];
+        const expirationDate = expirationDates[index];
 
-      if (!expirationDate) {
-        Toast.show(`Please set expiration date for ${item.name}`, 'error');
-        continue;
+        if (!expirationDate) {
+          Toast.show(`Please set expiration date for ${item.name}`, 'error');
+          continue;
+        }
+
+        await addPantryItem({
+          id: Date.now().toString() + index,
+          name: item.name,
+          quantity: item.quantity || 1,
+          unit: item.unit || 'pieces',
+          category: item.category || 'other',
+          expirationDate,
+          dateAdded: new Date().toISOString().split('T')[0],
+        });
+        addedCount++;
       }
 
-      await addPantryItem({
-        id: Date.now().toString() + index,
-        name: item.name,
-        quantity: item.quantity || 1,
-        unit: item.unit || 'pieces',
-        category: item.category || 'other',
-        expirationDate,
-        dateAdded: new Date().toISOString().split('T')[0],
-      });
-      addedCount++;
-    }
-
-    if (addedCount > 0) {
-      console.log(`Successfully added ${addedCount} items to pantry`);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show(`${addedCount} items added to pantry!`, 'success');
-      router.back();
+      if (addedCount > 0) {
+        console.log(`[ScanReceipt] Successfully added ${addedCount} items to pantry`);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Toast.show(`${addedCount} items added to pantry!`, 'success');
+        router.back();
+      }
+    } catch (error) {
+      console.error('[ScanReceipt] Error adding items to pantry:', error);
+      Toast.show('Failed to add some items. Please try again.', 'error');
     }
   };
 
@@ -665,7 +685,12 @@ export default function ScanReceiptScreen() {
         animationType="fade"
         onRequestClose={cancelDelete}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={cancelDelete}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Item</Text>
             <Text style={styles.modalMessage}>

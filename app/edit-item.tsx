@@ -619,11 +619,12 @@ export default function EditItemScreen() {
           animationType="slide"
           onRequestClose={() => setShowCategoryPicker(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowCategoryPicker(false)}
-          >
+          <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => setShowCategoryPicker(false)}
+            />
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Category</Text>
@@ -664,7 +665,7 @@ export default function EditItemScreen() {
                 ))}
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
 
         {/* Unit Picker Modal */}
@@ -674,11 +675,12 @@ export default function EditItemScreen() {
           animationType="slide"
           onRequestClose={() => setShowUnitPicker(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowUnitPicker(false)}
-          >
+          <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => setShowUnitPicker(false)}
+            />
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Unit</Text>
@@ -718,7 +720,7 @@ export default function EditItemScreen() {
                 ))}
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>

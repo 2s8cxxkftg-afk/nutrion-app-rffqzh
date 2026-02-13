@@ -73,6 +73,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  pickerButtonText: {
+    fontSize: 16,
+    color: colors.text,
+  },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
@@ -375,10 +379,17 @@ export default function AddItemScreen() {
     };
 
     console.log('[AddItem] Adding item to pantry:', newItem);
-    await addPantryItem(newItem);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Toast.show(`${name} added to pantry!`, 'success');
-    router.back();
+    
+    try {
+      await addPantryItem(newItem);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show(`${name} added to pantry!`, 'success');
+      router.back();
+    } catch (error) {
+      console.error('[AddItem] Error adding item:', error);
+      Toast.show('Failed to add item. Please try again.', 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   };
 
   const closeAllPickers = () => {
@@ -591,11 +602,12 @@ export default function AddItemScreen() {
         animationType="slide"
         onRequestClose={() => setShowCategoryPicker(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCategoryPicker(false)}
-        >
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowCategoryPicker(false)}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Category</Text>
@@ -636,7 +648,7 @@ export default function AddItemScreen() {
               ))}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* Unit Picker Modal */}
@@ -646,11 +658,12 @@ export default function AddItemScreen() {
         animationType="slide"
         onRequestClose={() => setShowUnitPicker(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowUnitPicker(false)}
-        >
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowUnitPicker(false)}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Unit</Text>
@@ -690,7 +703,7 @@ export default function AddItemScreen() {
               ))}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );

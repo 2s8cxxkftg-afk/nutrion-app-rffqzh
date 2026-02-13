@@ -365,6 +365,7 @@ function ShoppingScreenContent() {
       console.log('[Shopping] Shopping items loaded:', loadedItems.length);
     } catch (error) {
       console.error('[Shopping] Error loading shopping items:', error);
+      Toast.show('Failed to load shopping items', 'error');
     }
   };
 
@@ -385,6 +386,7 @@ function ShoppingScreenContent() {
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
       console.log('[Shopping] Cannot add item - name is empty');
+      Toast.show('Please enter an item name', 'error');
       return;
     }
 
@@ -427,6 +429,7 @@ function ShoppingScreenContent() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
       console.error('[Shopping] Error toggling shopping item:', error);
+      Toast.show('Failed to update item', 'error');
     }
   };
 
@@ -724,7 +727,15 @@ function ShoppingScreenContent() {
           setShowUnitPicker(false);
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => {
+              setEditingItem(null);
+              setShowUnitPicker(false);
+            }}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Quantity & Unit</Text>
             
@@ -790,7 +801,12 @@ function ShoppingScreenContent() {
         animationType="fade"
         onRequestClose={cancelDelete}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={cancelDelete}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Item</Text>
             <Text style={styles.modalMessage}>
@@ -831,7 +847,12 @@ function ShoppingScreenContent() {
         animationType="fade"
         onRequestClose={cancelClearCompleted}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={cancelClearCompleted}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Clear Completed Items</Text>
             <Text style={styles.modalMessage}>
@@ -876,14 +897,15 @@ function ShoppingScreenContent() {
             setShowUnitPicker(false);
           }}
         >
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => {
-              console.log('[Shopping] User tapped outside unit picker to close');
-              setShowUnitPicker(false);
-            }}
-          >
+          <View style={[StyleSheet.absoluteFill, { pointerEvents: 'box-none' }]}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => {
+                console.log('[Shopping] User tapped outside unit picker to close');
+                setShowUnitPicker(false);
+              }}
+            />
             <View style={styles.unitPickerModal}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>Select Unit</Text>
@@ -918,7 +940,7 @@ function ShoppingScreenContent() {
                 ))}
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
       )}
 
@@ -933,14 +955,15 @@ function ShoppingScreenContent() {
             setShowAddUnitPicker(false);
           }}
         >
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => {
-              console.log('[Shopping] User tapped outside add unit picker to close');
-              setShowAddUnitPicker(false);
-            }}
-          >
+          <View style={[StyleSheet.absoluteFill, { pointerEvents: 'box-none' }]}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => {
+                console.log('[Shopping] User tapped outside add unit picker to close');
+                setShowAddUnitPicker(false);
+              }}
+            />
             <View style={styles.unitPickerModal}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>Select Unit</Text>
@@ -975,7 +998,7 @@ function ShoppingScreenContent() {
                 ))}
               </ScrollView>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
       )}
     </SafeAreaView>

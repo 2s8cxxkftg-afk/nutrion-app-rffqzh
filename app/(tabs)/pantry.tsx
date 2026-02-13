@@ -507,7 +507,12 @@ function PantryScreenContent() {
         animationType="fade"
         onRequestClose={cancelDelete}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { pointerEvents: 'box-none' }]}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={cancelDelete}
+          />
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Item</Text>
             <Text style={styles.modalMessage}>
