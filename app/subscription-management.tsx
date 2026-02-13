@@ -346,13 +346,6 @@ export default function SubscriptionManagementScreen() {
             )}
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ads</Text>
-              <Text style={styles.infoValue}>
-                None
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>AI Recipe Generator</Text>
               <Text style={styles.infoValue}>
                 {isPremium ? 'Unlocked' : 'Locked'}
