@@ -7,6 +7,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { PantryItem, FOOD_CATEGORIES, UNITS } from '@/types/pantry';
 import { addPantryItem } from '@/utils/storage';
 import { Stack, useRouter } from 'expo-router';
+import { getCaloriesForFood } from '@/services/calorieService';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
@@ -208,6 +209,36 @@ const styles = StyleSheet.create({
     color: colors.success,
     marginLeft: 4,
   },
+  calorieInfoBox: {
+    backgroundColor: colors.success + '15',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.success + '30',
+  },
+  calorieInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  calorieInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.success,
+    marginLeft: 6,
+  },
+  calorieInfoText: {
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 18,
+  },
+  calorieInfoSubtext: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   dateInputContainer: {
     position: 'relative',
   },
@@ -240,6 +271,12 @@ export default function AddItemScreen() {
   } | null>(null);
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
   const [autoDetectedCategory, setAutoDetectedCategory] = useState(false);
+  const [calorieInfo, setCalorieInfo] = useState<{
+    calories: number;
+    caloriesPerUnit: number;
+    source: string;
+  } | null>(null);
+  const [isLoadingCalories, setIsLoadingCalories] = useState(false);
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
@@ -268,6 +305,32 @@ export default function AddItemScreen() {
     }
   }, [name, category]);
 
+  const fetchCalories = useCallback(async () => {
+    if (name.trim().length < 2 || !quantity || parseFloat(quantity) <= 0) {
+      setCalorieInfo(null);
+      return;
+    }
+
+    setIsLoadingCalories(true);
+    try {
+      const quantityNum = parseFloat(quantity);
+      const result = await getCaloriesForFood(name, quantityNum, unit);
+      
+      if (result) {
+        console.log('[AddItem] Calorie info found:', result);
+        setCalorieInfo(result);
+      } else {
+        console.log('[AddItem] No calorie info found for:', name);
+        setCalorieInfo(null);
+      }
+    } catch (error) {
+      console.error('[AddItem] Error fetching calories:', error);
+      setCalorieInfo(null);
+    } finally {
+      setIsLoadingCalories(false);
+    }
+  }, [name, quantity, unit]);
+
   useEffect(() => {
     if (name.trim().length >= 2) {
       console.log('[AddItem] Name changed, predicting expiration and category for:', name);
@@ -278,14 +341,25 @@ export default function AddItemScreen() {
       console.log('[AddItem] Auto-detected category:', suggestedCategory);
       setCategory(suggestedCategory);
       setAutoDetectedCategory(suggestedCategory !== 'other');
+
+      // Fetch calorie information
+      fetchCalories();
     } else {
       setAiPrediction(null);
       setExpirationDate('');
       setDateText('');
       setCategory('other');
       setAutoDetectedCategory(false);
+      setCalorieInfo(null);
     }
-  }, [name, predictExpiration]);
+  }, [name, predictExpiration, fetchCalories]);
+
+  // Update calories when quantity or unit changes
+  useEffect(() => {
+    if (name.trim().length >= 2) {
+      fetchCalories();
+    }
+  }, [quantity, unit, fetchCalories]);
 
   const handleNameChange = (text: string) => {
     setName(text);
@@ -376,6 +450,8 @@ export default function AddItemScreen() {
       category,
       expirationDate: isoDate,
       dateAdded: new Date().toISOString().split('T')[0],
+      calories: calorieInfo?.calories,
+      caloriesPerUnit: calorieInfo?.caloriesPerUnit,
     };
 
     console.log('[AddItem] Adding item to pantry:', newItem);
@@ -493,6 +569,35 @@ export default function AddItemScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.hint}>Enter quantity manually</Text>
+
+            {isLoadingCalories && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.success} />
+                <Text style={styles.loadingText}>Calculating calories...</Text>
+              </View>
+            )}
+
+            {calorieInfo && !isLoadingCalories && (
+              <View style={styles.calorieInfoBox}>
+                <View style={styles.calorieInfoHeader}>
+                  <IconSymbol 
+                    ios_icon_name="flame.fill" 
+                    android_material_icon_name="local-fire-department" 
+                    size={16} 
+                    color={colors.success} 
+                  />
+                  <Text style={styles.calorieInfoTitle}>Calorie Information</Text>
+                </View>
+                <Text style={styles.calorieInfoText}>
+                  Total: {calorieInfo.calories} calories for {quantity} {unit}
+                </Text>
+                <Text style={styles.calorieInfoSubtext}>
+                  {calorieInfo.source === 'database' 
+                    ? '✓ From nutrition database' 
+                    : '≈ Estimated based on average values'}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.section}>

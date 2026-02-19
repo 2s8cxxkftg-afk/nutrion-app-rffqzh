@@ -688,6 +688,21 @@ export default function AIRecipesScreen() {
                   </View>
                 </View>
                 
+                {recipe.totalCalories && (
+                  <View style={styles.calorieRow}>
+                    <IconSymbol
+                      ios_icon_name="flame.fill"
+                      android_material_icon_name="local-fire-department"
+                      size={14}
+                      color="#FF6B35"
+                    />
+                    <Text style={styles.calorieText}>
+                      {recipe.totalCalories} cal total
+                      {recipe.caloriesPerServing && ` • ${recipe.caloriesPerServing} cal/serving`}
+                    </Text>
+                  </View>
+                )}
+                
                 <View style={styles.ingredientPreview}>
                   <Text style={styles.ingredientPreviewText}>
                     {recipe.ingredients.slice(0, 3).join(', ')}
@@ -772,6 +787,32 @@ export default function AIRecipesScreen() {
                   <Text style={styles.modalMetaValue}>{selectedRecipe.category}</Text>
                 </View>
               </View>
+
+              {selectedRecipe.totalCalories && (
+                <View style={styles.modalCalorieCard}>
+                  <View style={styles.modalCalorieHeader}>
+                    <IconSymbol
+                      ios_icon_name="flame.fill"
+                      android_material_icon_name="local-fire-department"
+                      size={20}
+                      color="#FF6B35"
+                    />
+                    <Text style={styles.modalCalorieTitle}>Nutrition Information</Text>
+                  </View>
+                  <View style={styles.modalCalorieRow}>
+                    <View style={styles.modalCalorieItem}>
+                      <Text style={styles.modalCalorieLabel}>Total Calories</Text>
+                      <Text style={styles.modalCalorieValue}>{selectedRecipe.totalCalories} cal</Text>
+                    </View>
+                    {selectedRecipe.caloriesPerServing && (
+                      <View style={styles.modalCalorieItem}>
+                        <Text style={styles.modalCalorieLabel}>Per Serving</Text>
+                        <Text style={styles.modalCalorieValue}>{selectedRecipe.caloriesPerServing} cal</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
 
               <Text style={styles.modalSectionTitle}>Ingredients</Text>
               {selectedRecipe.ingredients.map((ingredient, idx) => (
@@ -1202,6 +1243,20 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
   },
+  calorieRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.grey,
+  },
+  calorieText: {
+    fontSize: typography.sizes.xs,
+    color: '#FF6B35',
+    fontWeight: '600',
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1302,5 +1357,41 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.md,
     color: colors.text,
     lineHeight: 24,
+  },
+  modalCalorieCard: {
+    backgroundColor: '#FFF5F0',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#FFE0D6',
+  },
+  modalCalorieHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  modalCalorieTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: '600',
+    color: '#FF6B35',
+  },
+  modalCalorieRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  modalCalorieItem: {
+    flex: 1,
+  },
+  modalCalorieLabel: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  modalCalorieValue: {
+    fontSize: typography.sizes.lg,
+    color: '#FF6B35',
+    fontWeight: '700',
   },
 });

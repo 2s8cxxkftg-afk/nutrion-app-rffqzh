@@ -355,6 +355,11 @@ function PantryScreenContent() {
           <Text style={styles.itemDetails}>
             {item.quantity} {item.unit} • {getCategoryDisplay(item.category)}
           </Text>
+          {item.calories && (
+            <Text style={styles.itemDetails}>
+              🔥 {item.calories} calories
+            </Text>
+          )}
           <Text style={[styles.itemExpiration, { color: expirationColor }]}>
             {expirationText}
           </Text>
@@ -417,23 +422,6 @@ function PantryScreenContent() {
 
       <View style={styles.quickActionsContainer}>
         <View style={styles.quickActionsRow}>
-          <TouchableOpacity
-            style={styles.quickActionButton}
-            onPress={() => {
-              console.log('[Pantry] User tapped Scan Receipt button');
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/scan-receipt');
-            }}
-          >
-            <IconSymbol
-              ios_icon_name="doc.text.viewfinder"
-              android_material_icon_name="receipt"
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={styles.quickActionText}>Scan Receipt</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {

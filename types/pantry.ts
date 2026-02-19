@@ -11,7 +11,8 @@ export interface PantryItem {
   notes?: string;
   brandName?: string;
   brand_name?: string;
-  calories?: number;
+  calories?: number; // Total calories for the item
+  caloriesPerUnit?: number; // Calories per unit (e.g., per 100g, per piece)
   photo?: string;
   food_name?: string;
   createdAt?: string;
@@ -135,3 +136,11 @@ export const QUANTITY_PRESETS = [
   { label: '50', value: 50 },
   { label: '100', value: 100 },
 ];
+
+export interface CalorieData {
+  name: string;
+  caloriesPer100g?: number;
+  caloriesPerUnit?: { unit: string; calories: number }[];
+  isNatural?: boolean;
+  isProcessed?: boolean;
+}

@@ -15,6 +15,8 @@ export type Recipe = {
   servings: number;
   category: string;
   matchPercentage: number;
+  totalCalories?: number; // Total calories for the recipe
+  caloriesPerServing?: number; // Calories per serving
 };
 
 type State =
