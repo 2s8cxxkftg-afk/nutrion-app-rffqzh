@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { IconSymbol } from '@/components/IconSymbol';
-import AdBanner from '@/components/AdBanner';
 import { loadPantryItems } from '@/utils/storage';
 import { PantryItem } from '@/types/pantry';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
@@ -224,8 +223,6 @@ function PlannerScreenContent() {
             {availableIngredients.length} ingredients available
           </Text>
         </View>
-
-        <AdBanner onUpgradePress={() => router.push('/subscription-management')} />
 
         {availableIngredients.length === 0 ? (
           <View style={styles.emptyContainer}>

@@ -313,7 +313,7 @@ export default function AIRecipesScreen() {
                   size={20}
                   color={colors.success}
                 />
-                <Text style={styles.featureText}>Receipt Scanner included</Text>
+                <Text style={styles.featureText}>Cuisine preferences</Text>
               </View>
               <View style={styles.featureItem}>
                 <IconSymbol
@@ -322,7 +322,7 @@ export default function AIRecipesScreen() {
                   size={20}
                   color={colors.success}
                 />
-                <Text style={styles.featureText}>Ad-free experience</Text>
+                <Text style={styles.featureText}>Calorie tracking</Text>
               </View>
             </View>
             <TouchableOpacity

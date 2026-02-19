@@ -4,7 +4,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { PantryItem } from '@/types/pantry';
-import AdBanner from '@/components/AdBanner';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -64,12 +63,6 @@ export default function HomeScreen() {
     console.log('[HomeScreen] User tapped AI Recipe Generator button');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/ai-recipes');
-  };
-
-  const handleScanReceipt = () => {
-    console.log('[HomeScreen] User tapped Scan Receipt button');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/scan-receipt');
   };
 
   const handleExpiringItem = (itemId: string) => {
@@ -154,19 +147,6 @@ export default function HomeScreen() {
             />
             <Text style={styles.actionText}>AI Recipe Generator</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleScanReceipt}
-          >
-            <IconSymbol
-              ios_icon_name="doc.text.viewfinder"
-              android_material_icon_name="receipt"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={styles.actionText}>Scan Receipt</Text>
-          </TouchableOpacity>
         </View>
 
         {expiringItems.length > 0 && (
@@ -192,8 +172,6 @@ export default function HomeScreen() {
             ))}
           </View>
         )}
-
-        <AdBanner />
       </ScrollView>
     </SafeAreaView>
   );

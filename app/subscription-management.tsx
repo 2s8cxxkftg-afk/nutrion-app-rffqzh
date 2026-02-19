@@ -277,6 +277,9 @@ export default function SubscriptionManagementScreen() {
   }
 
   const subscriptionPrice = getSubscriptionPrice();
+  const statusText = isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free';
+  const planText = isPremium ? 'Premium' : 'Free';
+  const aiRecipeStatus = isPremium ? 'Unlocked' : 'Locked';
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -327,14 +330,14 @@ export default function SubscriptionManagementScreen() {
               ]}
             >
               <Text style={styles.statusText}>
-                {isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free'}
+                {statusText}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Plan</Text>
               <Text style={styles.infoValue}>
-                {isPremium ? 'Premium' : 'Free'}
+                {planText}
               </Text>
             </View>
 
@@ -345,17 +348,10 @@ export default function SubscriptionManagementScreen() {
               </View>
             )}
 
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, styles.infoRowLast]}>
               <Text style={styles.infoLabel}>AI Recipe Generator</Text>
               <Text style={styles.infoValue}>
-                {isPremium ? 'Unlocked' : 'Locked'}
-              </Text>
-            </View>
-
-            <View style={[styles.infoRow, styles.infoRowLast]}>
-              <Text style={styles.infoLabel}>Receipt Scanner</Text>
-              <Text style={styles.infoValue}>
-                {isPremium ? 'Unlocked' : 'Locked'}
+                {aiRecipeStatus}
               </Text>
             </View>
           </View>
@@ -382,15 +378,6 @@ export default function SubscriptionManagementScreen() {
                   />
                   <Text style={styles.featureText}>AI Recipe Generator</Text>
                 </View>
-                <View style={[styles.featureItem, styles.premiumFeatureHighlight]}>
-                  <IconSymbol
-                    ios_icon_name="doc.text.viewfinder"
-                    android_material_icon_name="receipt"
-                    size={20}
-                    color="#FFD700"
-                  />
-                  <Text style={styles.featureText}>Receipt Scanner</Text>
-                </View>
 
                 <View style={styles.featureItem}>
                   <IconSymbol
@@ -408,7 +395,7 @@ export default function SubscriptionManagementScreen() {
                     size={20}
                     color={colors.success}
                   />
-                  <Text style={styles.featureText}>Automatic receipt scanning</Text>
+                  <Text style={styles.featureText}>Dietary restrictions support</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <IconSymbol
@@ -469,7 +456,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Upgrade to Premium</Text>
             <Text style={styles.modalMessage}>
-              Unlock AI Recipe Generator and Receipt Scanner for ${subscriptionPrice.toFixed(2)}/month
+              Unlock AI Recipe Generator for ${subscriptionPrice.toFixed(2)}/month
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -508,7 +495,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cancel Premium</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator and Receipt Scanner.
+              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
