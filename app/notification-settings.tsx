@@ -15,8 +15,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Platform,
-  Linking,
 } from 'react-native';
 import { loadPantryItems } from '@/utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,7 +46,6 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
-  const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
 
   // Wrap loadSettings with useCallback to stabilize its reference
@@ -58,8 +55,6 @@ export default function NotificationSettingsScreen() {
       if (stored) {
         setSettings(JSON.parse(stored));
       }
-      
-      await checkNotificationPermission();
     } catch (error) {
       console.log('Error loading notification settings:', error);
     }
@@ -91,31 +86,18 @@ export default function NotificationSettingsScreen() {
     }
   };
 
-  const checkNotificationPermission = async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    setPermissionStatus(status);
-  };
-
-  const requestNotificationPermission = async () => {
-    const hasPermission = await requestNotificationPermissions();
-    
-    if (hasPermission) {
-      setPermissionStatus('granted');
-      setToast({ visible: true, message: 'Notifications enabled!', type: 'success' });
-    } else {
-      setPermissionStatus('denied');
-      setToast({ 
-        visible: true, 
-        message: 'Please enable notifications in your device settings to receive alerts.', 
-        type: 'error' 
-      });
-    }
-  };
-
   const handleToggleEnabled = async (value: boolean) => {
-    if (value && permissionStatus !== 'granted') {
-      await requestNotificationPermission();
-      return;
+    if (value) {
+      const hasPermission = await requestNotificationPermissions();
+      
+      if (!hasPermission) {
+        setToast({ 
+          visible: true, 
+          message: 'Please enable notifications in your device settings to receive alerts.', 
+          type: 'error' 
+        });
+        return;
+      }
     }
     
     await saveSettings({ ...settings, enabled: value });
@@ -257,31 +239,7 @@ export default function NotificationSettingsScreen() {
           </>
         )}
 
-        {permissionStatus === 'denied' && (
-          <View style={styles.warningBox}>
-            <IconSymbol
-              ios_icon_name="exclamationmark.triangle.fill"
-              android_material_icon_name="warning"
-              size={24}
-              color={colors.warning}
-            />
-            <Text style={styles.warningText}>
-              Notifications are disabled in your device settings. Please enable them to receive alerts.
-            </Text>
-            <TouchableOpacity
-              style={styles.warningButton}
-              onPress={() => {
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
-                }
-              }}
-            >
-              <Text style={styles.warningButtonText}>Open Settings</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
       </ScrollView>
 
       <Toast
@@ -374,27 +332,5 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontWeight: '600',
   },
-  warningBox: {
-    backgroundColor: colors.warningLight,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    gap: 12,
-  },
-  warningText: {
-    fontSize: 14,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  warningButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  warningButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.background,
-  },
+
 });

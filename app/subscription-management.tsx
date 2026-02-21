@@ -22,7 +22,9 @@ import {
   getSubscriptionPrice,
   activatePremiumSubscription,
   cancelSubscription,
-  getTrialDaysRemaining
+  getTrialDaysRemaining,
+  getExpirationReminderUsage,
+  getMaxFreeExpirationReminders
 } from '@/utils/subscription';
 import * as Haptics from 'expo-haptics';
 
@@ -207,6 +209,7 @@ export default function SubscriptionManagementScreen() {
   const [subscription, setSubscription] = useState<any>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [trialDaysLeft, setTrialDaysLeft] = useState(0);
+  const [expirationReminderUsage, setExpirationReminderUsage] = useState(0);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const router = useRouter();
@@ -220,10 +223,12 @@ export default function SubscriptionManagementScreen() {
       const sub = await getSubscription();
       const premium = await isPremiumUser();
       const daysLeft = await getTrialDaysRemaining();
+      const usage = await getExpirationReminderUsage();
       
       setSubscription(sub);
       setIsPremium(premium);
       setTrialDaysLeft(daysLeft);
+      setExpirationReminderUsage(usage.count);
     } catch (error) {
       console.error('Error loading subscription:', error);
       Toast.show('Failed to load subscription data', 'error');
@@ -280,6 +285,10 @@ export default function SubscriptionManagementScreen() {
   const statusText = isPremium ? 'Premium Active' : subscription?.status === 'trial' ? 'Free Trial' : 'Free';
   const planText = isPremium ? 'Premium' : 'Free';
   const aiRecipeStatus = isPremium ? 'Unlocked' : 'Locked';
+  const maxFreeReminders = getMaxFreeExpirationReminders();
+  const expirationReminderStatus = isPremium 
+    ? 'Unlimited' 
+    : `${expirationReminderUsage}/${maxFreeReminders} used this month`;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -348,10 +357,17 @@ export default function SubscriptionManagementScreen() {
               </View>
             )}
 
-            <View style={[styles.infoRow, styles.infoRowLast]}>
+            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>AI Recipe Generator</Text>
               <Text style={styles.infoValue}>
                 {aiRecipeStatus}
+              </Text>
+            </View>
+
+            <View style={[styles.infoRow, styles.infoRowLast]}>
+              <Text style={styles.infoLabel}>Expiration Reminders</Text>
+              <Text style={styles.infoValue}>
+                {expirationReminderStatus}
               </Text>
             </View>
           </View>
@@ -377,6 +393,16 @@ export default function SubscriptionManagementScreen() {
                     color="#FFD700"
                   />
                   <Text style={styles.featureText}>AI Recipe Generator</Text>
+                </View>
+
+                <View style={[styles.featureItem, styles.premiumFeatureHighlight]}>
+                  <IconSymbol
+                    ios_icon_name="bell.badge.fill"
+                    android_material_icon_name="notifications-active"
+                    size={20}
+                    color="#FFD700"
+                  />
+                  <Text style={styles.featureText}>Unlimited Expiration Reminders</Text>
                 </View>
 
                 <View style={styles.featureItem}>
@@ -456,7 +482,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Upgrade to Premium</Text>
             <Text style={styles.modalMessage}>
-              Unlock AI Recipe Generator for ${subscriptionPrice.toFixed(2)}/month
+              Unlock AI Recipe Generator and unlimited expiration reminders for ${subscriptionPrice.toFixed(2)}/month
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -495,7 +521,7 @@ export default function SubscriptionManagementScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cancel Premium</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator.
+              Are you sure you want to cancel your premium subscription? You will lose access to AI Recipe Generator and unlimited expiration reminders (limited to 5 per month on free plan).
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity

@@ -252,7 +252,12 @@ function PantryScreenContent() {
       const loadedItems = await loadPantryItems();
       setItems(loadedItems);
       console.log('[Pantry] Pantry items loaded:', loadedItems.length);
-      await checkAndNotifyExpiringItems(loadedItems);
+      
+      const notificationResult = await checkAndNotifyExpiringItems(loadedItems);
+      
+      if (notificationResult.limitReached) {
+        Toast.show('Expiration reminder limit reached (5/month). Upgrade to Premium for unlimited reminders.', 'error');
+      }
     } catch (error) {
       console.error('[Pantry] Error loading pantry items:', error);
       Toast.show('Failed to load items', 'error');

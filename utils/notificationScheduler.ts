@@ -4,6 +4,7 @@ import { getExpirationStatus } from './expirationHelper';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { canUseExpirationReminder, incrementExpirationReminderUsage } from './subscription';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -89,6 +90,13 @@ export async function scheduleExpirationNotification(item: PantryItem): Promise<
       return;
     }
 
+    // Check if user can use expiration reminder feature
+    const { allowed, remaining } = await canUseExpirationReminder();
+    if (!allowed) {
+      console.log('[Notifications] Expiration reminder limit reached for free user');
+      return;
+    }
+
     const expirationDate = new Date(item.expirationDate);
     const now = new Date();
     const daysUntilExpiry = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -119,6 +127,13 @@ export async function scheduleExpirationNotification(item: PantryItem): Promise<
 
       console.log('[Notifications] Scheduled notification for', item.name);
 
+      // Increment usage count for free users
+      await incrementExpirationReminderUsage();
+      
+      if (remaining !== -1) {
+        console.log('[Notifications] Expiration reminders remaining this month:', remaining - 1);
+      }
+
       await saveScheduledNotification({
         itemId: item.id,
         notificationId,
@@ -137,6 +152,13 @@ export async function sendImmediateExpirationNotification(
   try {
     const settings = await getNotificationSettings();
     if (!settings.enabled || !settings.expirationAlerts) return;
+
+    // Check if user can use expiration reminder feature
+    const { allowed, remaining } = await canUseExpirationReminder();
+    if (!allowed) {
+      console.log('[Notifications] Expiration reminder limit reached for free user');
+      return;
+    }
 
     const body = settings.recipeAlerts
       ? `${item.name} expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}. Get AI recipe ideas now!`
@@ -157,6 +179,13 @@ export async function sendImmediateExpirationNotification(
     });
 
     console.log('[Notifications] Sent immediate notification for', item.name);
+    
+    // Increment usage count for free users
+    await incrementExpirationReminderUsage();
+    
+    if (remaining !== -1) {
+      console.log('[Notifications] Expiration reminders remaining this month:', remaining - 1);
+    }
   } catch (error) {
     console.error('[Notifications] Error sending immediate notification:', error);
   }
@@ -223,12 +252,23 @@ async function saveScheduledNotification(notification: ScheduledNotification): P
   }
 }
 
-export async function checkAndNotifyExpiringItems(items: PantryItem[]): Promise<void> {
+export async function checkAndNotifyExpiringItems(items: PantryItem[]): Promise<{ limitReached: boolean; remaining: number }> {
   try {
     const settings = await getNotificationSettings();
-    if (!settings.enabled || !settings.expirationAlerts) return;
+    if (!settings.enabled || !settings.expirationAlerts) {
+      return { limitReached: false, remaining: -1 };
+    }
+
+    // Check if user can use expiration reminder feature
+    const { allowed, remaining } = await canUseExpirationReminder();
+    
+    if (!allowed) {
+      console.log('[Notifications] Expiration reminder limit reached for free user');
+      return { limitReached: true, remaining: 0 };
+    }
 
     const now = new Date();
+    let notificationsSent = 0;
     
     for (const item of items) {
       if (!item.expirationDate) continue;
@@ -241,13 +281,26 @@ export async function checkAndNotifyExpiringItems(items: PantryItem[]): Promise<
         const today = now.toISOString().split('T')[0];
 
         if (lastNotified !== today) {
+          // Check again before sending each notification
+          const currentStatus = await canUseExpirationReminder();
+          if (!currentStatus.allowed) {
+            console.log('[Notifications] Limit reached while processing items');
+            return { limitReached: true, remaining: 0 };
+          }
+          
           await sendImmediateExpirationNotification(item, daysUntilExpiry);
           await saveLastNotificationDate(item.id, today);
+          notificationsSent++;
         }
       }
     }
+    
+    // Get updated remaining count
+    const finalStatus = await canUseExpirationReminder();
+    return { limitReached: false, remaining: finalStatus.remaining };
   } catch (error) {
     console.error('[Notifications] Error checking expiring items:', error);
+    return { limitReached: false, remaining: -1 };
   }
 }
 

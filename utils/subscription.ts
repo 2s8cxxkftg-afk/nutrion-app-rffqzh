@@ -5,7 +5,9 @@ import { supabase } from './supabase';
 const SUBSCRIPTION_KEY = '@nutrion_subscription';
 const TRIAL_START_KEY = '@nutrion_trial_start';
 const PREMIUM_KEY = '@nutrion_premium';
+const EXPIRATION_REMINDER_USAGE_KEY = '@nutrion_expiration_reminder_usage';
 const TRIAL_DURATION_DAYS = 15;
+const MAX_FREE_EXPIRATION_REMINDERS_PER_MONTH = 5;
 
 export interface Subscription {
   status: 'trial' | 'active' | 'cancelled' | 'expired';
@@ -14,6 +16,11 @@ export interface Subscription {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   plan: 'free' | 'premium';
+}
+
+export interface ExpirationReminderUsage {
+  count: number;
+  lastResetDate: string; // ISO string for monthly reset
 }
 
 /**
@@ -184,4 +191,105 @@ export function getSubscriptionPrice(): number {
 export async function shouldShowPaywall(): Promise<boolean> {
   // No paywall - users can always access the app
   return false;
+}
+
+/**
+ * Get expiration reminder usage for the current month
+ */
+export async function getExpirationReminderUsage(): Promise<ExpirationReminderUsage> {
+  try {
+    const usageData = await AsyncStorage.getItem(EXPIRATION_REMINDER_USAGE_KEY);
+    
+    if (usageData) {
+      const usage: ExpirationReminderUsage = JSON.parse(usageData);
+      
+      // Check if we need to reset the count (new month)
+      const lastReset = new Date(usage.lastResetDate);
+      const now = new Date();
+      
+      if (now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+        // Reset count for new month
+        const newUsage: ExpirationReminderUsage = {
+          count: 0,
+          lastResetDate: now.toISOString(),
+        };
+        await AsyncStorage.setItem(EXPIRATION_REMINDER_USAGE_KEY, JSON.stringify(newUsage));
+        return newUsage;
+      }
+      
+      return usage;
+    }
+    
+    // No usage data found - initialize
+    const newUsage: ExpirationReminderUsage = {
+      count: 0,
+      lastResetDate: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(EXPIRATION_REMINDER_USAGE_KEY, JSON.stringify(newUsage));
+    return newUsage;
+  } catch (error) {
+    console.error('Error getting expiration reminder usage:', error);
+    return {
+      count: 0,
+      lastResetDate: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Check if user can use expiration reminder feature
+ * Premium users: unlimited
+ * Free users: 5 per month
+ */
+export async function canUseExpirationReminder(): Promise<{ allowed: boolean; remaining: number }> {
+  try {
+    const isPremium = await isPremiumUser();
+    
+    // Premium users have unlimited access
+    if (isPremium) {
+      return { allowed: true, remaining: -1 }; // -1 indicates unlimited
+    }
+    
+    // Free users: check usage count
+    const usage = await getExpirationReminderUsage();
+    const remaining = MAX_FREE_EXPIRATION_REMINDERS_PER_MONTH - usage.count;
+    
+    return {
+      allowed: usage.count < MAX_FREE_EXPIRATION_REMINDERS_PER_MONTH,
+      remaining: Math.max(0, remaining),
+    };
+  } catch (error) {
+    console.error('Error checking expiration reminder access:', error);
+    return { allowed: false, remaining: 0 };
+  }
+}
+
+/**
+ * Increment expiration reminder usage count
+ * Only increments for free users (premium users have unlimited)
+ */
+export async function incrementExpirationReminderUsage(): Promise<void> {
+  try {
+    const isPremium = await isPremiumUser();
+    
+    // Premium users don't need usage tracking
+    if (isPremium) {
+      return;
+    }
+    
+    const usage = await getExpirationReminderUsage();
+    usage.count += 1;
+    
+    await AsyncStorage.setItem(EXPIRATION_REMINDER_USAGE_KEY, JSON.stringify(usage));
+    console.log('[Subscription] Expiration reminder usage incremented:', usage.count);
+  } catch (error) {
+    console.error('Error incrementing expiration reminder usage:', error);
+  }
+}
+
+/**
+ * Get the maximum number of free expiration reminders per month
+ */
+export function getMaxFreeExpirationReminders(): number {
+  return MAX_FREE_EXPIRATION_REMINDERS_PER_MONTH;
 }
