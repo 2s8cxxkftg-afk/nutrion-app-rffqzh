@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,12 +28,12 @@ const onboardingData = [
     color: '#4CAF50',
   },
   {
-    title: '📸 AI Receipt Scanner!',
-    description: 'Snap a photo of your grocery receipt and let AI automatically add all items to your pantry with quantities detected instantly!',
-    iosIcon: 'doc.text.viewfinder',
-    androidIcon: 'receipt',
-    color: '#9C27B0',
-    isPremium: true,
+    title: '🥗 All Diet Types Supported!',
+    description: 'Whether you\'re Vegan, Keto, Paleo, Gluten-Free, or following any other diet - we\'ve got you covered with personalized meal plans!',
+    iosIcon: 'leaf.fill',
+    androidIcon: 'eco',
+    color: '#8BC34A',
+    showDietTags: true,
   },
   {
     title: '🍳 AI Recipe Generator!',
@@ -56,6 +57,17 @@ const onboardingData = [
     androidIcon: 'shopping-cart',
     color: '#2196F3',
   },
+];
+
+const dietTypes = [
+  'Vegan',
+  'Vegetarian',
+  'Keto',
+  'Paleo',
+  'Mediterranean',
+  'Gluten-Free',
+  'Dairy-Free',
+  'Low-Carb',
 ];
 
 export default function IntroductionScreen() {
@@ -126,6 +138,16 @@ export default function IntroductionScreen() {
 
         <Text style={styles.title}>{currentData.title}</Text>
         <Text style={styles.description}>{currentData.description}</Text>
+
+        {currentData.showDietTags && (
+          <View style={styles.dietTagsContainer}>
+            {dietTypes.map((diet, index) => (
+              <View key={index} style={styles.dietTag}>
+                <Text style={styles.dietTagText}>{diet}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </Animated.View>
 
       <View style={styles.footer}>
@@ -206,6 +228,31 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     paddingHorizontal: spacing.md,
     fontWeight: '500',
+  },
+  dietTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  dietTag: {
+    backgroundColor: '#8BC34A',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    shadowColor: '#8BC34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dietTagText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footer: {
     paddingHorizontal: spacing.lg,
