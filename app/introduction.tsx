@@ -8,7 +8,7 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -96,20 +96,7 @@ export default function IntroductionScreen() {
   const currentData = onboardingData[currentPage];
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: '',
-          headerStyle: {
-            backgroundColor: '#FAFAFA',
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerLeft: () => null,
-        }}
-      />
-
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Animated.View 
         key={currentPage}
         entering={FadeInRight}
