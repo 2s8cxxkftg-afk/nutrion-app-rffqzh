@@ -145,7 +145,12 @@ export default function RootLayout() {
               value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
             >
               <StatusBar style="auto" animated />
-              <Stack>
+              <Stack
+                screenOptions={{
+                  headerBackTitle: "",
+                  headerBackTitleVisible: false,
+                }}
+              >
                 {/* Index/splash screen */}
                 <Stack.Screen name="index" options={{ headerShown: false }} />
 
@@ -170,7 +175,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Reset Password",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -178,7 +184,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Confirm Email",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -186,7 +193,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Email Confirmed",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
 
@@ -203,7 +211,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Premium",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -218,7 +227,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Manage Subscription",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
 
@@ -228,7 +238,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Add Item",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -236,7 +247,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Edit Item",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -244,7 +256,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Scan Receipt",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -252,7 +265,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "AI Recipe Generator",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -260,7 +274,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Search Food",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
 
@@ -270,7 +285,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Notification Settings",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -278,7 +294,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Edit Profile",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -286,7 +303,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Change Password",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -294,7 +312,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "About",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
 
@@ -304,7 +323,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Test Connection",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -312,7 +332,8 @@ export default function RootLayout() {
                   options={{ 
                     headerShown: true,
                     title: "Password Reset Diagnostics",
-                    presentation: "card"
+                    presentation: "card",
+                    headerBackTitle: "",
                   }} 
                 />
 
@@ -321,7 +342,8 @@ export default function RootLayout() {
                   name="modal" 
                   options={{ 
                     presentation: "modal",
-                    title: "Modal"
+                    title: "Modal",
+                    headerBackTitle: "",
                   }} 
                 />
                 <Stack.Screen 
@@ -331,7 +353,8 @@ export default function RootLayout() {
                     title: "Form Sheet",
                     sheetGrabberVisible: true,
                     sheetAllowedDetents: [0.5, 0.8, 1.0],
-                    sheetCornerRadius: 20
+                    sheetCornerRadius: 20,
+                    headerBackTitle: "",
                   }} 
                 />
 
