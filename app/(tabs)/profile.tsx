@@ -323,7 +323,7 @@ export default function ProfileScreen() {
               <View style={styles.premiumCardText}>
                 <Text style={styles.premiumCardTitle}>Upgrade to Premium</Text>
                 <Text style={styles.premiumCardDescription}>
-                  Unlock AI Recipe Generator, Receipt Scanner & Ad-Free Experience
+                  Unlock AI Recipe Generator
                 </Text>
               </View>
               <IconSymbol 
