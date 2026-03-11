@@ -1,156 +1,34 @@
+import { StyleSheet, Text, View } from "react-native";
 
-import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Text, ActivityIndicator, Platform } from 'react-native';
-import { Redirect } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '@/styles/commonStyles';
-import { supabase } from '@/utils/supabase';
-
-const ONBOARDING_KEY = '@nutrion_onboarding_completed';
-
-export default function Index() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    console.log('[Index] Platform:', Platform.OS);
-    checkAppStatus();
-  }, []);
-
-  const checkAppStatus = async () => {
-    try {
-      console.log('[Index] === Checking App Status ===');
-
-      // Check onboarding status with error handling and timeout
-      let completedOnboarding = false;
-      try {
-        const storagePromise = AsyncStorage.getItem(ONBOARDING_KEY);
-        const storageTimeout = new Promise<string | null>((_, reject) => 
-          setTimeout(() => reject(new Error('Storage timeout')), 2000)
-        );
-        
-        const onboardingValue = await Promise.race([storagePromise, storageTimeout]);
-        completedOnboarding = onboardingValue === 'true';
-        console.log('[Index] Onboarding completed:', completedOnboarding);
-      } catch (storageError: any) {
-        console.error('[Index] Error reading onboarding status:', storageError?.message || storageError);
-        completedOnboarding = false;
-      }
-      setHasCompletedOnboarding(completedOnboarding);
-
-      // Check authentication status with short timeout and better error handling
-      let authenticated = false;
-      
-      try {
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 3000)
-        );
-        
-        const result = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]);
-        
-        if (result && result.data) {
-          const { session, error: sessionError } = result.data;
-          
-          if (sessionError) {
-            console.log('[Index] Session error (non-critical):', sessionError.message);
-          }
-          
-          authenticated = !!session;
-          console.log('[Index] Authenticated:', authenticated);
-        } else {
-          console.log('[Index] No session data returned');
-        }
-      } catch (authError: any) {
-        console.log('[Index] Auth check timed out or failed (non-critical):', authError?.message || authError);
-        authenticated = false;
-      }
-      
-      setIsAuthenticated(authenticated);
-      
-      // Navigate immediately without artificial delay
-      console.log('[Index] Navigation ready - proceeding immediately');
-      setIsLoading(false);
-    } catch (error: any) {
-      console.error('[Index] Error checking app status:', error?.message || error);
-      // On error, assume nothing completed and proceed to avoid crash
-      setHasCompletedOnboarding(false);
-      setIsAuthenticated(false);
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading || hasCompletedOnboarding === null) {
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/images/575cb505-3519-4304-a96f-a07004583fb2.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-        <Text style={styles.appName}>Nutrion</Text>
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+export default function Page() {
+  return (
+    <View style={styles.container}>
+      <View style={styles.main}>
+        <Text style={styles.title}>Hello World</Text>
+        <Text style={styles.subtitle}>This is the first page of your app.</Text>
       </View>
-    );
-  }
-
-  // Navigation logic
-  console.log('[Index] === Navigation Decision ===');
-  console.log('[Index] Onboarding:', hasCompletedOnboarding);
-  console.log('[Index] Authenticated:', isAuthenticated);
-
-  if (!hasCompletedOnboarding) {
-    console.log('[Index] → /introduction');
-    return <Redirect href="/introduction" />;
-  }
-
-  if (!isAuthenticated) {
-    console.log('[Index] → /auth');
-    return <Redirect href="/auth" />;
-  }
-
-  console.log('[Index] → /(tabs)/pantry');
-  return <Redirect href="/(tabs)/pantry" />;
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F1E8',
+    alignItems: "center",
+    padding: 24,
   },
-  logoContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#1F5F4E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+  main: {
+    flex: 1,
+    justifyContent: "center",
+    maxWidth: 960,
+    marginHorizontal: "auto",
   },
-  logo: {
-    width: 120,
-    height: 120,
+  title: {
+    fontSize: 64,
+    fontWeight: "bold",
   },
-  appName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1F5F4E',
-    marginTop: 24,
-    letterSpacing: 0.5,
-  },
-  loader: {
-    marginTop: 32,
+  subtitle: {
+    fontSize: 36,
+    color: "#38434D",
   },
 });

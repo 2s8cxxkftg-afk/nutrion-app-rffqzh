@@ -1,17 +1,16 @@
-
 {
   "expo": {
     "name": "Nutrion",
     "slug": "nutrion",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/final_quest_240x240.png",
+    "icon": "./assets/images/9ea29484-cb69-40cd-933b-981ba5e01f98.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/final_quest_240x240.png",
+      "image": "./assets/images/9ea29484-cb69-40cd-933b-981ba5e01f98.png",
       "resizeMode": "contain",
-      "backgroundColor": "#4CAF50"
+      "backgroundColor": "#1E5A47"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,8 +23,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/final_quest_240x240.png",
-        "backgroundColor": "#4CAF50"
+        "foregroundImage": "./assets/images/9ea29484-cb69-40cd-933b-981ba5e01f98.png",
+        "backgroundColor": "#F5F1E8"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.solvralabs.nutrion.android",
@@ -39,7 +38,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/9ea29484-cb69-40cd-933b-981ba5e01f98.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -49,8 +48,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/final_quest_240x240.png",
-          "color": "#4CAF50",
+          "icon": "./assets/images/9ea29484-cb69-40cd-933b-981ba5e01f98.png",
+          "color": "#1E5A47",
           "sounds": []
         }
       ]
