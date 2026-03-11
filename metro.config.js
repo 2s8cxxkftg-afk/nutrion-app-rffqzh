@@ -1,3 +1,4 @@
+
 const { getDefaultConfig } = require('expo/metro-config');
 const { FileStore } = require('metro-cache');
 const path = require('path');
@@ -9,8 +10,8 @@ config.resolver.unstable_enablePackageExports = true;
 
 // Use turborepo to restore the cache when possible
 config.cacheStores = [
-    new FileStore({ root: path.join(__dirname, 'node_modules', '.cache', 'metro') }),
-  ];
+  new FileStore({ root: path.join(__dirname, 'node_modules', '.cache', 'metro') }),
+];
 
 // Custom server middleware to receive console.log messages from the app
 const LOG_FILE_PATH = path.join(__dirname, '.natively', 'app_console.log');
@@ -25,7 +26,6 @@ if (!fs.existsSync(logDir)) {
 config.server = config.server || {};
 config.server.enhanceMiddleware = (middleware) => {
   return (req, res, next) => {
-
     // DEBUG: log all metro bundle requests
     if (req.url.includes('index.bundle') || req.url.includes('.bundle')) {
       console.log('[METRO] Request:', req.method, req.url);
@@ -65,6 +65,7 @@ config.server.enhanceMiddleware = (middleware) => {
             }
           } catch (e) {
             // Ignore rotation errors
+            console.log('[NATIVELY-LOGS] Log rotation error (non-critical):', e.message);
           }
 
           fs.appendFileSync(LOG_FILE_PATH, logLine);
